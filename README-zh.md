@@ -20,8 +20,8 @@
 
 1.  **克隆仓库:**
     ```bash
-    git clone [你的仓库地址]
-    cd [你的仓库文件夹]
+    git clone https://github.com/SenLief/RegManagerBot.git
+    cd RegManagerBot
     ```
 2.  **创建虚拟环境 (可选):**
     ```bash
@@ -35,7 +35,7 @@
     ```
 4.  **配置 `.env` 文件：** 在项目根目录下创建一个 `.env` 文件，并添加以下配置。请将占位符替换为你的实际数据。
     ```
-    DATABASE_URL=sqlite:///./data/db.sqlite3
+    DATABASE_URL="./data.db"
     TELEGRAM_BOT_TOKEN=your_telegram_bot_token
     ADMIN_TELEGRAM_IDS=123456789,987654321
     NAVIDROME_API_URL=http://your_navidrome_url/api
