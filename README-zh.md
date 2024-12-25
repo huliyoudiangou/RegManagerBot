@@ -35,7 +35,7 @@
     ```
 4.  **配置 `.env` 文件：** 在项目根目录下创建一个 `.env` 文件，并添加以下配置。请将占位符替换为你的实际数据。
     ```
-    DATABASE_URL="./data.db"
+    DATABASE_URL=".data/data.db"
     TELEGRAM_BOT_TOKEN=your_telegram_bot_token
     ADMIN_TELEGRAM_IDS=123456789,987654321
     NAVIDROME_API_URL=http://your_navidrome_url/api

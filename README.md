@@ -20,8 +20,8 @@ This system is a powerful and flexible user management system designed to manage
 
 1.  **Clone the repository:**
     ```bash
-    git clone [your_repository_url]
-    cd [your_repository_folder]
+    git clone https://github.com/SenLief/RegManagerBot.git
+    cd RegManagerBot
     ```
 2.  **Create a virtual environment (optional):**
     ```bash
@@ -35,7 +35,7 @@ This system is a powerful and flexible user management system designed to manage
     ```
 4.  **Configure `.env` file:** Create a `.env` file in the project root directory, and add the following configurations. Please replace the placeholder with your actual data.
     ```
-    DATABASE_URL=sqlite:///./data/db.sqlite3
+    DATABASE_URL=".data/data.db"
     TELEGRAM_BOT_TOKEN=your_telegram_bot_token
     ADMIN_TELEGRAM_IDS=123456789,987654321
     NAVIDROME_API_URL=http://your_navidrome_url/api
