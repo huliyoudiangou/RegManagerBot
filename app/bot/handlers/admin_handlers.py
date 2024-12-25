@@ -279,7 +279,7 @@ def get_user_info_by_telegram_id_command(message):
        logger.info(f"用户查询成功: telegram_id={target_telegram_id}, user_id={user.id}")
        response = f"用户信息如下：\n" \
                  f"Telegram ID: {user.telegram_id}\n" \
-                 f"用户名: {user.navidrome_username}\n" \
+                 f"用户名: {user.username}\n" \
                  f"积分: {user.score}\n" \
                  f"本地数据库ID: {user.id}\n" \
                  f"Navidrome用户ID: {user.navidrome_user_id}"
@@ -305,35 +305,24 @@ def get_user_info_by_username_command(message):
         return
 
     username = args[0]
-
-    # 先通过用户名在 Navidrome Web 应用中查找用户信息
-    navidrome_user = navidrome_api_client.get_user(username)
-    if not navidrome_user or navidrome_user['status'] == 'error':
-        bot.reply_to(message, f"未在 Navidrome 中找到用户: {username}")
-        logger.warning(f"未在 Navidrome 中找到用户: username={username}")
+    
+    # 在本地数据库中查找用户
+    user = UserService.get_user_by_username(username)
+    if user:
+        logger.info(f"用户查询成功: username={username}, user_id={user.id}")
+        response = f"用户信息如下：\n" \
+                f"Telegram ID: {user.telegram_id}\n" \
+                f"用户名: {user.username}\n" \
+                f"积分: {user.score}\n" \
+                f"本地数据库ID: {user.id}\n" \
+                f"Navidrome用户ID: {user.navidrome_user_id}"
+        bot.reply_to(message, response)
         return
 
-    # 从 Navidrome API 响应中提取 id
-    navidrome_user_id = navidrome_user['data']['id']
-
-    # 在本地数据库中查找用户
-    users = UserService.get_all_users()
-    if users:
-      for user in users:
-        if user.navidrome_user_id == navidrome_user_id:
-          logger.info(f"用户查询成功: username={username}, user_id={user.id}")
-          response = f"用户信息如下：\n" \
-                    f"Telegram ID: {user.telegram_id}\n" \
-                     f"用户名: {username}\n" \
-                    f"积分: {user.score}\n" \
-                     f"本地数据库ID: {user.id}\n" \
-                     f"Navidrome用户ID: {user.navidrome_user_id}"
-          bot.reply_to(message, response)
-          return
-
     # 如果没有找到用户，返回错误信息
-    bot.reply_to(message, f"未找到用户: {username}")
-    logger.warning(f"未找到用户: username={username}")
+    else:
+        bot.reply_to(message, f"未找到用户: {username}")
+        logger.warning(f"未找到用户: username={username}")
     
 @bot.message_handler(commands=['stats'])
 @admin_required

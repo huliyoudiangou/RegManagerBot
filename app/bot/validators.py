@@ -9,6 +9,31 @@ from config import settings
 from app.bot.core.bot_instance import bot
 # 需要安装的模块：无
 
+def user_exists(service_name, negate=False):
+    """
+    验证用户是否存在于本地数据库的装饰器
+     Args:
+        service_name: 服务名称，例如 "navidrome"
+        negate: 是否取反，默认为 False
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(message, *args, **kwargs):
+            telegram_id = message.from_user.id
+            logger.info(f"校验用户是否存在于本地数据库: telegram_id={telegram_id}, service_name={service_name}, negate={negate}")
+
+            user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+            if (user and not negate) or (not user and negate):
+                logger.info(f"用户校验通过: telegram_id={telegram_id}, service_name={service_name}, negate={negate}, user_exists={bool(user)}")
+                return func(message, *args, **kwargs)
+            else:
+                logger.warning(f"用户校验失败: telegram_id={telegram_id}, service_name={service_name}, negate={negate}, user_exists={bool(user)}")
+                bot.reply_to(message, "未找到您的账户信息!" if not negate else "您已注册，请勿重复注册!")
+                return
+
+        return wrapper
+    return decorator
+
 def admin_required(func):
     """
     验证用户是否是管理员的装饰器

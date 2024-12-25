@@ -141,6 +141,26 @@ class UserService:
             return None
     
     @staticmethod
+    def get_user_by_username(username):
+        """
+        根据用户 username 查询用户
+
+        Args:
+            username: 用户 username
+
+        Returns:
+            NavidromeUser 对象，如果用户不存在则返回 None
+        """
+        logger.info(f"查询用户: username={username}")
+        user = NavidromeUser.get_by_username(username)
+        if user:
+            logger.info(f"用户查询成功: user={user}")
+            return user
+        else:
+            logger.warning(f"用户不存在: username={username}")
+            return None
+    
+    @staticmethod
     def get_all_users():
       """获取所有用户"""
       logger.info("获取所有用户")
@@ -191,4 +211,20 @@ class UserService:
             logger.error(f"f服务器出错: {user}")
             return False
 
-    
+    @staticmethod
+    def reset_password(user, new_password):
+        """重置密码"""
+        user_data = {
+            "id": user.navidrome_user_id,
+            "userName": user.username,
+            "name": user.username,
+            "changePassword": "true",
+            "password": new_password
+            }
+        result = navidrome_api_client.update_user(user.navidrome_user_id, user_data)
+        if result and result['status'] == 'success':
+            logger.info("密码重置成功")
+            return True
+        else:
+            logger.error(f"密码重置失败: {result}")
+            return False

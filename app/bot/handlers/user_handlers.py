@@ -1,5 +1,5 @@
 # 用户命令处理器
-import telebot
+
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService
@@ -7,7 +7,8 @@ from app.utils.logger import logger
 from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
-from app.utils.api_clients import navidrome_api_client
+from app.bot.validators import user_exists
+
 
 # 需要安装的模块：无
 @bot.message_handler(commands=['start'])
@@ -26,7 +27,10 @@ def start_command(message):
                "- `/score`: 查看您的积分\n" \
                "- `/checkin`: 每日签到获得积分\n" \
                "- `/buyinvite`: 购买邀请码\n" \
-               "- `/deleteuser`: 删除您的账户\n" \
+               "- `/reset_password`: 重置密码\n" \
+               "- `/deleteuser`: 删除您的账户!!!\n" \
+               "- `/bind`: 绑定您的账户\n" \
+               "- `/unbind`: 解绑您的账户\n" \
                "\n您可以使用 `/help` 命令获取更详细的帮助信息。"
     bot.reply_to(message, response)
 
@@ -76,6 +80,7 @@ def help_command(message):
   bot.reply_to(message, response)
 
 @bot.message_handler(commands=['register'])
+@user_exists("navidrome", negate=True)
 def register_command(message):
     """
     处理 /register 命令，用户注册
@@ -404,5 +409,31 @@ def unbind_command(message):
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
         bot.reply_to(message, "未找到您的账户信息！")
 
+@bot.message_handler(commands=['reset_password'])
+@user_exists("navidrome")
+def reset_password_command(message):
+    """
+    处理 /reset_password 命令，重置密码
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+
+    logger.info(f"用户请求重置密码: telegram_id={telegram_id}, service_name={service_name}")
+
+    args = message.text.split()[1:]
+    if len(args) != 1:
+        bot.reply_to(message, "参数错误，请提供新密码，格式为：/reset_password <new_password>")
+        return
+
+    new_password = args[0]
+    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    # 重置密码
+    result = UserService.reset_password(user, new_password=new_password)
+    if result:
+        logger.info(f"用户重置密码成功: telegram_id={telegram_id}, service_name={service_name}")
+        bot.reply_to(message, "密码重置成功！")
+    else:
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        bot.reply_to(message, "密码重置失败，请联系管理员！")
 
         

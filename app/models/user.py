@@ -196,6 +196,24 @@ class NavidromeUser(User):
             return None
 
     @staticmethod
+    def get_by_username(username):
+        """根据 Navidrome 用户名查询用户"""
+        logger.info(f"根据 Navidrome 用户名查询用户: username={username}")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM Users WHERE username = ?", (username,))
+        row = cursor.fetchone()
+        close_db_connection(conn)
+
+        if row:
+            logger.info(f"根据 Navidrome 用户名查询用户成功: username={username}, telegram_id={row['telegram_id']},id={row['id']}")
+            return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], row['last_sign_in_date'], service_name=row['service_name'], username = row['username'])
+        else:
+           logger.warning(f"Navidrome 用户不存在: username={username}")
+           return None
+    
+    @staticmethod
     def get_all():
         """查询所有用户"""
         logger.info("查询所有 Navidrome 用户")
