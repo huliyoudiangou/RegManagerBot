@@ -3,7 +3,6 @@ import telebot
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService
-from app.bot.validators import user_exists
 from app.utils.logger import logger
 from config import settings
 from datetime import datetime
@@ -287,12 +286,11 @@ def info_command(message):
     telegram_id = message.from_user.id
     user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
     if user and user.navidrome_user_id:
-        service_user = UserService.get_user_by_service_id(user.navidrome_user_id)
         logger.info(f"user: {user}")
         logger.info(f"用户信息查询成功: telegram_id={telegram_id}, user_id={user.id}")
         response = f"您的信息如下：\n" \
                    f"Telegram ID: {user.telegram_id}\n" \
-                   f"用户名: {service_user["userName"]}\n" \
+                   f"用户名: {user.username}\n" \
                    f"积分: {user.score}\n" \
                    f"本地数据库ID: {user.id}\n" \
                    f"Navidrome用户ID: {user.navidrome_user_id}"
@@ -302,7 +300,6 @@ def info_command(message):
         bot.reply_to(message, "未注册用户，请先注册！")
 
 @bot.message_handler(commands=['give'])
-# @user_exists(service_name="navidrome") # 验证用户是否存在
 def give_score_command(message):
     """
     处理 /give 命令，用户赠送积分
@@ -357,3 +354,55 @@ def give_score_command(message):
     else:
        logger.error(f"用户赠送积分失败: sender_id={sender.id}, receiver_id={receiver.id}, score={score}")
        bot.reply_to(message, f"积分赠送失败，请重试!")
+
+@bot.message_handler(commands=['bind'])
+def bind_command(message):
+    """
+    处理 /bind 命令，绑定 Web 服务账户
+    /bind <username> <user_id>
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+
+    logger.info(f"用户请求绑定账户: telegram_id={telegram_id}, service_name={service_name}")
+
+    args = message.text.split()[1:]
+    if len(args) != 2:
+        bot.reply_to(message, "参数错误，请提供用户名和用户 ID，格式为：/bind <username> <user_id>")
+        return
+
+    username, user_id = args
+
+    # 验证用户
+    result = UserService.auth_user_by_id(user_id, username)
+    if result:
+        logger.info(f"用户绑定账户成功: telegram_id={telegram_id}, service_name={service_name}, username={username}, user_id={user_id}")
+        bot.reply_to(message, "账户绑定成功!")
+        user = UserService.register_local_user(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=user_id, username=username)
+    else:
+        logger.error(f"用户绑定账户失败: telegram_id={telegram_id}, service_name={service_name}, username={username}, user_id={user_id}")
+        bot.reply_to(message, "账户绑定失败，请重试!")
+
+@bot.message_handler(commands=['unbind'])
+def unbind_command(message):
+    """
+    处理 /unbind 命令，解绑 Web 服务账户并删除本地用户
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+
+    logger.info(f"用户请求解绑账户: telegram_id={telegram_id}, service_name={service_name}")
+
+    # 查找本地数据库中的用户
+    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    if user:
+        # 删除本地用户
+        UserService.delete_local_user(user)
+        logger.info(f"用户解绑成功: telegram_id={telegram_id}, service_name={service_name}")
+        bot.reply_to(message, "解绑成功！已删除您的本地账户信息。")
+    else:
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        bot.reply_to(message, "未找到您的账户信息！")
+
+
+        

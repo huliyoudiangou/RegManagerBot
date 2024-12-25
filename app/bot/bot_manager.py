@@ -17,6 +17,8 @@ bot.register_message_handler(user_handlers.delete_user_command, commands=['delet
 bot.register_message_handler(user_handlers.score_command, commands=['score']) # 注册查询积分命令
 bot.register_message_handler(user_handlers.checkin_command, commands=['checkin']) # 注册签到命令
 bot.register_message_handler(user_handlers.buy_invite_code_command, commands=['buyinvite']) # 注册购买邀请码命令
+bot.register_message_handler(user_handlers.bind_command, commands=['bind'])
+bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])# 注册解绑命令
 
 # 注册管理员命令处理函数
 bot.register_message_handler(admin_handlers.generate_invite_code_command, commands=['generate_code'])

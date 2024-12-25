@@ -25,6 +25,7 @@ def create_tables():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             telegram_id INTEGER UNIQUE NOT NULL,
             service_name TEXT NOT NULL,
+            username TEXT,
             score INTEGER DEFAULT 0,
             invite_code TEXT,
             navidrome_user_id TEXT,

@@ -97,3 +97,5 @@ class NavidromeAPIClient(BaseAPIClient):
         """删除 Navidrome 用户"""
         endpoint = f"/api/user/{user_id}"
         return self._make_request("DELETE", endpoint)
+    
+        
