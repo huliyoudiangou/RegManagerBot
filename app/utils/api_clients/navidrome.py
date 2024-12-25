@@ -38,24 +38,28 @@ class NavidromeAPIClient(BaseAPIClient):
         _headers = {"x-nd-authorization": f"Bearer {self.token}"} if self.token else {}
         if headers:
           _headers.update(headers) # 如果传入了 headers，则合并
-
+        
+        response = None
         try:
             response = requests.request(method, url, params=params, json=data, headers=_headers)
             response.raise_for_status()
 
             # 根据状态码返回不同的结果
             if response.status_code == 200:
+                logger.info(f"Navidrome API 请求成功: {method} {endpoint}")
                 return {"status": "success", "data": response.json()}
             else:
+                logger.warning(f"Navidrome API 请求失败: {method} {endpoint}, 状态码: {response.status_code}, 响应: {response.text}")
                 return {"status": "error", "message": "请求失败", "data": response.json()}
 
         except requests.exceptions.RequestException as e:
-            if response.status_code == 401:  # 假设 401 表示 token 过期
-                print("Navidrome token 过期，尝试重新登录...")
+            if response and response.status_code == 401:  # 假设 401 表示 token 过期
+                logger.warning("Navidrome token 过期，尝试重新登录...")
                 self.token = self._login()
                 if self.token:
+                    logger.info("Navidrome 重新登录成功，使用新 token 重新发送请求")
                     return self._make_request(method, endpoint, params, data, headers)  # 使用新 token 重新发送请求
-            print(f"Navidrome API 请求失败: {e}")
+            logger.error(f"Navidrome API 请求失败: {e}")
             return {"status": "error", "message": str(e)}
 
     def get_user(self, user_id):

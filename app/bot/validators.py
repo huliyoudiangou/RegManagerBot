@@ -34,15 +34,10 @@ def user_exists(service_name):
                         logger.info(f"用户存在于 Navidrome 和本地数据库: telegram_id={telegram_id}, service_name={service_name}, navidrome_user_id={user_data['id']}")
                         return func(message, *args, **kwargs)
                       elif not user:
-                        # 如果本地数据库中不存在，创建用户
-                        # new_user = UserService.register_user(telegram_id, service_name, user_data['userName'], 'password') # 默认创建一个密码为password的用户
-                        # if True:
-                        logger.info(f"用户不存在于本地数据库，但已在服务器中，无法使用Bot管理: telegram_id={telegram_id}, service_name={service_name}, navidrome_user_id={user_data['id']}")
-                        return func(message, *args, **kwargs)
-                        # else:
-                        #   logger.error(f"自动注册用户失败: telegram_id={telegram_id}, service_name={service_name}, navidrome_user_id={user_data['id']}")
-                        #   bot.reply_to(message, "用户注册失败，请联系管理员!")
-                        #   return
+                        # 如果本地数据库中不存在，则返回错误信息
+                        logger.warning(f"用户不存在于本地数据库，请使用register注册用户: telegram_id={telegram_id}, service_name={service_name}, navidrome_user_id={user_data['id']}")
+                        bot.reply_to(message, "用户不存在，请使用/register注册用户")
+                        return
                     # 如果 Web 应用中不存在该用户，返回错误信息
                     logger.warning(f"用户不存在于 Navidrome: telegram_id={telegram_id}, service_name={service_name}")
                     bot.reply_to(message, "用户不存在!")
