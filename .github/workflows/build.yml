@@ -19,6 +19,10 @@ jobs:
       - name: Get commit SHA
         id: get-commit-sha
         run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Get lowercase repository owner
+        id: get-lowercase-repo-owner
+        run: echo "LOWERCASE_REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
       
       - name: Login to Docker Hub
         if: ${{ github.event_name == 'push' && github.event_name != 'pull_request' }}
@@ -46,5 +50,5 @@ jobs:
           tags: |
             docker.io/${{ secrets.DOCKER_USERNAME }}/regmanagerbot:${{ steps.get-commit-sha.outputs.COMMIT_SHA }}
             docker.io/${{ secrets.DOCKER_USERNAME }}/regmanagerbot:latest
-            ghcr.io/${{ github.repository_owner }}/regmanagerbot:${{ steps.get-commit-sha.outputs.COMMIT_SHA }}
-            ghcr.io/${{ github.repository_owner }}/regmanagerbot:latest
+            ghcr.io/${{ steps.get-lowercase-repo-owner.outputs.LOWERCASE_REPO_OWNER }}/regmanagerbot:${{ steps.get-commit-sha.outputs.COMMIT_SHA }}
+            ghcr.io/${{ steps.get-lowercase-repo-owner.outputs.LOWERCASE_REPO_OWNER }}/regmanagerbot:latest
