@@ -7,6 +7,7 @@ from app.services.invite_code_service import InviteCodeService
 from app.utils.logger import logger
 from config import settings
 from app.bot.core.bot_instance import bot
+from app.utils.api_clients import navidrome_api_client
 
 # 需要安装的模块：无
 
@@ -16,12 +17,34 @@ from app.bot.core.bot_instance import bot
 def generate_invite_code_command(message):
     """生成邀请码 (管理员命令)"""
     telegram_id = message.from_user.id
-    invite_code = InviteCodeService.generate_invite_code(telegram_id)
-    if invite_code:
-        bot.reply_to(message, f"邀请码已生成：{invite_code.code}")
+    
+    args = message.text.split()[1:]
+    if len(args) == 0:
+        count = 1 # 默认生成 1 个
     else:
-        bot.reply_to(message, "邀请码生成失败，请重试！")
+      try:
+          count = int(args[0])
+      except ValueError:
+        bot.reply_to(message, "参数错误，邀请码数量必须是整数！")
+        return
 
+    if count <= 0:
+        bot.reply_to(message, "邀请码数量必须大于 0！")
+        return
+
+    invite_codes = []
+    for _ in range(count):
+      invite_code = InviteCodeService.generate_invite_code(telegram_id)
+      if invite_code:
+        invite_codes.append(invite_code.code)
+      else:
+        bot.reply_to(message, "邀请码生成失败，请重试！")
+        return
+    
+    if invite_codes:
+      response = f"成功生成{count}个邀请码:\n" + "\n".join(invite_codes)
+      bot.reply_to(message, response)
+      
 @bot.message_handler(commands=['invite'])
 @admin_required
 def get_all_invite_codes_command(message):
@@ -201,3 +224,142 @@ def reduce_score_command(message):
         logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
         bot.reply_to(message, f"未找到用户: {target_telegram_id}")
 
+@bot.message_handler(commands=['set_price'])
+@admin_required
+def set_price_command(message):
+    """
+    设置邀请码价格 (管理员命令)
+    /set_price <price>
+    """
+    telegram_id = message.from_user.id
+    logger.info(f"管理员设置邀请码价格: telegram_id={telegram_id}")
+
+    args = message.text.split()[1:]
+    if len(args) != 1:
+        bot.reply_to(message, "参数错误，请提供价格，格式为：/set_price <price>")
+        return
+
+    try:
+        price = int(args[0])
+    except ValueError:
+        bot.reply_to(message, "价格必须是整数！")
+        return
+
+    config_name = "INVITE_CODE_PRICE" # 直接指定配置项
+    # 更新配置
+    setattr(settings, config_name, price) # 只更新 config 对象中的值
+    logger.info(f"配置项 {config_name} 已更新为 {price}")
+    bot.reply_to(message, f"邀请码积分价格已更新为 {price}")
+
+@bot.message_handler(commands=['userinfo'])
+@admin_required
+def get_user_info_by_telegram_id_command(message):
+    """
+    根据 Telegram ID 查询用户信息 (管理员命令)
+    /userinfo <telegram_id>
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+    logger.info(f"管理员根据 Telegram ID 查询用户信息: telegram_id={telegram_id}, service_name={service_name}")
+
+    args = message.text.split()[1:]
+    if len(args) != 1:
+        bot.reply_to(message, "参数错误，请提供用户 Telegram ID，格式为：/userinfo <telegram_id>")
+        return
+
+    try:
+        target_telegram_id = int(args[0])
+    except ValueError:
+        bot.reply_to(message, "参数错误，用户 Telegram ID 必须是整数！")
+        return
+
+    # 查找本地数据库中的用户
+    user = UserService.get_user_by_telegram_id(target_telegram_id, service_name)
+    if user:
+       logger.info(f"用户查询成功: telegram_id={target_telegram_id}, user_id={user.id}")
+       response = f"用户信息如下：\n" \
+                 f"Telegram ID: {user.telegram_id}\n" \
+                 f"用户名: {user.navidrome_username}\n" \
+                 f"积分: {user.score}\n" \
+                 f"本地数据库ID: {user.id}\n" \
+                 f"Navidrome用户ID: {user.navidrome_user_id}"
+       bot.reply_to(message, response)
+    else:
+        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
+        bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+
+@bot.message_handler(commands=['userinfo_by_username'])
+@admin_required
+def get_user_info_by_username_command(message):
+    """
+    根据用户名查询用户信息 (管理员命令)
+    /userinfo_by_username <username>
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+    logger.info(f"管理员根据用户名查询用户信息: telegram_id={telegram_id}, service_name={service_name}")
+
+    args = message.text.split()[1:]
+    if len(args) != 1:
+        bot.reply_to(message, "参数错误，请提供用户名，格式为：/userinfo_by_username <username>")
+        return
+
+    username = args[0]
+
+    # 先通过用户名在 Navidrome Web 应用中查找用户信息
+    navidrome_user = navidrome_api_client.get_user(username)
+    if not navidrome_user or navidrome_user['status'] == 'error':
+        bot.reply_to(message, f"未在 Navidrome 中找到用户: {username}")
+        logger.warning(f"未在 Navidrome 中找到用户: username={username}")
+        return
+
+    # 从 Navidrome API 响应中提取 id
+    navidrome_user_id = navidrome_user['data']['id']
+
+    # 在本地数据库中查找用户
+    users = UserService.get_all_users()
+    if users:
+      for user in users:
+        if user.navidrome_user_id == navidrome_user_id:
+          logger.info(f"用户查询成功: username={username}, user_id={user.id}")
+          response = f"用户信息如下：\n" \
+                    f"Telegram ID: {user.telegram_id}\n" \
+                     f"用户名: {username}\n" \
+                    f"积分: {user.score}\n" \
+                     f"本地数据库ID: {user.id}\n" \
+                     f"Navidrome用户ID: {user.navidrome_user_id}"
+          bot.reply_to(message, response)
+          return
+
+    # 如果没有找到用户，返回错误信息
+    bot.reply_to(message, f"未找到用户: {username}")
+    logger.warning(f"未找到用户: username={username}")
+    
+@bot.message_handler(commands=['stats'])
+@admin_required
+def get_stats_command(message):
+    """
+    获取统计信息 (管理员命令)
+    /stats
+    """
+    telegram_id = message.from_user.id
+    logger.info(f"管理员查询统计信息: telegram_id={telegram_id}")
+    
+    # 获取本地数据库用户数量
+    users = UserService.get_all_users()
+    if users:
+      local_user_count = len(users)
+    else:
+      local_user_count = 0
+    
+    # 获取 Navidrome 用户数量
+    navidrome_users = navidrome_api_client.get_users()
+    if navidrome_users and navidrome_users['status'] == 'success':
+        web_user_count = len(navidrome_users['data'])
+    else:
+      web_user_count = 0
+    
+    response = f"统计信息:\n" \
+               f"本地数据库注册用户数量: {local_user_count}\n" \
+               f"Navidrome Web 应用用户数量: {web_user_count}"
+    bot.reply_to(message, response)

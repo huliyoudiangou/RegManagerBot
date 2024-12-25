@@ -1,5 +1,6 @@
 from app.utils.db_utils import get_db_connection, close_db_connection
 from app.utils.logger import logger
+from datetime import datetime
 
 # 需要安装的模块：无
 
@@ -8,39 +9,45 @@ class User:
     用户模型基类
     """
 
-    def __init__(self, telegram_id, service_name, score=0, invite_code=None, id=None):
+    def __init__(self, telegram_id, service_name, score=0, invite_code=None, id=None, last_sign_in_date=None):
         self.id = id
         self.telegram_id = telegram_id
         self.service_name = service_name
         self.score = score
         self.invite_code = invite_code
-        logger.debug(f"创建用户模型: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+        
+        if isinstance(last_sign_in_date, str):
+            self.last_sign_in_date = datetime.fromisoformat(last_sign_in_date)
+        else:
+            self.last_sign_in_date = last_sign_in_date
+
+        logger.debug(f"创建用户模型: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, last_sign_in_date={self.last_sign_in_date}")
 
     def save(self):
         """保存用户信息到数据库"""
-        logger.info(f"保存用户信息到数据库: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+        logger.info(f"保存用户信息到数据库: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, last_sign_in_date={self.last_sign_in_date}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
         if self.id:
             # 更新
             cursor.execute(
-                "UPDATE Users SET telegram_id = ?, service_name = ?, score = ?, invite_code = ? WHERE id = ?",
-                (self.telegram_id, self.service_name, self.score, self.invite_code, self.id)
+                "UPDATE Users SET telegram_id = ?, service_name = ?, score = ?, invite_code = ?, last_sign_in_date = ? WHERE id = ?",
+                (self.telegram_id, self.service_name, self.score, self.invite_code, self.last_sign_in_date, self.id)
             )
-            logger.debug(f"更新用户数据: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+            logger.debug(f"更新用户数据: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, last_sign_in_date={self.last_sign_in_date}")
         else:
             # 插入
             cursor.execute(
-                "INSERT INTO Users (telegram_id, service_name, score, invite_code) VALUES (?, ?, ?, ?)",
-                (self.telegram_id, self.service_name, self.score, self.invite_code)
+                "INSERT INTO Users (telegram_id, service_name, score, invite_code, last_sign_in_date) VALUES (?, ?, ?, ?, ?)",
+                (self.telegram_id, self.service_name, self.score, self.invite_code, self.last_sign_in_date)
             )
             self.id = cursor.lastrowid
-            logger.debug(f"插入用户数据: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+            logger.debug(f"插入用户数据: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, last_sign_in_date={self.last_sign_in_date}")
 
         conn.commit()
         close_db_connection(conn)
-        logger.info(f"用户信息保存成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+        logger.info(f"用户信息保存成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, last_sign_in_date={self.last_sign_in_date}")
         return self
 
     @staticmethod
@@ -59,7 +66,7 @@ class User:
 
         if row:
             logger.info(f"查询用户成功: telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
-            return User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id'])
+            return User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id'], row['last_sign_in_date'])
         else:
             logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
             return None
@@ -77,7 +84,7 @@ class User:
 
         if row:
             logger.info(f"查询用户成功: user_id={user_id}, telegram_id={row['telegram_id']}")
-            return User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id'])
+            return User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id'], row['last_sign_in_date'])
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
             return None
@@ -94,7 +101,7 @@ class User:
         close_db_connection(conn)
 
         logger.info(f"查询所有用户成功，共 {len(rows)} 个用户")
-        return [User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id']) for row in rows]
+        return [User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id'], row['last_sign_in_date']) for row in rows]
 
     def delete(self):
         """从数据库中删除用户"""
@@ -118,36 +125,36 @@ class NavidromeUser(User):
     Navidrome 用户模型
     """
 
-    def __init__(self, telegram_id, score=0, invite_code=None, id=None, navidrome_user_id=None, service_name='navidrome'):
-        super().__init__(telegram_id, service_name, score, invite_code, id)
+    def __init__(self, telegram_id, score=0, invite_code=None, id=None, navidrome_user_id=None, service_name='navidrome', last_sign_in_date=None):
+        super().__init__(telegram_id, service_name, score, invite_code, id, last_sign_in_date)
         self.navidrome_user_id = navidrome_user_id
-        logger.debug(f"创建 Navidrome 用户模型: id={self.id}, telegram_id={self.telegram_id}, navidrome_user_id={self.navidrome_user_id}")
+        logger.debug(f"创建 Navidrome 用户模型: id={self.id}, telegram_id={self.telegram_id}, navidrome_user_id={self.navidrome_user_id}, last_sign_in_date={self.last_sign_in_date}")
 
     def save(self):
         """保存用户信息到数据库"""
-        logger.info(f"保存 Navidrome 用户信息到数据库: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+        logger.info(f"保存 Navidrome 用户信息到数据库: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}, last_sign_in_date={self.last_sign_in_date}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
         if self.id:
             # 更新
             cursor.execute(
-                "UPDATE Users SET telegram_id = ?, service_name = ?, score = ?, invite_code = ?, navidrome_user_id = ? WHERE id = ?",
-                (self.telegram_id, self.service_name, self.score, self.invite_code, self.navidrome_user_id, self.id)
+                "UPDATE Users SET telegram_id = ?, service_name = ?, score = ?, invite_code = ?, navidrome_user_id = ?, last_sign_in_date = ? WHERE id = ?",
+                (self.telegram_id, self.service_name, self.score, self.invite_code, self.navidrome_user_id, self.last_sign_in_date, self.id)
             )
-            logger.debug(f"更新 Navidrome 用户数据: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}")
+            logger.debug(f"更新 Navidrome 用户数据: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}, last_sign_in_date={self.last_sign_in_date}")
         else:
             # 插入
             cursor.execute(
-                "INSERT INTO Users (telegram_id, service_name, score, invite_code, navidrome_user_id) VALUES (?, ?, ?, ?, ?)",
-                (self.telegram_id, self.service_name, self.score, self.invite_code, self.navidrome_user_id)
+                "INSERT INTO Users (telegram_id, service_name, score, invite_code, navidrome_user_id, last_sign_in_date) VALUES (?, ?, ?, ?, ?, ?)",
+                (self.telegram_id, self.service_name, self.score, self.invite_code, self.navidrome_user_id, self.last_sign_in_date)
             )
             self.id = cursor.lastrowid
-            logger.debug(f"插入 Navidrome 用户数据: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}")
+            logger.debug(f"插入 Navidrome 用户数据: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}, last_sign_in_date={self.last_sign_in_date}")
 
         conn.commit()
         close_db_connection(conn)
-        logger.info(f"Navidrome 用户信息保存成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}")
+        logger.info(f"Navidrome 用户信息保存成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}, last_sign_in_date={self.last_sign_in_date}")
         return self
 
     @staticmethod
@@ -165,11 +172,11 @@ class NavidromeUser(User):
         close_db_connection(conn)
 
         if row:
-           logger.info(f"查询 Navidrome 用户成功: telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
-           return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], service_name = row['service_name'])
+            logger.info(f"查询 Navidrome 用户成功: telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
+            return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], service_name = row['service_name'], last_sign_in_date = row['last_sign_in_date'])
         else:
-           logger.warning(f"Navidrome 用户不存在: telegram_id={telegram_id}, service_name={service_name}")
-           return None
+            logger.warning(f"Navidrome 用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+            return None
 
     @staticmethod
     def get_by_id(user_id):
@@ -184,7 +191,7 @@ class NavidromeUser(User):
 
         if row:
             logger.info(f"查询 Navidrome 用户成功: user_id={user_id}, telegram_id={row['telegram_id']}")
-            return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], service_name = row['service_name'])
+            return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], service_name = row['service_name'], last_sign_in_date = row['last_sign_in_date'])
         else:
             logger.warning(f"Navidrome 用户不存在: user_id={user_id}")
             return None
@@ -201,10 +208,10 @@ class NavidromeUser(User):
         close_db_connection(conn)
 
         logger.info(f"查询所有 Navidrome 用户成功, 共 {len(rows)} 个用户")
-        return [NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], service_name = row['service_name']) for row in rows]
+        return [NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], service_name = row['service_name'], last_sign_in_date = row['last_sign_in_date']) for row in rows]
 
     def __str__(self):
-        return f"<NavidromeUser id={self.id}, telegram_id={self.telegram_id}, navidrome_user_id={self.navidrome_user_id}, score={self.score}, invite_code={self.invite_code}>"
+        return f"<NavidromeUser id={self.id}, telegram_id={self.telegram_id}, navidrome_user_id={self.navidrome_user_id}, score={self.score}, invite_code={self.invite_code}, last_sign_in_date={self.last_sign_in_date}>"
 
 class EmbyUser(User):
     """
@@ -214,8 +221,8 @@ class EmbyUser(User):
     def __init__(self, telegram_id, score=0, invite_code=None, id=None, emby_user_id=None):
         super().__init__(telegram_id, 'emby', score, invite_code, id)
         self.emby_user_id = emby_user_id
-        logger.debug(f"创建 Emby 用户模型: id={self.id}, telegram_id={self.telegram_id}, emby_user_id={self.emby_user_id}")
         # 你可以在这里添加更多 Emby 特有的属性
+        logger.debug(f"创建 Emby 用户模型: id={self.id}, telegram_id={self.telegram_id}, emby_user_id={self.emby_user_id}")
 
     def __str__(self):
         return f"<EmbyUser id={self.id}, telegram_id={self.telegram_id}, emby_user_id={self.emby_user_id}, score={self.score}, invite_code={self.invite_code}>"

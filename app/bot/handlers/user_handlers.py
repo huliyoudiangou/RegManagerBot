@@ -10,6 +10,70 @@ from datetime import datetime
 from app.bot.core.bot_instance import bot
 
 # 需要安装的模块：无
+@bot.message_handler(commands=['start'])
+def start_command(message):
+    """
+    处理 /start 命令
+    """
+    telegram_id = message.from_user.id
+    logger.info(f"用户 {telegram_id} 执行了 /start 命令")
+    response = "欢迎使用注册机器人！祝您每天开心！\n\n" \
+               "本机器人主要用于管理 Navidrome 和 Emby 用户，并提供积分和邀请码功能。\n" \
+               "您可以通过以下命令进行注册和管理：\n" \
+               "- `/register <用户名> <密码>`: 注册用户 (邀请码系统关闭时)\n" \
+               "- `/register <用户名> <密码> <邀请码>`: 使用邀请码注册用户 (邀请码系统开启时)\n" \
+               "- `/info`: 查看您的个人信息\n" \
+               "- `/score`: 查看您的积分\n" \
+               "- `/checkin`: 每日签到获得积分\n" \
+               "- `/buyinvite`: 购买邀请码\n" \
+               "- `/deleteuser`: 删除您的账户\n" \
+               "\n您可以使用 `/help` 命令获取更详细的帮助信息。"
+    bot.reply_to(message, response)
+
+@bot.message_handler(commands=['help'])
+def help_command(message):
+  """
+  处理 /help 命令，输出详细的命令使用说明
+  """
+  telegram_id = message.from_user.id
+  logger.info(f"用户 {telegram_id} 执行了 /help 命令")
+  response = "本机器人主要用于管理 Navidrome 和 Emby 用户，并提供积分和邀请码功能。\n\n" \
+             "**用户命令：**\n" \
+             "- `/register <用户名> <密码>`: 注册用户 (邀请码系统关闭时)。\n" \
+             "   -  示例: `/register testuser password` \n" \
+            "- `/register <用户名> <密码> <邀请码>`: 使用邀请码注册用户(邀请码系统开启时)\n"\
+             "   -  示例: `/register testuser password abc123def` \n" \
+             "- `/info`: 查看您的个人信息。\n" \
+             "   -  示例: `/info` \n" \
+             "- `/score`: 查看您的积分。\n" \
+             "   -  示例: `/score` \n" \
+             "- `/checkin`: 每日签到获得积分。\n" \
+             "   -  示例: `/checkin` \n" \
+             "- `/buyinvite`: 购买邀请码。\n" \
+             "   -  示例: `/buyinvite` \n" \
+            "- `/deleteuser`: 删除您的账户。\n" \
+             "   -  示例: `/deleteuser` \n" \
+             "\n**管理员命令：**\n" \
+             "- `/generate_code [<数量>]`：生成指定数量的邀请码（默认为 1）。\n" \
+             "   -  示例: `/generate_code` 或 `/generate_code 10`\n" \
+             "- `/invite`：查看所有邀请码。\n" \
+             "   -  示例: `/invite` \n" \
+             "- `/toggle_invite_code_system`：开启/关闭邀请码系统。\n" \
+             "   -  示例: `/toggle_invite_code_system`\n" \
+             "- `/set_score <telegram_id> <score>`：设置用户的积分。\n" \
+             "   -  示例: `/set_score 12345 100` \n" \
+              "- `/get_score <telegram_id>` 或 `/score <telegram_id>`：查看用户的积分。\n" \
+             "   -  示例: `/get_score 12345` 或 `/score 12345` \n" \
+             "- `/add_score <telegram_id> <score>`：为用户增加积分。\n" \
+             "   -  示例: `/add_score 12345 50` \n" \
+              "- `/reduce_score <telegram_id> <score>`：减少用户的积分。\n" \
+             "   -  示例: `/reduce_score 12345 20`\n" \
+            "- `/set_price <price>`: 设置邀请码的价格。\n" \
+             "   -  示例: `/set_price 150`\n" \
+            "- `/stats`: 查看统计信息。\n" \
+             "   -  示例: `/stats` \n"
+
+  bot.reply_to(message, response)
 
 @bot.message_handler(commands=['register'])
 @user_exists(service_name="navidrome")
@@ -167,10 +231,10 @@ def checkin_command(message):
     user = UserService.get_user_by_telegram_id(telegram_id, service_name)
     if user:
         # 调用服务层的签到方法
-        success = ScoreService.sign_in(user.id)
-        if success:
+        score = ScoreService.sign_in(user.id)
+        if score:
             logger.info(f"用户签到成功: telegram_id={telegram_id}, service_name={service_name}")
-            bot.reply_to(message, "签到成功!")
+            bot.reply_to(message, f"签到成功! 获得了{score}积分!")
         else:
             logger.warning(f"用户签到失败: telegram_id={telegram_id}, service_name={service_name}")
             bot.reply_to(message, "签到失败，您今天已签到!")
@@ -214,3 +278,81 @@ def buy_invite_code_command(message):
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
         bot.reply_to(message, "未找到您的账户信息!")
+
+@bot.message_handler(commands=['info'])
+@user_exists(service_name="navidrome")
+def info_command(message):
+    """
+    处理 /info 命令，用户信息查询
+    """
+    telegram_id = message.from_user.id
+    user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
+    if user:
+        logger.info(f"用户信息查询成功: telegram_id={telegram_id}, user_id={user.id}")
+        response = f"您的信息如下：\n" \
+                   f"Telegram ID: {user.telegram_id}\n" \
+                   f"用户名: {user.navidrome_username}\n" \
+                   f"积分: {user.score}\n" \
+                   f"本地数据库ID: {user.id}\n" \
+                   f"Navidrome用户ID: {user.navidrome_user_id}"
+        bot.reply_to(message, response)
+    else:
+        logger.error(f"用户信息查询失败: telegram_id={telegram_id}")
+        bot.reply_to(message, "未注册用户，请先注册！")
+
+@bot.message_handler(commands=['give'])
+@user_exists(service_name="navidrome") # 验证用户是否存在
+def give_score_command(message):
+    """
+    处理 /give 命令，用户赠送积分
+     /give <telegram_id> <score>
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+
+    logger.info(f"用户请求赠送积分: telegram_id={telegram_id}, service_name={service_name}")
+
+    args = message.text.split()[1:]
+    if len(args) != 2:
+        bot.reply_to(message, "参数错误，请提供接收者 Telegram ID 和积分数，格式为：/give <telegram_id> <score>")
+        return
+
+    try:
+        receiver_telegram_id, score = args
+        receiver_telegram_id = int(receiver_telegram_id)
+        score = int(score)
+    except ValueError:
+        bot.reply_to(message, "参数错误，接收者 Telegram ID 和积分数必须是整数！")
+        return
+
+    if telegram_id == receiver_telegram_id:
+      bot.reply_to(message, "不能给自己赠送积分！")
+      return
+
+    # 检查赠送者是否存在
+    sender = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    if not sender:
+       bot.reply_to(message, "未找到您的账户信息!")
+       return
+    
+    # 检查接收者是否存在
+    receiver = UserService.get_user_by_telegram_id(receiver_telegram_id, service_name)
+    if not receiver:
+        bot.reply_to(message, f"未找到接收者 {receiver_telegram_id} 的账户信息！")
+        return
+
+    # 检查赠送者积分是否足够
+    if sender.score < score:
+        bot.reply_to(message, f"您的积分不足，无法赠送 {score} 积分！")
+        return
+
+    # 扣除赠送者积分，增加接收者积分
+    sender = ScoreService.reduce_score(sender.id, score)
+    receiver = ScoreService.add_score(receiver.id, score)
+    
+    if sender and receiver:
+      logger.info(f"用户赠送积分成功: sender_id={sender.id}, receiver_id={receiver.id}, score={score}")
+      bot.reply_to(message, f"您已成功向用户 {receiver_telegram_id} 赠送 {score} 积分!")
+    else:
+       logger.error(f"用户赠送积分失败: sender_id={sender.id}, receiver_id={receiver.id}, score={score}")
+       bot.reply_to(message, f"积分赠送失败，请重试!")

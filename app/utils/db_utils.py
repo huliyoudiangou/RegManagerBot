@@ -29,6 +29,7 @@ def create_tables():
             invite_code TEXT,
             navidrome_user_id TEXT,
             emby_user_id TEXT,
+            last_sign_in_date DATETIME,
             UNIQUE(telegram_id, service_name) 
         )
     """)

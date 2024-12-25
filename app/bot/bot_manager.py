@@ -10,8 +10,9 @@ from app.bot.core.bot_instance import bot
 
 # 注册用户命令处理函数
 bot.register_message_handler(user_handlers.register_command, commands=['register'])
-# bot.register_message_handler(user_handlers.start_command, commands=['start'])
-# bot.register_message_handler(user_handlers.info_command, commands=['info'])
+bot.register_message_handler(user_handlers.start_command, commands=['start'])
+bot.register_message_handler(user_handlers.help_command, commands=['help'])
+bot.register_message_handler(user_handlers.info_command, commands=['info'])
 bot.register_message_handler(user_handlers.delete_user_command, commands=['deleteuser'])
 bot.register_message_handler(user_handlers.score_command, commands=['score']) # 注册查询积分命令
 bot.register_message_handler(user_handlers.checkin_command, commands=['checkin']) # 注册签到命令
@@ -25,6 +26,10 @@ bot.register_message_handler(admin_handlers.set_score_command, commands=['set_sc
 bot.register_message_handler(admin_handlers.get_score_command, commands=['get_score', 'score']) # 注册查看积分命令
 bot.register_message_handler(admin_handlers.add_score_command, commands=['add_score']) # 注册增加积分命令
 bot.register_message_handler(admin_handlers.reduce_score_command, commands=['reduce_score']) # 注册减少积分命令
+bot.register_message_handler(admin_handlers.set_price_command, commands=['set_price']) # 注册设置积分价格命令
+bot.register_message_handler(admin_handlers.get_stats_command, commands=['stats']) # 注册统计命令
+bot.register_message_handler(admin_handlers.get_user_info_by_telegram_id_command, commands=['userinfo']) # 注册管理员获取用
+bot.register_message_handler(admin_handlers.get_user_info_by_username_command, commands=['userinfo_by_username']) # 注册管理员获取用户信息命令
 
 def run_bot():
     """运行 Bot"""

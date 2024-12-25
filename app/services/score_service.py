@@ -120,9 +120,8 @@ class ScoreService:
         user = UserService.get_user_by_id(user_id)
         if user:
             # 检查今天是否已签到
-            last_sign_in_date = getattr(user, 'last_sign_in_date', None)
-            if last_sign_in_date and last_sign_in_date.date() == datetime.today().date():
-                logger.warning(f"用户今日已签到: user_id={user_id}")
+            if user.last_sign_in_date and user.last_sign_in_date.date() == datetime.today().date():
+                logger.warning(f"用户今日已签到: user_id={user_id}, last_sign_in_date={user.last_sign_in_date}")
                 return False
 
             # 签到，增加随机积分
@@ -131,8 +130,8 @@ class ScoreService:
             user.score += sign_in_score
             user.last_sign_in_date = datetime.now()
             user.save()
-            logger.info(f"用户签到成功: user_id={user_id}, 获得积分={sign_in_score}, 总积分={user.score}")
-            return True
+            logger.info(f"用户签到成功: user_id={user_id}, 获得积分={sign_in_score}, 总积分={user.score}, last_sign_in_date={user.last_sign_in_date}")
+            return sign_in_score
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
             return False
