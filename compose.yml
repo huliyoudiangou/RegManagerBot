@@ -1,0 +1,10 @@
+services:
+  regmanagerbot:
+    image: janzbff/regmanagerbot:latest
+    container_name: regmanagerbot
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    env_file:
+      - .env   #  使用 .env 文件设置环境变量
+    restart: on-failure

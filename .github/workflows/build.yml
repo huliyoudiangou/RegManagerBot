@@ -1,0 +1,50 @@
+name: Docker Image Build and Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Get commit SHA
+        id: get-commit-sha
+        run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      
+      - name: Login to Docker Hub
+        if: ${{ github.event_name == 'push' && github.event_name != 'pull_request' }}
+        uses: docker/login-action@v2
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to GitHub Container Registry
+        if: ${{ github.event_name == 'push' && github.event_name != 'pull_request' }}
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/regmanagerbot:${{ steps.get-commit-sha.outputs.COMMIT_SHA }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/regmanagerbot:latest
+            ghcr.io/${{ github.repository_owner }}/regmanagerbot:${{ steps.get-commit-sha.outputs.COMMIT_SHA }}
+            ghcr.io/${{ github.repository_owner }}/regmanagerbot:latest
