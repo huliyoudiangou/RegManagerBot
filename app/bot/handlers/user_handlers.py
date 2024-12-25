@@ -8,6 +8,7 @@ from app.utils.logger import logger
 from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
+from app.utils.api_clients import navidrome_api_client
 
 # 需要安装的模块：无
 @bot.message_handler(commands=['start'])
@@ -76,7 +77,6 @@ def help_command(message):
   bot.reply_to(message, response)
 
 @bot.message_handler(commands=['register'])
-@user_exists(service_name="navidrome")
 def register_command(message):
     """
     处理 /register 命令，用户注册
@@ -280,18 +280,19 @@ def buy_invite_code_command(message):
         bot.reply_to(message, "未找到您的账户信息!")
 
 @bot.message_handler(commands=['info'])
-@user_exists(service_name="navidrome")
 def info_command(message):
     """
     处理 /info 命令，用户信息查询
     """
     telegram_id = message.from_user.id
     user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
-    if user:
+    if user and user.navidrome_user_id:
+        service_user = UserService.get_user_by_service_id(user.navidrome_user_id)
+        logger.info(f"user: {user}")
         logger.info(f"用户信息查询成功: telegram_id={telegram_id}, user_id={user.id}")
         response = f"您的信息如下：\n" \
                    f"Telegram ID: {user.telegram_id}\n" \
-                   f"用户名: {user.navidrome_username}\n" \
+                   f"用户名: {service_user["userName"]}\n" \
                    f"积分: {user.score}\n" \
                    f"本地数据库ID: {user.id}\n" \
                    f"Navidrome用户ID: {user.navidrome_user_id}"
@@ -301,7 +302,7 @@ def info_command(message):
         bot.reply_to(message, "未注册用户，请先注册！")
 
 @bot.message_handler(commands=['give'])
-@user_exists(service_name="navidrome") # 验证用户是否存在
+# @user_exists(service_name="navidrome") # 验证用户是否存在
 def give_score_command(message):
     """
     处理 /give 命令，用户赠送积分

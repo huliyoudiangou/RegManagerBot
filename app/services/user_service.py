@@ -28,11 +28,11 @@ class UserService:
         """
         logger.info(f"开始注册用户: telegram_id={telegram_id}, service_name={service_name}, username={username}, password={password}")
 
-        # 检查用户是否已存在
-        user = NavidromeUser.get_by_telegram_id_and_service_name(telegram_id, service_name)
-        if user:
-            logger.warning(f"用户已存在: telegram_id={telegram_id}, service_name={service_name}")
-            return user
+        # # 检查用户是否已存在
+        # user = NavidromeUser.get_by_telegram_id_and_service_name(telegram_id, service_name)
+        # if user:
+        #     logger.warning(f"用户已存在: telegram_id={telegram_id}, service_name={service_name}")
+        #     return user
         if email is None:
             email = ""
         # 在 Navidrome 中创建用户
@@ -50,7 +50,7 @@ class UserService:
                 logger.info(f"本地用户创建成功: user_id={user.id}, telegram_id={user.telegram_id}, service_name={user.service_name}, navidrome_user_id={user.navidrome_user_id}")
                 return user
             else:
-                logger.error(f"Navidrome 用户创建失败: {result}")
+                logger.error(f"Navidrome 用户创建失败，服务器已有该账号，请绑定Bot和账号: {result}")
                 return None
         else:
             logger.error(f"不支持的服务名称: {service_name}")
@@ -77,7 +77,6 @@ class UserService:
     def get_user_by_telegram_id(telegram_id, service_name):
         """
         根据 Telegram ID 和服务名称查询用户
-
         Args:
             telegram_id: Telegram ID
             service_name: 服务名称
@@ -85,25 +84,13 @@ class UserService:
         Returns:
             User 对象，如果用户不存在则返回 None
         """
-        logger.info(f"查询用户: telegram_id={telegram_id}, service_name={service_name}")
+        logger.info(f"根据Telegram ID查询本地用户: telegram_id={telegram_id}, service_name={service_name}")
         user = NavidromeUser.get_by_telegram_id_and_service_name(telegram_id, service_name)
-        logger.info(f"查询结果: {user}")
         if user:
-          if service_name == 'navidrome':
-            # 获取 Navidrome 用户信息
-            navidrome_user_info = navidrome_api_client.get_user(user.navidrome_user_id)
-            if navidrome_user_info and navidrome_user_info['status'] == 'success':
-              logger.info(f"获取 Navidrome 用户信息成功: {navidrome_user_info}")
-              user.navidrome_username = navidrome_user_info['data']['userName']
-              return user
-            else:
-              logger.error(f"获取 Navidrome 用户信息失败: {navidrome_user_info}")
-              return None
-          else:
-            logger.error(f"不支持的服务名称: {service_name}")
-            return None
+            logger.info(f"本地用户查询成功: telegram_id={telegram_id}, service_name={service_name}, user_id={user.id}")
+            return user
         else:
-            logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+            logger.warning(f"本地用户不存在: telegram_id={telegram_id}, service_name={service_name}")
             return None
 
     @staticmethod
@@ -124,6 +111,26 @@ class UserService:
             return user
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
+            return None
+    
+    @staticmethod
+    def get_user_by_service_id(navidrome_user_id):
+        """
+        根据用户 ID 查询用户
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            User 对象，如果用户不存在则返回 None
+        """
+        logger.info(f"查询用户: user_id={navidrome_user_id}")
+        resp = navidrome_api_client.get_user(navidrome_user_id)
+        if resp['status'] == 'success':
+            logger.info(f"用户查询成功: user={resp['data']['userName']}")
+            return resp['data']
+        else:
+            logger.warning(f"用户不存在: user_id={navidrome_user_id}")
             return None
     
     @staticmethod
