@@ -64,7 +64,7 @@ data/*.db
 # Flask stuff:
 instance/
 .webassets-cache
-logs/
+logs/*.log
 # Scrapy stuff:
 .scrapy
 
