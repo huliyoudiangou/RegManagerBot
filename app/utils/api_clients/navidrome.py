@@ -48,17 +48,26 @@ class NavidromeAPIClient(BaseAPIClient):
             if response.status_code == 200:
                 logger.info(f"Navidrome API 请求成功: {method} {endpoint}")
                 return {"status": "success", "data": response.json()}
-            else:
-                logger.warning(f"Navidrome API 请求失败: {method} {endpoint}, 状态码: {response.status_code}, 响应: {response.text}")
-                return {"status": "error", "message": "请求失败", "data": response.json()}
+            # else:
+            #     logger.warning(f"Navidrome API 请求失败: {method} {endpoint}, 状态码: {response.status_code}, 响应: {response.text}")
+            #     return {"status": "error", "message": "请求失败", "data": response.json()}
+            elif response.status_code == 401:
+                max_retries = 3
+                retries = 0
 
+                while retries < max_retries:
+                    logger.warning(f"Navidrome token 过期，尝试第{retries}次重新登录...")
+                    self.token = self._login()
+                    if self.token:
+                        logger.info("Navidrome 重新登录成功，使用新 token 重新发送请求")
+                        return self._make_request(method, endpoint, params, data, headers)
+                    else:
+                        logger.warning(f"尝试第{retries}次重新登录失败...")
+                        retries += 1
+            else:
+                logger.error(f"Navidrome 尝试重新登录多次后失败！")
+                raise Exception("操作重试三次仍然失败！")
         except requests.exceptions.RequestException as e:
-            if response and response.status_code == 401:  # 假设 401 表示 token 过期
-                logger.warning("Navidrome token 过期，尝试重新登录...")
-                self.token = self._login()
-                if self.token:
-                    logger.info("Navidrome 重新登录成功，使用新 token 重新发送请求")
-                    return self._make_request(method, endpoint, params, data, headers)  # 使用新 token 重新发送请求
             logger.error(f"Navidrome API 请求失败: {e}")
             return {"status": "error", "message": str(e)}
 
