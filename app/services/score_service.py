@@ -2,7 +2,7 @@
 from app.models import User
 from app.utils.logger import logger
 from app.services.user_service import UserService
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 # 需要安装的模块：无
 
@@ -120,8 +120,9 @@ class ScoreService:
         user = UserService.get_user_by_id(user_id)
         if user:
             # 检查今天是否已签到
-            if user.last_sign_in_date and user.last_sign_in_date.date() == datetime.today().date():
-                logger.warning(f"用户今日已签到: user_id={user_id}, last_sign_in_date={user.last_sign_in_date}")
+            last_sign_in_date = getattr(user, 'last_sign_in_date', None)
+            if last_sign_in_date and last_sign_in_date.date() == date.today():
+                logger.warning(f"用户今日已签到: user_id={user_id}")
                 return False
 
             # 签到，增加随机积分
