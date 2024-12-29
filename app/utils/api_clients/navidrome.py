@@ -42,15 +42,11 @@ class NavidromeAPIClient(BaseAPIClient):
         response = None
         try:
             response = requests.request(method, url, params=params, json=data, headers=_headers)
-            # response.raise_for_status()
-
             # 根据状态码返回不同的结果
             if response.status_code == 200:
                 logger.info(f"Navidrome API 请求成功: {method} {endpoint}")
                 return {"status": "success", "data": response.json()}
-            # else:
-            #     logger.warning(f"Navidrome API 请求失败: {method} {endpoint}, 状态码: {response.status_code}, 响应: {response.text}")
-            #     return {"status": "error", "message": "请求失败", "data": response.json()}
+
             elif response.status_code == 401:
                 max_retries = 3
                 retries = 0
@@ -65,8 +61,7 @@ class NavidromeAPIClient(BaseAPIClient):
                         logger.warning(f"尝试第{retries}次重新登录失败...")
                         retries += 1
             else:
-                logger.error(f"Navidrome 尝试重新登录多次后失败！")
-                raise Exception("操作重试三次仍然失败！")
+                raise requests.exceptions.RequestException
         except requests.exceptions.RequestException as e:
             logger.error(f"Navidrome API 请求失败: {e}")
             return {"status": "error", "message": str(e)}

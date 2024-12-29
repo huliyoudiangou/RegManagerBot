@@ -208,7 +208,7 @@ class UserService:
                 logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
                 return False
         else:
-            logger.error(f"f服务器出错: {user}")
+            logger.error(f"服务器未找到该用户！: {username}")
             return False
 
     @staticmethod
