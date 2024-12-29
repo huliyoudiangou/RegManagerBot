@@ -143,6 +143,26 @@ class UserService:
             return None
     
     @staticmethod
+    def get_user_by_navidrome_id(user_id):
+        """
+        根据用户 navidrome_id 查询用户
+
+        Args:
+            user_id: navidrome_id
+
+        Returns:
+            NavidromeUser 对象，如果用户不存在则返回 None
+        """
+        logger.info(f"查询用户: user_id={user_id}")
+        user = NavidromeUser.get_by_navidrome_id(user_id)
+        if user:
+            logger.info(f"用户查询成功: user={user}")
+            return user
+        else:
+            logger.warning(f"用户不存在: user_id={user_id}")
+            return None
+        
+    @staticmethod
     def get_user_by_username(username):
         """
         根据用户 username 查询用户
@@ -253,3 +273,31 @@ class UserService:
         else:
             logger.error(f"用户重置用户名失败: {result}")
             return False
+    
+    @staticmethod
+    def clean_expired_users():
+        """清理过期用户"""
+        logger.info("开始清理过期用户")
+        expired_users = navidrome_api_client._get_expired_users()
+        if 'warning' in expired_users and expired_users['warning']:
+            for user in expired_users['warning']:
+                logger.warning(f"用户将在3天后过期，请注意: navidrome_user_id={user}")
+        if 'expired' in expired_users and expired_users['expired']:
+            for user in expired_users['expired']:
+                logger.info(f"删除过期用户: navidrome_user_id={user}")
+                navidrome_api_client.delete_user(user)
+                navi = NavidromeUser.get_by_navidrome_id(user)
+                if navi:
+                    logger.info(f"删除本地过期用户: telegram_id={navi.telegram_id}")
+                    navi.delete()
+                else:
+                    logger.warning("本地无用户信息，无需删除！")
+                    pass
+                
+
+    @staticmethod
+    def get_expired_users():
+          """获取过期用户和即将过期的用户"""
+          logger.info("获取过期用户和即将过期的用户")
+          expired_users = navidrome_api_client._get_expired_users()
+          return expired_users

@@ -33,7 +33,11 @@ class BotManager:
             telebot.types.BotCommand("set_price", "设置积分价格 (管理员)"),
             telebot.types.BotCommand("userinfo", "获取用户信息 (管理员)"),
             telebot.types.BotCommand("userinfo_by_username", "通过用户名获取用户信息 (管理员)"),
-            telebot.types.BotCommand("stats", "获取注册状态 (管理员)")
+            telebot.types.BotCommand("stats", "获取注册状态 (管理员)"),
+            telebot.types.BotCommand("toggle_expired_user_clean", "切换自动清理状态 (管理员)"),
+            telebot.types.BotCommand("get_expiring_users", "获取不活跃的用户 (管理员)"),
+            telebot.types.BotCommand("get_expired_users", "获取已过期的用户 (管理员)"),
+            telebot.types.BotCommand("clean_expired_users", "清理不活跃的用户 (管理员)")
         ]
         # 设置Bot命令
         self.bot.set_my_commands(commands)
@@ -65,6 +69,10 @@ class BotManager:
         bot.register_message_handler(admin_handlers.get_user_info_by_telegram_id_command, commands=['userinfo'])
         bot.register_message_handler(admin_handlers.get_user_info_by_username_command, commands=['userinfo_by_username'])
         bot.register_message_handler(admin_handlers.get_stats_command, commands=['stats'])
+        bot.register_message_handler(admin_handlers.toggle_expired_user_clean_command, commands=['toggle_expired_user_clean']) # 注册开关清理过期用户定时任务的命令
+        bot.register_message_handler(admin_handlers.get_expiring_users_command, commands=['get_expiring_users']) # 注册获取即将过期用户的命令
+        bot.register_message_handler(admin_handlers.get_expired_users_command, commands=['get_expired_users']) # 注册获取已过期用户列表的命令
+        bot.register_message_handler(admin_handlers.clean_expired_users_command, commands=['clean_expired_users']) # 注册立即清理过期用户的命令
 
     def get_bot(self):
        return self.bot

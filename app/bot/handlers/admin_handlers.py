@@ -363,12 +363,82 @@ def get_stats_command(message):
       response = f"统计信息:\n" \
                 f"本地数据库注册用户数量: {local_user_count}\n" \
                f"Navidrome Web 应用用户数量: {web_user_count}\n"
+      response += f"-------\n"
       response += f"Navidrome 歌曲总数: {song_count}\n"
       response += f"Navidrome 专辑总数: {album_count}\n"
       response += f"Navidrome 艺术家总数: {artist_count}\n"
       response += f"Navidrome 电台总数: {radio_count}\n"
+      response += f"-------\n"
+      response += f"清理系统的状态为：{settings.ENABLE_EXPIRED_USER_CLEAN}\n"
+      response += f"邀请码系统的状态为：{settings.INVITE_CODE_SYSTEM_ENABLED}\n"
       bot.reply_to(message, response)
       logger.info(f"管理员获取注册状态成功: telegram_id={telegram_id}, 本地注册用户数量={local_user_count},  Navidrome Web 应用用户数量={web_user_count}, 歌曲总数={song_count}, 专辑总数={album_count}, 艺术家总数={artist_count}, 电台总数={radio_count}")
     except Exception as e:
       logger.error(f"获取注册状态失败: telegram_id={telegram_id}, error={e}")
       bot.reply_to(message, "获取注册状态失败，请重试！")
+
+
+@bot.message_handler(commands=['toggle_expired_user_clean'])
+@admin_required
+def toggle_expired_user_clean_command(message):
+    """开启/关闭过期用户清理定时任务 (管理员命令)"""
+    settings.ENABLE_EXPIRED_USER_CLEAN = not settings.ENABLE_EXPIRED_USER_CLEAN
+    logger.debug(f'清理系统的状态为：{settings.ENABLE_EXPIRED_USER_CLEAN}')
+    # if settings.ENABLE_EXPIRED_USER_CLEAN:
+    #    UserService.clean_expired_users()
+
+    logger.info(f"过期用户清理定时任务已更改: {settings.ENABLE_EXPIRED_USER_CLEAN}")
+    bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
+
+@bot.message_handler(commands=['get_expired_users'])
+@admin_required
+def get_expired_users_command(message):
+    """获取已过期的用户 (管理员命令)"""
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求获取已过期的用户列表: telegram_id={telegram_id}")
+
+    expired_users = UserService.get_expired_users()
+    if expired_users and 'expired' in expired_users and expired_users['expired']:
+        response = "已过期的用户列表：\n"
+        for user in expired_users['expired']:
+            response += f"navidrome_user_id: {user}\n"
+        bot.reply_to(message, response)
+        logger.info(f"管理员获取已过期的用户列表成功: telegram_id={telegram_id}, users={expired_users}")
+    elif expired_users and 'warning' in expired_users and expired_users['warning']:
+        response = "已过期的用户列表为空\n 即将过期的用户列表：\n"
+        for user in expired_users['warning']:
+          response += f"navidrome_user_id: {user}\n"
+        bot.reply_to(message, response)
+        logger.info(f"管理员获取已过期的用户列表成功: telegram_id={telegram_id}, users={expired_users}")
+    else:
+        bot.reply_to(message, "没有已过期的用户!")
+        logger.warning(f"没有已过期的用户: telegram_id={telegram_id}")
+        
+@bot.message_handler(commands=['get_expiring_users'])
+@admin_required
+def get_expiring_users_command(message):
+    """获取即将过期的用户 (管理员命令)"""
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求获取即将过期的用户列表: telegram_id={telegram_id}")
+
+    expiring_users = UserService.get_expired_users()
+    if expiring_users and 'warning' in expiring_users and expiring_users['warning']:
+        response = "即将过期的用户列表：\n"
+        for user in expiring_users['warning']:
+            response += f"navidrome_user_id: {user}\n"
+        bot.reply_to(message, response)
+        logger.info(f"管理员获取即将过期的用户列表成功: telegram_id={telegram_id}, users={expiring_users}")
+    else:
+        bot.reply_to(message, "没有即将过期的用户!")
+        logger.warning(f"没有即将过期的用户: telegram_id={telegram_id}")
+
+@bot.message_handler(commands=['clean_expired_users'])
+@admin_required
+def clean_expired_users_command(message):
+    """立即清理过期用户 (管理员命令)"""
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求清理过期用户: telegram_id={telegram_id}")
+
+    UserService.clean_expired_users()
+    bot.reply_to(message, "已执行过期用户清理!")
+    logger.info(f"管理员清理过期用户成功: telegram_id={telegram_id}")

@@ -2,6 +2,7 @@
 import threading
 import time
 import requests
+from datetime import datetime, timedelta, timezone
 from .base import BaseAPIClient
 from config import settings
 from app.utils.logger import logger
@@ -21,6 +22,8 @@ class NavidromeAPIClient(BaseAPIClient):
         self.session = requests.Session()
         self.token = self._login()  # 初始化时登录并获取 token
         self._start_keep_alive()
+        if settings.ENABLE_EXPIRED_USER_CLEAN:
+           self._start_clean_expired_users()  # 启动清理过期用户的定时任务
         logger.info("NavidromeAPIClient 初始化完成") # 初始化时登录并获取 token
 
     def _login(self):
@@ -40,6 +43,60 @@ class NavidromeAPIClient(BaseAPIClient):
             print(f"Navidrome 登录失败: {e}")
             return None
 
+    def _start_clean_expired_users(self):
+        """启动清理过期用户的定时器"""
+        if settings.ENABLE_EXPIRED_USER_CLEAN:
+           self._clean_expired_users_timer = threading.Timer(settings.CLEAN_INTERVAL, self._clean_expired_users)
+           self._clean_expired_users_timer.daemon = True
+           self._clean_expired_users_timer.start()
+           logger.debug(f"Navidrome 过期用户清理定时器启动，时间间隔：{settings.CLEAN_INTERVAL} 秒")
+        else:
+            logger.debug("Navidrome 过期用户清理定时器未启动")
+    
+    def _clean_expired_users(self):
+      """删除过期用户"""
+      with self._token_lock:
+          if self.token:
+            logger.info("开始清理过期用户")
+            expired_users = self._get_expired_users()
+            if 'warning' in expired_users and expired_users['warning']:
+                for user in expired_users['warning']:
+                    logger.warning(f"用户将在3天后过期，请注意: navidrome_user_id={user}")
+            if 'expired' in expired_users and expired_users['expired']:
+              for user in expired_users['expired']:
+                logger.info(f"删除过期用户: navidrome_user_id={user}")
+                self.delete_user(user)
+          else:
+            logger.warning(f"无法获取token, 无法执行清理过期用户")
+          if settings.ENABLE_EXPIRED_USER_CLEAN:
+            self._start_clean_expired_users()
+    
+    def _get_expired_users(self):
+        """获取过期用户和即将过期的用户"""
+        expired_users = []
+        warning_users = []
+        users = self.get_users()
+        if users and users['status'] == 'success':
+            now = datetime.now()
+            for user_data in users['data']:
+                last_login_at = user_data.get('lastLoginAt')
+                last_access_at = user_data.get('lastAccessAt')
+                
+                last_login_time = datetime.fromisoformat(last_login_at.replace('Z', '+00:00')).replace(tzinfo=None) if last_login_at else None
+                last_access_time = datetime.fromisoformat(last_access_at.replace('Z', '+00:00')).replace(tzinfo=None) if last_access_at else None
+                # 获取最后登录或访问时间
+                last_time = max(last_login_time, last_access_time) if last_login_time and last_access_time else last_login_time if last_login_time else last_access_time if last_access_time else None
+                if last_time:
+                    time_diff = now - last_time
+                    if time_diff > timedelta(days=settings.EXPIRED_DAYS):
+                        expired_users.append(user_data['id'])
+                    elif time_diff > timedelta(days=settings.EXPIRED_DAYS - settings.WARNING_DAYS):
+                      warning_users.append(user_data['id'])
+                else:
+                    # 如果 lastLoginAt 和 lastAccessAt 都是 None，则立即删除
+                    expired_users.append(user_data['id'])
+        return {'expired':expired_users, 'warning':warning_users}
+    
     def _keep_alive(self):
         """发送 Navidrome 保活请求"""
         with self._token_lock:
