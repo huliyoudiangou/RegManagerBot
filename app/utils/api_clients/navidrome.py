@@ -42,7 +42,7 @@ class NavidromeAPIClient(BaseAPIClient):
         response = None
         try:
             response = requests.request(method, url, params=params, json=data, headers=_headers)
-            response.raise_for_status()
+            # response.raise_for_status()
 
             # 根据状态码返回不同的结果
             if response.status_code == 200:
