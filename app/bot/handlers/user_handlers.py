@@ -436,4 +436,31 @@ def reset_password_command(message):
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
         bot.reply_to(message, "密码重置失败，请联系管理员！")
 
+@bot.message_handler(commands=['reset_username'])
+@user_exists("navidrome")
+def reset_password_command(message):
+    """
+    处理 /reset_username 命令，重置用户名
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+
+    logger.info(f"用户请求重置用户名: telegram_id={telegram_id}, service_name={service_name}")
+
+    args = message.text.split()[1:]
+    if len(args) != 1:
+        bot.reply_to(message, "参数错误，请提供新用户名，格式为：/reset_username <new_username>")
+        return
+
+    new_username = args[0]
+    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    # 重置用户名
+    result = UserService.reset_username(user, new_password=new_username)
+    if result:
+        logger.info(f"用户重置用户名成功: telegram_id={telegram_id}, service_name={service_name}")
+        bot.reply_to(message, f"用户名重置成功，请使用{new_username}登录！")
+    else:
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        bot.reply_to(message, "用户名重置失败，请联系管理员！")
+
         

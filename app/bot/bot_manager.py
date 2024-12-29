@@ -19,6 +19,7 @@ class BotManager:
             telebot.types.BotCommand("checkin", "签到"),
             telebot.types.BotCommand("buyinvite", "购买邀请码"),
             telebot.types.BotCommand("reset_password", "重置密码"),
+            telebot.types.BotCommand("reset_username", "重置用户名"),
             telebot.types.BotCommand("give", "赠送积分"),
             telebot.types.BotCommand("bind", "绑定账号"),
             telebot.types.BotCommand("unbind", "解绑账号"),
@@ -47,6 +48,7 @@ class BotManager:
         bot.register_message_handler(user_handlers.checkin_command, commands=['checkin'])
         bot.register_message_handler(user_handlers.buy_invite_code_command, commands=['buyinvite'])
         bot.register_message_handler(user_handlers.reset_password_command, commands=['reset_password'])
+        bot.register_message_handler(user_handlers.reset_username_command, commands=['reset_username'])
         bot.register_message_handler(user_handlers.give_score_command, commands=['give'])
         bot.register_message_handler(user_handlers.bind_command, commands=['bind'])
         bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])
