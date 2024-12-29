@@ -301,3 +301,9 @@ class UserService:
           logger.info("获取过期用户和即将过期的用户")
           expired_users = navidrome_api_client._get_expired_users()
           return expired_users
+    
+    @staticmethod
+    def start_clean_expired_users():
+          """启动和关闭清理系统"""
+          logger.info("准备关闭/开启清理系统")
+          navidrome_api_client._start_clean_expired_users()

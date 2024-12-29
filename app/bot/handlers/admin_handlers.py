@@ -64,7 +64,7 @@ def toggle_invite_code_system_command(message):
     """开启/关闭邀请码系统 (管理员命令)"""
     settings.INVITE_CODE_SYSTEM_ENABLED = not settings.INVITE_CODE_SYSTEM_ENABLED
     logger.info(f"邀请码系统状态已更改: {settings.INVITE_CODE_SYSTEM_ENABLED}")
-    bot.reply_to(message, f"邀请码系统已{'开启' if settings.INVITE_CODE_SYSTEM_ENABLED else '关闭'}")
+    bot.reply_to(message, f"邀请码系统已{'开启' if settings.INVITE_CODE_SYSTEM_ENABLED == True else '关闭'}")
 
 @bot.message_handler(commands=['set_score'])
 @admin_required
@@ -384,11 +384,11 @@ def toggle_expired_user_clean_command(message):
     """开启/关闭过期用户清理定时任务 (管理员命令)"""
     settings.ENABLE_EXPIRED_USER_CLEAN = not settings.ENABLE_EXPIRED_USER_CLEAN
     logger.debug(f'清理系统的状态为：{settings.ENABLE_EXPIRED_USER_CLEAN}')
-    # if settings.ENABLE_EXPIRED_USER_CLEAN:
-    #    UserService.clean_expired_users()
+
+    UserService.start_clean_expired_users()
 
     logger.info(f"过期用户清理定时任务已更改: {settings.ENABLE_EXPIRED_USER_CLEAN}")
-    bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
+    bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN == True else '关闭'}")
 
 @bot.message_handler(commands=['get_expired_users'])
 @admin_required
