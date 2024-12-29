@@ -119,7 +119,7 @@ class UserService:
             logger.error(f"不支持的服务名称: {service_name}")
             return None
         else:
-            logger.warning(f"用户不存在: username={user.username}, telegram_id={telegram_id}, service_name={service_name}")
+            logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
             return None
 
     @staticmethod
@@ -205,7 +205,7 @@ class UserService:
         if user and user['status'] == 'success':
             if user['data']['userName'] == username:
                 logger.info(f"用户认证成功: user_id={user_id}, name={username}")
-                return True
+                return user
             else:
                 logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
                 return False
@@ -231,6 +231,12 @@ class UserService:
             logger.error(f"密码重置失败: {result}")
             return False
     
+    @staticmethod
+    def update_user_name(user, username):
+        """更新本地数据库中的用户名"""
+        logger.info(f"用户重置为：{username}")
+        return NavidromeUser.update_username(user.telegram_id, user.service_name, username)
+  
     @staticmethod
     def reset_username(user, new_username):
         """重置用户名"""

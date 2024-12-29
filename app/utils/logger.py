@@ -2,6 +2,7 @@
 from loguru import logger
 from config import settings
 import os
+import sys
 
 # 需要安装的模块：loguru
 # pip install loguru
@@ -18,6 +19,9 @@ logger.add(os.path.join(log_dir, "info.log"), rotation="1 week", level="INFO", f
 logger.add(os.path.join(log_dir, "debug.log"), rotation="1 week", level="DEBUG", format="{time} {level} {message}", backtrace=True, diagnose=True)  # 调试日志
 logger.add(os.path.join(log_dir, "business.log"), rotation="1 week", level="INFO", format="{time} {level} {message}")  # 业务日志
 logger.add(os.path.join(log_dir, "system.log"), rotation="1 week", level="INFO", format="{time} {level} {message}")  # 系统日志
+
+logger.remove() # 移除默认控制台输出
+logger.add(sys.stdout, level="INFO", format="{time} {level} {message}") # 添加控制台输出，级别为 INFO
 
 # 使用示例
 if __name__ == "__main__":

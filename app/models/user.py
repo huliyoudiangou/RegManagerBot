@@ -227,6 +227,35 @@ class NavidromeUser(User):
         logger.info(f"查询所有 Navidrome 用户成功, 共 {len(rows)} 个用户")
         return [NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], row['last_sign_in_date'], service_name=row['service_name'], username=row['username']) for row in rows]
 
+    @staticmethod
+    def update_username(telegram_id, service_name, new_username):
+        """
+        修改 Navidrome 用户名
+        Args:
+          new_username: 新的用户名
+        Returns:
+          修改后的 NavidromeUser对象
+        """
+        logger.info(f"修改 Navidrome 用户名: new_username={new_username}")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("UPDATE Users SET username = ? WHERE telegram_id = ? AND service_name = ?", (new_username, telegram_id, service_name))
+        conn.commit()
+        # 获取更新后的数据
+        cursor.execute(
+            "SELECT * FROM Users WHERE telegram_id = ? AND service_name = ?",
+            (telegram_id, service_name)
+        )
+        row = cursor.fetchone()
+        close_db_connection(conn)
+        if row:
+          logger.info(f"修改 Navidrome 用户名成功, 返回新的NavidromeUser对象: new_username={new_username}, telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
+          return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], service_name = row['service_name'])
+        else:
+          logger.error(f"修改 Navidrome 用户名失败: new_username={new_username}, telegram_id={telegram_id}, service_name={service_name}")
+          return None
+    
     def __str__(self):
         return f"<NavidromeUser id={self.id}, telegram_id={self.telegram_id}, navidrome_user_id={self.navidrome_user_id}, score={self.score}, invite_code={self.invite_code}, last_sign_in_date={self.last_sign_in_date}, username={self.username}>"
 

@@ -28,6 +28,7 @@ def start_command(message):
                "- `/checkin`: 每日签到获得积分\n" \
                "- `/buyinvite`: 购买邀请码\n" \
                "- `/reset_password`: 重置密码\n" \
+               "- `/reset_username`: 重置登录用户名\n" \
                "- `/deleteuser`: 删除您的账户!!!\n" \
                "- `/bind`: 绑定您的账户\n" \
                "- `/unbind`: 解绑您的账户\n" \
@@ -427,18 +428,23 @@ def reset_password_command(message):
 
     new_password = args[0]
     user = UserService.get_user_by_telegram_id(telegram_id, service_name)
-    # 重置密码
-    result = UserService.reset_password(user, new_password=new_password)
-    if result:
-        logger.info(f"用户重置密码成功: telegram_id={telegram_id}, service_name={service_name}")
-        bot.reply_to(message, "密码重置成功！")
+    if user and UserService.auth_user_by_id(user.navidrome_user_id, user.username):
+        # 重置密码
+        result = UserService.reset_password(user, new_password=new_password)
+        if result:
+            logger.info(f"用户重置密码成功: telegram_id={telegram_id}, service_name={service_name}")
+            bot.reply_to(message, "密码重置成功！")
+        else:
+            logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+            bot.reply_to(message, "密码重置失败，请联系管理员！")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
-        bot.reply_to(message, "密码重置失败，请联系管理员！")
+        bot.reply_to(message, "该用户未注册！")
+        
 
 @bot.message_handler(commands=['reset_username'])
 @user_exists("navidrome")
-def reset_password_command(message):
+def reset_username_command(message):
     """
     处理 /reset_username 命令，重置用户名
     """
@@ -454,13 +460,24 @@ def reset_password_command(message):
 
     new_username = args[0]
     user = UserService.get_user_by_telegram_id(telegram_id, service_name)
-    # 重置用户名
-    result = UserService.reset_username(user, new_password=new_username)
-    if result:
-        logger.info(f"用户重置用户名成功: telegram_id={telegram_id}, service_name={service_name}")
-        bot.reply_to(message, f"用户名重置成功，请使用{new_username}登录！")
+    if user and user.username != new_username:
+        if UserService.auth_user_by_id(user.navidrome_user_id, user.username):
+            # 重置用户名
+            result = UserService.reset_username(user, new_username=new_username)
+            if result:
+                UserService.update_user_name(user, new_username)
+                logger.info(f"用户重置用户名成功: telegram_id={telegram_id}, service_name={service_name}")
+                bot.reply_to(message, f"用户名重置成功，请使用{new_username}登录！")
+            else:
+                logger.warning(f"服务器出错: telegram_id={telegram_id}, service_name={service_name}")
+                bot.reply_to(message, "服务器出错，请联系管理员！")
+        else:
+            logger.warning(f"服务器无该用户: telegram_id={telegram_id}, service_name={service_name}")
+            bot.reply_to(message, "服务器找不到该用户！")
     else:
-        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
-        bot.reply_to(message, "用户名重置失败，请联系管理员！")
+        logger.warning(f"用户重名: telegram_id={telegram_id}, service_name={service_name}")
+        bot.reply_to(message, "用户重名，请重新选择用户名！")
+        
+            
 
         

@@ -1,8 +1,11 @@
 # Navidrome API 客户端
+import threading
+import time
 import requests
 from .base import BaseAPIClient
 from config import settings
 from app.utils.logger import logger
+
 
 # 需要安装的模块：requests
 # pip install requests
@@ -14,7 +17,10 @@ class NavidromeAPIClient(BaseAPIClient):
 
     def __init__(self):
         super().__init__(settings.NAVIDROME_API_URL, username=settings.NAVIDROME_API_USERNAME, password=settings.NAVIDROME_API_PASSWORD, auth_type='token')
+        self._token_lock = threading.Lock()
         self.token = self._login()  # 初始化时登录并获取 token
+        self._start_keep_alive()
+        logger.info("NavidromeAPIClient 初始化完成") # 初始化时登录并获取 token
 
     def _login(self):
         """登录 Navidrome 并获取 token"""
@@ -30,6 +36,32 @@ class NavidromeAPIClient(BaseAPIClient):
             print(f"Navidrome 登录失败: {e}")
             return None
 
+    def _keep_alive(self):
+        """发送 Navidrome 保活请求"""
+        with self._token_lock:
+            if self.token:
+              endpoint = "/api/keepalive/keepalive" # 使用用户列表接口来保活
+              result = self._make_request("GET", endpoint)
+              if result and result['status'] == 'success':
+                logger.debug("Navidrome 保活请求成功")
+              else:
+                  logger.warning(f"Navidrome 保活请求失败, result: {result} , 重新获取token")
+                  self.token = self._login()
+                  if self.token:
+                    logger.info("Navidrome 重新登录成功")
+                  else:
+                      logger.error("Navidrome 重新登录失败")
+        self._start_keep_alive()
+
+    def _start_keep_alive(self):
+        """启动保活定时器"""
+        # 设置保活时间间隔，例如每 60 分钟发送一次
+        interval = 60 * 60
+        self._keep_alive_timer = threading.Timer(interval, self._keep_alive)
+        self._keep_alive_timer.daemon = True  # 设置为守护线程，防止主线程退出时阻塞
+        self._keep_alive_timer.start()
+        logger.debug(f"Navidrome 保活定时器启动，时间间隔：{interval} 秒")
+        
     def _make_request(self, method, endpoint, params=None, data=None, headers=None):
         """发送 API 请求"""
         url = f"{self.api_url}{endpoint}"
