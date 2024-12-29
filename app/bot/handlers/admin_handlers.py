@@ -332,23 +332,43 @@ def get_stats_command(message):
     /stats
     """
     telegram_id = message.from_user.id
-    logger.info(f"管理员查询统计信息: telegram_id={telegram_id}")
+    service_name = "navidrome"
+    logger.info(f"管理员查询统计信息: telegram_id={telegram_id}, service_name={service_name}")
     
-    # 获取本地数据库用户数量
-    users = UserService.get_all_users()
-    if users:
-      local_user_count = len(users)
-    else:
-      local_user_count = 0
+    try:
+      # 获取本地数据库用户数量
+      users = UserService.get_all_users()
+      local_user_count = len(users) if users else 0
+      
+      # 获取 Navidrome 用户数量
+      navidrome_users = navidrome_api_client.get_users()
+      web_user_count = len(navidrome_users['data']) if navidrome_users and navidrome_users['status'] == 'success' else 0
     
-    # 获取 Navidrome 用户数量
-    navidrome_users = navidrome_api_client.get_users()
-    if navidrome_users and navidrome_users['status'] == 'success':
-        web_user_count = len(navidrome_users['data'])
-    else:
-      web_user_count = 0
-    
-    response = f"统计信息:\n" \
-               f"本地数据库注册用户数量: {local_user_count}\n" \
-               f"Navidrome Web 应用用户数量: {web_user_count}"
-    bot.reply_to(message, response)
+      # 获取 Navidrome 歌曲总数
+      songs = navidrome_api_client.get_songs()
+      song_count = int(songs['x-total-count']) if songs and 'x-total-count' in songs else 0
+
+      # 获取 Navidrome 专辑总数
+      albums = navidrome_api_client.get_albums()
+      album_count = int(albums['x-total-count']) if albums and 'x-total-count' in albums else 0
+      
+      # 获取 Navidrome 艺术家总数
+      artists = navidrome_api_client.get_artists()
+      artist_count = int(artists['x-total-count']) if artists and 'x-total-count' in artists else 0
+
+      # 获取 Navidrome 电台总数
+      radios = navidrome_api_client.get_radios()
+      radio_count = int(radios['x-total-count']) if radios and 'x-total-count' in radios else 0
+
+      response = f"统计信息:\n" \
+                f"本地数据库注册用户数量: {local_user_count}\n" \
+               f"Navidrome Web 应用用户数量: {web_user_count}\n"
+      response += f"Navidrome 歌曲总数: {song_count}\n"
+      response += f"Navidrome 专辑总数: {album_count}\n"
+      response += f"Navidrome 艺术家总数: {artist_count}\n"
+      response += f"Navidrome 电台总数: {radio_count}\n"
+      bot.reply_to(message, response)
+      logger.info(f"管理员获取注册状态成功: telegram_id={telegram_id}, 本地注册用户数量={local_user_count},  Navidrome Web 应用用户数量={web_user_count}, 歌曲总数={song_count}, 专辑总数={album_count}, 艺术家总数={artist_count}, 电台总数={radio_count}")
+    except Exception as e:
+      logger.error(f"获取注册状态失败: telegram_id={telegram_id}, error={e}")
+      bot.reply_to(message, "获取注册状态失败，请重试！")

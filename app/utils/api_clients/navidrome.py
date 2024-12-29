@@ -18,6 +18,7 @@ class NavidromeAPIClient(BaseAPIClient):
     def __init__(self):
         super().__init__(settings.NAVIDROME_API_URL, username=settings.NAVIDROME_API_USERNAME, password=settings.NAVIDROME_API_PASSWORD, auth_type='token')
         self._token_lock = threading.Lock()
+        self.session = requests.Session()
         self.token = self._login()  # 初始化时登录并获取 token
         self._start_keep_alive()
         logger.info("NavidromeAPIClient 初始化完成") # 初始化时登录并获取 token
@@ -29,9 +30,12 @@ class NavidromeAPIClient(BaseAPIClient):
         data = {"username": self.username, "password": self.password}
 
         try:
-            response = requests.post(url, json=data)
+            response = self.session.post(url, json=data)
             response.raise_for_status()
-            return response.json().get("token")
+            token = response.json().get("token")
+            logger.info(f"Navidrome 登录成功，获取到 token: {token}")
+            self.session.headers.update({"x-nd-authorization": f"Bearer {token}"})
+            return token
         except requests.exceptions.RequestException as e:
             print(f"Navidrome 登录失败: {e}")
             return None
@@ -73,11 +77,11 @@ class NavidromeAPIClient(BaseAPIClient):
         
         response = None
         try:
-            response = requests.request(method, url, params=params, json=data, headers=_headers)
+            response = self.session.request(method, url, params=params, json=data, headers=_headers)
             # 根据状态码返回不同的结果
             if response.status_code == 200:
                 logger.info(f"Navidrome API 请求成功: {method} {endpoint}")
-                return {"status": "success", "data": response.json()}
+                return {"status": "success", "data": response.json(), "headers": response.headers}
 
             elif response.status_code == 401:
                 max_retries = 3
@@ -134,4 +138,116 @@ class NavidromeAPIClient(BaseAPIClient):
         endpoint = f"/api/user/{user_id}"
         return self._make_request("DELETE", endpoint)
     
+    def get_albums(self, _end=1, _order="", _sort="", _start=0):
+        """
+        获取 Navidrome 专辑列表
         
+        Args:
+          _end: 获取数据结束位置
+          _order: 排序规则
+          _sort: 排序字段
+          _start: 获取数据开始位置
+        Returns:
+            返回一个字典，其中 'data' 字段包含专辑列表，'x-total-count' 字段包含响应头中的总数
+        """
+        params = {
+            "_end": _end,
+            "_order": _order,
+            "_sort": _sort,
+            "_start": _start
+        }
+        endpoint = "/api/album"
+        
+        response = self._make_request("GET", endpoint, params=params)
+        if response and response['status'] == 'success':
+           return {
+                "data": response['data'],
+                 "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
+            }
+        else:
+           return None   
+    
+    def get_songs(self, _end=1, _order="", _sort="", _start=0):
+        """
+        获取 Navidrome 歌曲列表
+        
+        Args:
+          _end: 获取数据结束位置
+          _order: 排序规则
+          _sort: 排序字段
+          _start: 获取数据开始位置
+        Returns:
+           返回一个字典，其中 'data' 字段包含歌曲列表，'x-total-count' 字段包含响应头中的总数
+        """
+        params = {
+            "_end": _end,
+            "_order": _order,
+            "_sort": _sort,
+            "_start": _start
+        }
+        endpoint = "/api/song"
+
+        response = self._make_request("GET", endpoint, params=params)
+        if response and response['status'] == 'success':
+           return {
+                "data": response['data'],
+                 "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
+            }
+        else:
+           return None
+
+    def get_artists(self, _end=1, _order="", _sort="", _start=0):
+        """
+        获取 Navidrome 艺术家列表
+        
+        Args:
+          _end: 获取数据结束位置
+          _order: 排序规则
+          _sort: 排序字段
+          _start: 获取数据开始位置
+        Returns:
+           返回一个字典，其中 'data' 字段包含艺术家列表，'x-total-count' 字段包含响应头中的总数
+        """
+        params = {
+            "_end": _end,
+            "_order": _order,
+            "_sort": _sort,
+            "_start": _start
+        }
+        endpoint = "/api/artist"
+        response = self._make_request("GET", endpoint, params=params)
+        if response and response['status'] == 'success':
+           return {
+                "data": response['data'],
+                 "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
+            }
+        else:
+           return None
+
+    def get_radios(self, _end=1, _order="", _sort="", _start=0):
+        """
+        获取 Navidrome 电台列表
+
+        Args:
+          _end: 获取数据结束位置
+          _order: 排序规则
+          _sort: 排序字段
+          _start: 获取数据开始位置
+        Returns:
+          返回一个字典，其中 'data' 字段包含电台列表，'x-total-count' 字段包含响应头中的总数
+        """
+        params = {
+            "_end": _end,
+            "_order": _order,
+            "_sort": _sort,
+            "_start": _start
+        }
+        endpoint = "/api/radio"
+        response = self._make_request("GET", endpoint, params=params)
+        if response and response['status'] == 'success':
+           return {
+                "data": response['data'],
+                 "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
+            }
+        else:
+           return None
