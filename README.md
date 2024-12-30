@@ -51,6 +51,10 @@ You can choose to install this system either by traditional method or using Dock
     INVITE_CODE_EXPIRATION_DAYS=14
     INVITE_CODE_SYSTEM_ENABLED=False
     INVITE_CODE_PRICE=100
+    EXPIRED_DAYS=30
+    WARNING_DAYS=3
+    CLEAN_INTERVAL=2592000
+    ENABLE_EXPIRED_USER_CLEAN=False
     ```
 5.  **(Optional) Create a `regmangerbot.service` file, replace the placeholder with your actual data:**
     ```

@@ -51,6 +51,10 @@
     INVITE_CODE_EXPIRATION_DAYS=14
     INVITE_CODE_SYSTEM_ENABLED=False
     INVITE_CODE_PRICE=100
+    EXPIRED_DAYS=30
+    WARNING_DAYS=3
+    CLEAN_INTERVAL=2592000
+    ENABLE_EXPIRED_USER_CLEAN=False
     ```
 5.  **(可选) 创建 `regmangerbot.service` 文件，替换文件中的占位符：**
     ```

@@ -1,15 +1,14 @@
 # Navidrome API 客户端
 import threading
-import time
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from .base import BaseAPIClient
 from config import settings
 from app.utils.logger import logger
+from dateutil import parser, tz
 
-
-# 需要安装的模块：requests
-# pip install requests
+# 需要安装的模块：requests, python-dateutil
+# pip install requests python-dateutil
 
 class NavidromeAPIClient(BaseAPIClient):
     """
@@ -65,11 +64,11 @@ class NavidromeAPIClient(BaseAPIClient):
             expired_users = self._get_expired_users()
             if 'warning' in expired_users and expired_users['warning']:
                 for user in expired_users['warning']:
-                    logger.warning(f"用户将在3天后过期，请注意: navidrome_user_id={user}")
+                    logger.warning(f"用户名：{user['username']}将在3天后过期，请注意！")
             if 'expired' in expired_users and expired_users['expired']:
               for user in expired_users['expired']:
-                logger.info(f"删除过期用户: navidrome_user_id={user}")
-                self.delete_user(user)
+                logger.info(f"删除过期用户: username={user['username']}, navidrome_user_id: {user['navidrome_user_id']}")
+                self.delete_user(user['navidrome_user_id'])
           else:
             logger.warning(f"无法获取token, 无法执行清理过期用户")
           if settings.ENABLE_EXPIRED_USER_CLEAN:
@@ -81,24 +80,41 @@ class NavidromeAPIClient(BaseAPIClient):
         warning_users = []
         users = self.get_users()
         if users and users['status'] == 'success':
-            now = datetime.now()
+            now = datetime.now().astimezone()
+            local_tz = now.tzinfo # 获取本地时区
             for user_data in users['data']:
                 last_login_at = user_data.get('lastLoginAt')
                 last_access_at = user_data.get('lastAccessAt')
                 
-                last_login_time = datetime.fromisoformat(last_login_at.replace('Z', '+00:00')).replace(tzinfo=None) if last_login_at else None
-                last_access_time = datetime.fromisoformat(last_access_at.replace('Z', '+00:00')).replace(tzinfo=None) if last_access_at else None
+                def parse_datetime_str(time_str):
+                    if not time_str:
+                        return None
+
+                    try:
+                        time_str = time_str.replace('Z', '+00:00')
+                        if '.' in time_str:
+                            time_str = time_str[:time_str.find('.')]  # 删除微秒部分
+
+                        dt = datetime.fromisoformat(time_str)
+                        return dt.astimezone(local_tz).replace(second=0, microsecond=0)
+                    except Exception as e:
+                        logger.error(f"解析时间字符串失败: {time_str}，错误信息为 {e}")
+                        return None
+
+                last_login_time = parse_datetime_str(last_login_at)
+                last_access_time = parse_datetime_str(last_access_at)
+                
                 # 获取最后登录或访问时间
                 last_time = max(last_login_time, last_access_time) if last_login_time and last_access_time else last_login_time if last_login_time else last_access_time if last_access_time else None
+                
                 if last_time:
-                    time_diff = now - last_time
-                    if time_diff > timedelta(days=settings.EXPIRED_DAYS):
-                        expired_users.append(user_data['id'])
-                    elif time_diff > timedelta(days=settings.EXPIRED_DAYS - settings.WARNING_DAYS):
-                      warning_users.append(user_data['id'])
+                   if (now - last_time) > timedelta(days=settings.EXPIRED_DAYS):
+                        expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
+                   elif (now - last_time) > timedelta(days=settings.EXPIRED_DAYS - settings.WARNING_DAYS):
+                      warning_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
                 else:
                     # 如果 lastLoginAt 和 lastAccessAt 都是 None，则立即删除
-                    expired_users.append(user_data['id'])
+                   expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
         return {'expired':expired_users, 'warning':warning_users}
     
     def _keep_alive(self):

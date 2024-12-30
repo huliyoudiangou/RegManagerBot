@@ -281,12 +281,12 @@ class UserService:
         expired_users = navidrome_api_client._get_expired_users()
         if 'warning' in expired_users and expired_users['warning']:
             for user in expired_users['warning']:
-                logger.warning(f"用户将在3天后过期，请注意: navidrome_user_id={user}")
+                logger.warning(f"用户将在3天后过期，请注意: navidrome_user_id={user['navidrome_user_id']}")
         if 'expired' in expired_users and expired_users['expired']:
             for user in expired_users['expired']:
-                logger.info(f"删除过期用户: navidrome_user_id={user}")
-                navidrome_api_client.delete_user(user)
-                navi = NavidromeUser.get_by_navidrome_id(user)
+                logger.info(f"删除过期用户: navidrome_user_id={user['navidrome_user_id']}")
+                navidrome_api_client.delete_user(user['navidrome_user_id'])
+                navi = NavidromeUser.get_by_navidrome_id(user['navidrome_user_id'])
                 if navi:
                     logger.info(f"删除本地过期用户: telegram_id={navi.telegram_id}")
                     navi.delete()
