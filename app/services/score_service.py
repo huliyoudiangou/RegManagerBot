@@ -2,7 +2,7 @@
 from app.models import User
 from app.utils.logger import logger
 from app.services.user_service import UserService
-from datetime import datetime, timedelta, date
+from datetime import datetime, date
 
 # 需要安装的模块：无
 
@@ -22,10 +22,10 @@ class ScoreService:
         Returns:
             用户积分，如果用户不存在则返回 None
         """
-        logger.info(f"获取用户积分: user_id={user_id}")
+        logger.debug(f"获取用户积分: user_id={user_id}")
         user = UserService.get_user_by_id(user_id)
         if user:
-            logger.info(f"获取用户积分成功: user_id={user_id}, score={user.score}")
+            logger.debug(f"获取用户积分成功: user_id={user_id}, score={user.score}")
             return user.score
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
@@ -43,12 +43,12 @@ class ScoreService:
         Returns:
             更新后的用户对象，如果用户不存在则返回 None
         """
-        logger.info(f"增加用户积分: user_id={user_id}, score={score}")
+        logger.debug(f"增加用户积分: user_id={user_id}, score={score}")
         user = UserService.get_user_by_id(user_id)
         if user:
             user.score += score
             user.save()
-            logger.info(f"增加用户积分成功: user_id={user_id}, score={user.score}")
+            logger.debug(f"增加用户积分成功: user_id={user_id}, score={user.score}")
             return user
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
@@ -66,13 +66,13 @@ class ScoreService:
         Returns:
             更新后的用户对象，如果用户不存在则返回 None
         """
-        logger.info(f"减少用户积分: user_id={user_id}, score={score}")
+        logger.debug(f"减少用户积分: user_id={user_id}, score={score}")
         user = UserService.get_user_by_id(user_id)
         if user:
             if user.score >= score:
                 user.score -= score
                 user.save()
-                logger.info(f"减少用户积分成功: user_id={user_id}, score={user.score}")
+                logger.debug(f"减少用户积分成功: user_id={user_id}, score={user.score}")
                 return user
             else:
                 logger.warning(f"用户积分不足: user_id={user_id}, score={user.score}, required={score}")
@@ -93,12 +93,12 @@ class ScoreService:
         Returns:
             更新后的用户对象，如果用户不存在则返回 None
         """
-        logger.info(f"设置用户积分: user_id={user_id}, score={score}")
+        logger.debug(f"设置用户积分: user_id={user_id}, score={score}")
         user = UserService.get_user_by_id(user_id)
         if user:
             user.score = score
             user.save()
-            logger.info(f"设置用户积分成功: user_id={user_id}, score={user.score}")
+            logger.debug(f"设置用户积分成功: user_id={user_id}, score={user.score}")
             return user
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
@@ -116,7 +116,7 @@ class ScoreService:
         Returns:
             签到结果，如果签到成功则返回 True，如果用户不存在或已签到则返回 False
         """
-        logger.info(f"用户签到: user_id={user_id}")
+        logger.debug(f"用户签到: user_id={user_id}")
         user = UserService.get_user_by_id(user_id)
         if user:
             # 检查今天是否已签到
@@ -131,7 +131,7 @@ class ScoreService:
             user.score += sign_in_score
             user.last_sign_in_date = datetime.now()
             user.save()
-            logger.info(f"用户签到成功: user_id={user_id}, 获得积分={sign_in_score}, 总积分={user.score}, last_sign_in_date={user.last_sign_in_date}")
+            logger.debug(f"用户签到成功: user_id={user_id}, 获得积分={sign_in_score}, 总积分={user.score}, last_sign_in_date={user.last_sign_in_date}")
             return sign_in_score
         else:
             logger.warning(f"用户不存在: user_id={user_id}")

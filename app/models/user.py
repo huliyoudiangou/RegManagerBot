@@ -24,7 +24,7 @@ class User:
 
     def save(self):
         """保存用户信息到数据库"""
-        logger.info(f"保存用户信息到数据库: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+        logger.debug(f"保存用户信息到数据库: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -46,13 +46,13 @@ class User:
 
         conn.commit()
         close_db_connection(conn)
-        logger.info(f"用户信息保存成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+        logger.debug(f"用户信息保存成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
         return self
 
     @staticmethod
     def get_by_telegram_id_and_service_name(telegram_id, service_name):
         """根据 Telegram ID 和服务名称查询用户"""
-        logger.info(f"查询用户: telegram_id={telegram_id}, service_name={service_name}")
+        logger.debug(f"查询用户: telegram_id={telegram_id}, service_name={service_name}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -64,7 +64,7 @@ class User:
         close_db_connection(conn)
 
         if row:
-            logger.info(f"查询用户成功: telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
+            logger.debug(f"查询用户成功: telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
             return User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id'], row['last_sign_in_date'], row['username'])
         else:
             logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
@@ -73,7 +73,7 @@ class User:
     @staticmethod
     def get_by_id(user_id):
         """根据用户 ID 查询用户"""
-        logger.info(f"查询用户: user_id={user_id}")
+        logger.debug(f"查询用户: user_id={user_id}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -82,7 +82,7 @@ class User:
         close_db_connection(conn)
 
         if row:
-            logger.info(f"查询用户成功: user_id={user_id}, telegram_id={row['telegram_id']}")
+            logger.debug(f"查询用户成功: user_id={user_id}, telegram_id={row['telegram_id']}")
             return User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id'], row['last_sign_in_date'], row['username'])
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
@@ -91,7 +91,7 @@ class User:
     @staticmethod
     def get_all():
         """查询所有用户"""
-        logger.info("查询所有用户")
+        logger.debug("查询所有用户")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -99,19 +99,19 @@ class User:
         rows = cursor.fetchall()
         close_db_connection(conn)
 
-        logger.info(f"查询所有用户成功，共 {len(rows)} 个用户")
+        logger.debug(f"查询所有用户成功，共 {len(rows)} 个用户")
         return [User(row['telegram_id'], row['service_name'], row['score'], row['invite_code'], row['id'], row['last_sign_in_date'], row['username']) for row in rows]
 
     def delete(self):
         """从数据库中删除用户"""
-        logger.info(f"删除用户: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+        logger.debug(f"删除用户: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
         if self.id:
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM Users WHERE id = ?", (self.id,))
             conn.commit()
             close_db_connection(conn)
-            logger.info(f"用户删除成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
+            logger.debug(f"用户删除成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}")
             self.id = None  # 删除后将 id 设置为 None
         else:
             logger.warning(f"用户 id 为空，无法删除用户: telegram_id={self.telegram_id}, service_name={self.service_name}")
@@ -131,7 +131,7 @@ class NavidromeUser(User):
 
     def save(self):
         """保存用户信息到数据库"""
-        logger.info(f"保存 Navidrome 用户信息到数据库: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}")
+        logger.debug(f"保存 Navidrome 用户信息到数据库: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -153,13 +153,13 @@ class NavidromeUser(User):
 
         conn.commit()
         close_db_connection(conn)
-        logger.info(f"Navidrome 用户信息保存成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}")
+        logger.debug(f"Navidrome 用户信息保存成功: id={self.id}, telegram_id={self.telegram_id}, service_name={self.service_name}, navidrome_user_id={self.navidrome_user_id}")
         return self
 
     @staticmethod
     def get_by_telegram_id_and_service_name(telegram_id, service_name):
         """根据 Telegram ID 和服务名称查询用户"""
-        logger.info(f"查询 Navidrome 用户: telegram_id={telegram_id}, service_name={service_name}")
+        logger.debug(f"查询 Navidrome 用户: telegram_id={telegram_id}, service_name={service_name}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -171,7 +171,7 @@ class NavidromeUser(User):
         close_db_connection(conn)
 
         if row:
-           logger.info(f"查询 Navidrome 用户成功: telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
+           logger.debug(f"查询 Navidrome 用户成功: telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
            return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], row['last_sign_in_date'], service_name=row['service_name'], username=row['username'])
         else:
            logger.warning(f"Navidrome 用户不存在: telegram_id={telegram_id}, service_name={service_name}")
@@ -180,7 +180,7 @@ class NavidromeUser(User):
     @staticmethod
     def get_by_id(user_id):
         """根据用户 ID 查询用户"""
-        logger.info(f"查询 Navidrome 用户: user_id={user_id}")
+        logger.debug(f"查询 Navidrome 用户: user_id={user_id}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -189,7 +189,7 @@ class NavidromeUser(User):
         close_db_connection(conn)
 
         if row:
-            logger.info(f"查询 Navidrome 用户成功: user_id={user_id}, telegram_id={row['telegram_id']}")
+            logger.debug(f"查询 Navidrome 用户成功: user_id={user_id}, telegram_id={row['telegram_id']}")
             return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], row['last_sign_in_date'], service_name=row['service_name'], username = row['username'])
         else:
             logger.warning(f"Navidrome 用户不存在: user_id={user_id}")
@@ -198,7 +198,7 @@ class NavidromeUser(User):
     @staticmethod
     def get_by_navidrome_id(user_id):
         """根据用户 ID 查询用户"""
-        logger.info(f"查询 Navidrome 用户: user_id={user_id}")
+        logger.debug(f"查询 Navidrome 用户: user_id={user_id}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -207,7 +207,7 @@ class NavidromeUser(User):
         close_db_connection(conn)
 
         if row:
-            logger.info(f"查询 Navidrome 用户成功: user_id={user_id}, telegram_id={row['telegram_id']}")
+            logger.debug(f"查询 Navidrome 用户成功: user_id={user_id}, telegram_id={row['telegram_id']}")
             return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], row['last_sign_in_date'], service_name=row['service_name'], username = row['username'])
         else:
             logger.warning(f"Navidrome 用户不存在: user_id={user_id}")
@@ -216,7 +216,7 @@ class NavidromeUser(User):
     @staticmethod
     def get_by_username(username):
         """根据 Navidrome 用户名查询用户"""
-        logger.info(f"根据 Navidrome 用户名查询用户: username={username}")
+        logger.debug(f"根据 Navidrome 用户名查询用户: username={username}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -225,7 +225,7 @@ class NavidromeUser(User):
         close_db_connection(conn)
 
         if row:
-            logger.info(f"根据 Navidrome 用户名查询用户成功: username={username}, telegram_id={row['telegram_id']},id={row['id']}")
+            logger.debug(f"根据 Navidrome 用户名查询用户成功: username={username}, telegram_id={row['telegram_id']},id={row['id']}")
             return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], row['last_sign_in_date'], service_name=row['service_name'], username = row['username'])
         else:
            logger.warning(f"Navidrome 用户不存在: username={username}")
@@ -234,7 +234,7 @@ class NavidromeUser(User):
     @staticmethod
     def get_all():
         """查询所有用户"""
-        logger.info("查询所有 Navidrome 用户")
+        logger.debug("查询所有 Navidrome 用户")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -242,7 +242,7 @@ class NavidromeUser(User):
         rows = cursor.fetchall()
         close_db_connection(conn)
 
-        logger.info(f"查询所有 Navidrome 用户成功, 共 {len(rows)} 个用户")
+        logger.debug(f"查询所有 Navidrome 用户成功, 共 {len(rows)} 个用户")
         return [NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], row['last_sign_in_date'], service_name=row['service_name'], username=row['username']) for row in rows]
 
     @staticmethod
@@ -254,7 +254,7 @@ class NavidromeUser(User):
         Returns:
           修改后的 NavidromeUser对象
         """
-        logger.info(f"修改 Navidrome 用户名: new_username={new_username}")
+        logger.debug(f"修改 Navidrome 用户名: new_username={new_username}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -268,7 +268,7 @@ class NavidromeUser(User):
         row = cursor.fetchone()
         close_db_connection(conn)
         if row:
-          logger.info(f"修改 Navidrome 用户名成功, 返回新的NavidromeUser对象: new_username={new_username}, telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
+          logger.debug(f"修改 Navidrome 用户名成功, 返回新的NavidromeUser对象: new_username={new_username}, telegram_id={telegram_id}, service_name={service_name}, id={row['id']}")
           return NavidromeUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['navidrome_user_id'], service_name = row['service_name'])
         else:
           logger.error(f"修改 Navidrome 用户名失败: new_username={new_username}, telegram_id={telegram_id}, service_name={service_name}")

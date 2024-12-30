@@ -1,5 +1,4 @@
 import telebot
-from config import settings
 from app.utils.logger import logger
 from app.bot.handlers import user_handlers, admin_handlers
 from app.bot.core.bot_instance import bot

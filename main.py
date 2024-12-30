@@ -12,7 +12,7 @@ def init_app():
     # 创建数据库表
     create_tables()
     logger.info("数据库表创建完成")
-
+    logger.info(f"邀请码系统已{'开启' if settings.INVITE_CODE_SYSTEM_ENABLED else '关闭'}")
     logger.info("初始化完成")
 
 if __name__ == "__main__":

@@ -2,7 +2,6 @@ from app.models import User, NavidromeUser
 from app.utils.api_clients import navidrome_api_client
 from app.utils.logger import logger
 from config import settings
-from app.utils.db_utils import insert_data, select_data, update_data, delete_data
 
 # 需要安装的模块：无
 
@@ -15,7 +14,7 @@ class UserService:
         # 在本地数据库中创建用户
         user = NavidromeUser(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username)
         user.save()
-        logger.info(f"本地用户创建成功: username={username}")
+        logger.debug(f"本地用户创建成功: username={username}")
         return user
     
     @staticmethod
@@ -32,7 +31,7 @@ class UserService:
         Returns:
             注册成功的用户对象，如果注册失败则返回 None
         """
-        logger.info(f"开始注册用户: telegram_id={telegram_id}, service_name={service_name}， username={username}, password={password}")
+        logger.debug(f"开始注册用户: telegram_id={telegram_id}, service_name={service_name}， username={username}, password={password}")
 
         # 检查用户是否已存在
         user = User.get_by_telegram_id_and_service_name(telegram_id, service_name)
@@ -47,12 +46,12 @@ class UserService:
             result = navidrome_api_client.create_user(user_data)
             if result and result['status'] == 'success':
                 navidrome_user_id = result['data']['id']
-                logger.info(f"Navidrome 用户创建成功: navidrome_user_id={navidrome_user_id}")
+                logger.debug(f"Navidrome 用户创建成功: navidrome_user_id={navidrome_user_id}")
 
                 # 在本地数据库中创建用户
                 user = NavidromeUser(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username)
                 user.save()
-                logger.info(f"本地用户创建成功: user_id={user.id}")
+                logger.debug(f"本地用户创建成功: user_id={user.id}")
                 return user
             else:
                 logger.error(f"Navidrome 用户创建失败: {result}")
@@ -67,7 +66,7 @@ class UserService:
         if user.service_name == "navidrome":
             # 删除本地用户
             user.delete()
-            logger.info(f"本地用户删除成功: user_name={user.username}")
+            logger.warning(f"本地用户删除成功: user_name={user.username}")
             return True
         else:
             logger.error(f"Navidrome 用户删除失败")
@@ -80,10 +79,10 @@ class UserService:
         # 删除 Navidrome 上的用户
         result = navidrome_api_client.delete_user(user.navidrome_user_id)
         if result and result['status'] == 'success':
-          logger.info(f"Navidrome 用户删除成功: user_id={user.navidrome_user_id}")
+          logger.warning(f"Navidrome 用户删除成功: user_id={user.navidrome_user_id}")
           # 删除本地用户
           user.delete()
-          logger.info(f"本地用户删除成功: user_id={user.id}")
+          logger.warning(f"本地用户删除成功: user_id={user.id}")
           return True
         else:
           user.delete()
@@ -102,11 +101,11 @@ class UserService:
         Returns:
             User 对象，如果用户不存在则返回 None
         """
-        logger.info(f"查询用户: telegram_id={telegram_id}, service_name={service_name}")
+        logger.debug(f"查询用户: telegram_id={telegram_id}, service_name={service_name}")
         user = NavidromeUser.get_by_telegram_id_and_service_name(telegram_id, service_name)
         if user:
           if service_name == 'navidrome':
-              logger.info(f"获取用户信息成功: {user.username}")
+              logger.debug(f"获取用户信息成功: {user.username}")
               return user
             # 获取 Navidrome 用户信息
             # navidrome_user_info = navidrome_api_client.get_user(user.navidrome_user_id)
@@ -134,10 +133,10 @@ class UserService:
         Returns:
             User 对象，如果用户不存在则返回 None
         """
-        logger.info(f"查询用户: user_id={user_id}")
+        logger.debug(f"查询用户: user_id={user_id}")
         user = NavidromeUser.get_by_id(user_id)
         if user:
-            logger.info(f"用户查询成功: user={user}")
+            logger.debug(f"用户查询成功: user={user}")
             return user
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
@@ -154,10 +153,10 @@ class UserService:
         Returns:
             NavidromeUser 对象，如果用户不存在则返回 None
         """
-        logger.info(f"查询用户: user_id={user_id}")
+        logger.debug(f"查询用户: user_id={user_id}")
         user = NavidromeUser.get_by_navidrome_id(user_id)
         if user:
-            logger.info(f"用户查询成功: user={user}")
+            logger.debug(f"用户查询成功: user={user}")
             return user
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
@@ -174,10 +173,10 @@ class UserService:
         Returns:
             NavidromeUser 对象，如果用户不存在则返回 None
         """
-        logger.info(f"查询用户: username={username}")
+        logger.debug(f"查询用户: username={username}")
         user = NavidromeUser.get_by_username(username)
         if user:
-            logger.info(f"用户查询成功: user={user}")
+            logger.debug(f"用户查询成功: user={user}")
             return user
         else:
             logger.warning(f"用户不存在: username={username}")
@@ -186,10 +185,10 @@ class UserService:
     @staticmethod
     def get_all_users():
       """获取所有用户"""
-      logger.info("获取所有用户")
+      logger.debug("获取所有用户")
       users = NavidromeUser.get_all()
       if users:
-        logger.info(f"获取所有用户成功: users={users}")
+        logger.debug(f"获取所有用户成功: users={users}")
         return users
       else:
         logger.warning("获取所有用户失败")
@@ -216,7 +215,7 @@ class UserService:
       """更新用户积分"""
       user.score = score
       user.save()
-      logger.info(f"用户积分更新成功: user_id={user.id}, score={user.score}")
+      logger.debug(f"用户积分更新成功: user_id={user.id}, score={user.score}")
       return user
   
     @staticmethod
@@ -225,7 +224,7 @@ class UserService:
         user = navidrome_api_client.get_user(user_id)
         if user and user['status'] == 'success':
             if user['data']['userName'] == username:
-                logger.info(f"用户认证成功: user_id={user_id}, name={username}")
+                logger.debug(f"用户认证成功: user_id={user_id}, name={username}")
                 return user
             else:
                 logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
@@ -246,7 +245,7 @@ class UserService:
             }
         result = navidrome_api_client.update_user(user.navidrome_user_id, user_data)
         if result and result['status'] == 'success':
-            logger.info("密码重置成功")
+            logger.debug("密码重置成功")
             return True
         else:
             logger.error(f"密码重置失败: {result}")
@@ -255,7 +254,7 @@ class UserService:
     @staticmethod
     def update_user_name(user, username):
         """更新本地数据库中的用户名"""
-        logger.info(f"用户重置为：{username}")
+        logger.debug(f"用户重置为：{username}")
         return NavidromeUser.update_username(user.telegram_id, user.service_name, username)
   
     @staticmethod
@@ -269,7 +268,7 @@ class UserService:
             }
         result = navidrome_api_client.update_user(user.navidrome_user_id, user_data)
         if result and result['status'] == 'success':
-            logger.info(f"用户重置为：{new_username}")
+            logger.debug(f"用户重置为：{new_username}")
             return True
         else:
             logger.error(f"用户重置用户名失败: {result}")
@@ -278,7 +277,7 @@ class UserService:
     @staticmethod
     def clean_expired_users():
         """清理过期用户"""
-        logger.info("开始清理过期用户")
+        logger.warning("开始清理过期用户")
         expired_users = navidrome_api_client._get_expired_users()
         if 'warning' in expired_users and expired_users['warning']:
             for user in expired_users['warning']:
@@ -286,12 +285,12 @@ class UserService:
         if 'expired' in expired_users and expired_users['expired']:
             user_list = []
             for user in expired_users['expired']:
-                logger.info(f"删除过期用户: navidrome_user_id={user['navidrome_user_id']}")
+                logger.warning(f"删除过期用户: navidrome_user_id={user['navidrome_user_id']}")
                 navidrome_api_client.delete_user(user['navidrome_user_id'])
                 user_list.append(user['username'])
                 navi = NavidromeUser.get_by_navidrome_id(user['navidrome_user_id'])
                 if navi:
-                    logger.info(f"删除本地过期用户: telegram_id={navi.telegram_id}")
+                    logger.warning(f"删除本地过期用户: telegram_id={navi.telegram_id}")
                     navi.delete()
                 else:
                     logger.warning("本地无用户信息，无需删除！")
@@ -302,12 +301,12 @@ class UserService:
     @staticmethod
     def get_expired_users():
           """获取过期用户和即将过期的用户"""
-          logger.info("获取过期用户和即将过期的用户")
+          logger.debug("获取过期用户和即将过期的用户")
           expired_users = navidrome_api_client._get_expired_users()
           return expired_users
     
     @staticmethod
     def start_clean_expired_users():
           """启动和关闭清理系统"""
-          logger.info("准备关闭/开启清理系统")
+          logger.debug("准备关闭/开启清理系统")
           navidrome_api_client._start_clean_expired_users()

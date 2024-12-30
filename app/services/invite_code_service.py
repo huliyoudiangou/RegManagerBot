@@ -1,9 +1,8 @@
 # 邀请码服务层
 from app.models import InviteCode
 from app.utils.logger import logger
-from app.services.user_service import UserService
 from config import settings
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # 需要安装的模块：无
 
@@ -25,12 +24,12 @@ class InviteCodeService:
         Returns:
             生成的邀请码对象，如果生成失败则返回 None
         """
-        logger.info(f"开始生成邀请码: create_user_id={create_user_id}, length={length}, expire_days={expire_days}")
+        logger.debug(f"开始生成邀请码: create_user_id={create_user_id}, length={length}, expire_days={expire_days}")
 
         invite_code = InviteCode.generate_code(length=length, user_id=create_user_id)
 
         if invite_code:
-            logger.info(f"邀请码生成成功: invite_code={invite_code.code}")
+            logger.debug(f"邀请码生成成功: invite_code={invite_code.code}")
             return invite_code
         else:
             logger.error("邀请码生成失败")
@@ -47,10 +46,10 @@ class InviteCodeService:
         Returns:
             邀请码对象，如果邀请码不存在则返回 None
         """
-        logger.info(f"查询邀请码: code={code}")
+        logger.debug(f"查询邀请码: code={code}")
         invite_code = InviteCode.get_by_code(code)
         if invite_code:
-            logger.info(f"邀请码查询成功: invite_code={invite_code}")
+            logger.debug(f"邀请码查询成功: invite_code={invite_code}")
             return invite_code
         else:
             logger.warning(f"邀请码不存在: code={code}")
@@ -68,7 +67,7 @@ class InviteCodeService:
         Returns:
             True 如果使用成功，否则返回 False
         """
-        logger.info(f"开始使用邀请码: code={code}, user_id={user_id}")
+        logger.debug(f"开始使用邀请码: code={code}, user_id={user_id}")
         invite_code = InviteCode.get_by_code(code)
         if invite_code:
             if invite_code.is_used:
@@ -81,7 +80,7 @@ class InviteCodeService:
             invite_code.is_used = True
             invite_code.user_id = user_id
             invite_code.save()
-            logger.info(f"邀请码使用成功: code={code}, user_id={user_id}")
+            logger.debug(f"邀请码使用成功: code={code}, user_id={user_id}")
             return True
         else:
             logger.warning(f"邀请码不存在: code={code}")
@@ -90,10 +89,10 @@ class InviteCodeService:
     @staticmethod
     def get_all_invite_codes():
         """获取所有邀请码"""
-        logger.info("获取所有邀请码")
+        logger.debug("获取所有邀请码")
         invite_codes = InviteCode.get_all()
         if invite_codes:
-          logger.info(f"获取所有邀请码成功: invite_codes={invite_codes}")
+          logger.debug(f"获取所有邀请码成功: invite_codes={invite_codes}")
           return invite_codes
         else:
           logger.warning("获取所有邀请码失败")
@@ -102,7 +101,7 @@ class InviteCodeService:
     @staticmethod
     def delete_invite_code(invite_code):
       """删除邀请码"""
-      logger.info(f"删除邀请码: invite_code={invite_code}")
+      logger.debug(f"删除邀请码: invite_code={invite_code}")
       invite_code.delete()
-      logger.info(f"邀请码删除成功: invite_code={invite_code}")
+      logger.debug(f"邀请码删除成功: invite_code={invite_code}")
       return True

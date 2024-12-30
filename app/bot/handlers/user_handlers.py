@@ -19,7 +19,7 @@ def start_command(message):
     telegram_id = message.from_user.id
     logger.info(f"用户 {telegram_id} 执行了 /start 命令")
     response = "欢迎使用注册机器人！祝您每天开心！\n\n" \
-               "本机器人主要用于管理 Navidrome 和 Emby 用户，并提供积分和邀请码功能。\n" \
+               "本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。\n" \
                "您可以通过以下命令进行注册和管理：\n" \
                "- `/register <用户名> <密码>`: 注册用户 (邀请码系统关闭时)\n" \
                "- `/register <用户名> <密码> <邀请码>`: 使用邀请码注册用户 (邀请码系统开启时)\n" \
@@ -42,7 +42,7 @@ def help_command(message):
   """
   telegram_id = message.from_user.id
   logger.info(f"用户 {telegram_id} 执行了 /help 命令")
-  response = "本机器人主要用于管理 Navidrome 和 Emby 用户，并提供积分和邀请码功能。\n\n" \
+  response = "本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。\n\n" \
              "**用户命令：**\n" \
              "- `/register <用户名> <密码>`: 注册用户 (邀请码系统关闭时)。\n" \
              "   -  示例: `/register testuser password` \n" \
@@ -100,15 +100,12 @@ def register_command(message):
         return
 
     args = message.text.split()[1:]
-    logger.info(f"args: {args}")
     # 管理员注册
     if UserService.is_admin(telegram_id):
         if len(args) != 2:
             bot.reply_to(message, "管理员注册，请提供用户名和密码，格式为：/register <用户名> <密码>")
             return
         username, password = args
-        logger.info(f"username: {username}")
-        logger.info(f"passwd: {password}")
         # 调用 UserService.register_user 方法注册用户
         user = UserService.register_user(telegram_id, "navidrome", username, password)
         if user:
@@ -148,7 +145,7 @@ def register_command(message):
         # 注册用户
         user = UserService.register_user(telegram_id, "navidrome", username, password)
         if user:
-            logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, user_id={user.id}, code={code}")
+            logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, username={username}, code={code}")
             bot.reply_to(message, "注册成功!")
         else:
             logger.error(f"用户使用邀请码注册失败: telegram_id={telegram_id}, code={code}")
@@ -164,7 +161,7 @@ def register_command(message):
         # 调用 UserService.register_user 方法注册用户
         user = UserService.register_user(telegram_id, "navidrome", username, password)
         if user:
-            logger.info(f"用户注册成功: telegram_id={telegram_id}, user_id={user.id}")
+            logger.info(f"用户注册成功: telegram_id={telegram_id}, username={username}")
             bot.reply_to(message, "注册成功!")
         else:
             logger.error(f"用户注册失败: telegram_id={telegram_id}")
@@ -183,15 +180,14 @@ def delete_user_command(message):
 
     # 查找本地数据库中的用户
     user = UserService.get_user_by_telegram_id(telegram_id, service_name)
-    logger.info(f"user: {user}")
     if user:
         # 调用服务层的删除用户方法
         success = UserService.delete_user(user)
         if success:
-            logger.info(f"用户删除成功: telegram_id={telegram_id}, service_name={service_name}")
+            logger.info(f"用户删除成功: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
             bot.reply_to(message, "您的账户已成功删除!")
         else:
-            logger.error(f"用户删除失败: telegram_id={telegram_id}, service_name={service_name}")
+            logger.error(f"用户删除失败: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
             bot.reply_to(message, "删除服务器账户失败，本地账户已删除!")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
@@ -213,10 +209,10 @@ def score_command(message):
         # 调用服务层的获取用户积分方法
         score = ScoreService.get_user_score(user.id)
         if score is not None:
-            logger.info(f"用户积分查询成功: telegram_id={telegram_id}, score={score}")
+            logger.info(f"用户积分查询成功: telegram_id={telegram_id}, username={user.username}, score={score}")
             bot.reply_to(message, f"您的积分: {score}")
         else:
-            logger.error(f"用户积分查询失败: telegram_id={telegram_id}")
+            logger.error(f"用户积分查询失败: telegram_id={telegram_id}, username={user.username}")
             bot.reply_to(message, "查询积分失败，请重试!")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
@@ -238,7 +234,7 @@ def checkin_command(message):
         # 调用服务层的签到方法
         score = ScoreService.sign_in(user.id)
         if score:
-            logger.info(f"用户签到成功: telegram_id={telegram_id}, service_name={service_name}")
+            logger.info(f"用户签到成功: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
             bot.reply_to(message, f"签到成功! 获得了{score}积分!")
         else:
             logger.warning(f"用户签到失败: telegram_id={telegram_id}, service_name={service_name}")
@@ -269,16 +265,16 @@ def buy_invite_code_command(message):
                 # 生成邀请码
                 invite_code = InviteCodeService.generate_invite_code(telegram_id)
                 if invite_code:
-                    logger.info(f"用户购买邀请码成功: telegram_id={telegram_id}, service_name={service_name}, code={invite_code.code}")
+                    logger.info(f"用户购买邀请码成功: telegram_id={telegram_id}, service_name={service_name}, code={invite_code.code}, username={user.username}")
                     bot.reply_to(message, f"购买邀请码成功，您的邀请码是：{invite_code.code}，请妥善保管！")
                 else:
-                    logger.error(f"用户购买邀请码失败，生成邀请码失败: telegram_id={telegram_id}, service_name={service_name}")
+                    logger.error(f"用户购买邀请码失败，生成邀请码失败: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
                     bot.reply_to(message, "购买邀请码失败，生成邀请码失败，请重试！")
             else:
-                logger.error(f"用户购买邀请码失败，扣除积分失败: telegram_id={telegram_id}, service_name={service_name}")
+                logger.error(f"用户购买邀请码失败，扣除积分失败: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
                 bot.reply_to(message, "购买邀请码失败，扣除积分失败，请重试！")
         else:
-            logger.warning(f"用户购买邀请码失败，积分不足: telegram_id={telegram_id}, service_name={service_name}")
+            logger.warning(f"用户购买邀请码失败，积分不足: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
             bot.reply_to(message, f"购买邀请码失败，您的积分不足，邀请码需要 {required_score} 积分！")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")

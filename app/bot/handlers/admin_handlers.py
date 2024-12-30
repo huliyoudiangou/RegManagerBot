@@ -411,10 +411,10 @@ def get_expired_users_command(message):
         response += f"已过期的用户一共有：{count}位！\n"
         # bot.reply_to(message, response)
         bot.reply_to(message, f"已过期的用户列表成功，共有{count}位！")
-        logger.info(f"管理员获取已过期的用户列表成功，共有{count}位！")
+        logger.warning(f"管理员获取已过期的用户列表成功，共有{count}位！")
     else:
         bot.reply_to(message, "没有已过期的用户!")
-        logger.warning(f"没有已过期的用户: telegram_id={telegram_id}")
+        logger.info(f"没有已过期的用户: telegram_id={telegram_id}")
         
 @bot.message_handler(commands=['get_expiring_users'])
 @admin_required
@@ -436,10 +436,10 @@ def get_expiring_users_command(message):
         response += f"即将过期的用户一共有：{count}位！\n"
         # bot.reply_to(message, response)
         bot.reply_to(message, f"即将过期的用户列表成功，共有{count}位！")
-        logger.info(f"管理员获取即将过期的用户列表成功: 共有{count}位！")
+        logger.warning(f"管理员获取即将过期的用户列表成功: 共有{count}位！")
     else:
         bot.reply_to(message, "没有即将过期的用户!")
-        logger.warning(f"没有即将过期的用户: telegram_id={telegram_id}")
+        logger.info(f"没有即将过期的用户: telegram_id={telegram_id}")
 
 @bot.message_handler(commands=['clean_expired_users'])
 @admin_required

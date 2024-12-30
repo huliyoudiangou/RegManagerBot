@@ -69,7 +69,7 @@ class NavidromeAPIClient(BaseAPIClient):
                 logger.info(f"删除过期用户: username={user['username']}, navidrome_user_id: {user['navidrome_user_id']}")
                 self.delete_user(user['navidrome_user_id'])
           else:
-            logger.warning(f"无法获取token, 无法执行清理过期用户")
+            logger.error(f"无法获取token, 无法执行清理过期用户")
           if settings.ENABLE_EXPIRED_USER_CLEAN:
             self._start_clean_expired_users()
     
@@ -110,19 +110,19 @@ class NavidromeAPIClient(BaseAPIClient):
                     
                     if last_time:
                         if (now - last_time) > timedelta(days=settings.EXPIRED_DAYS):
-                            logger.info(f"发现过期用户: {user_data['userName']}")
+                            logger.debug(f"发现过期用户: {user_data['userName']}")
                             expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
                         elif (now - last_time) > timedelta(days=settings.EXPIRED_DAYS - settings.WARNING_DAYS):
-                            logger.info(f"发现即将过期用户: {user_data['userName']}")
+                            logger.debug(f"发现即将过期用户: {user_data['userName']}")
                             warning_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
                         else:
-                            logger.info(f"该用户正常: {user_data['userName']}")
+                            logger.debug(f"该用户正常: {user_data['userName']}")
                     else:
                         # 如果 lastLoginAt 和 lastAccessAt 都是 None，则立即删除
-                        logger.info(f"该用户从未登录过: {user_data['userName']}")
+                        logger.debug(f"该用户从未登录过: {user_data['userName']}")
                         expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
                 else:
-                    logger.info(f"发现管理员账号：{user_data['userName']}")
+                    logger.debug(f"发现管理员账号：{user_data['userName']}")
         return {'expired':expired_users, 'warning':warning_users}
     
     def _keep_alive(self):
@@ -132,7 +132,7 @@ class NavidromeAPIClient(BaseAPIClient):
               endpoint = "/api/keepalive/keepalive" # 使用用户列表接口来保活
               result = self._make_request("GET", endpoint)
               if result and result['status'] == 'success':
-                logger.debug("Navidrome 保活请求成功")
+                logger.info("Navidrome 保活请求成功")
               else:
                   logger.warning(f"Navidrome 保活请求失败, result: {result} , 重新获取token")
                   self.token = self._login()
@@ -149,7 +149,7 @@ class NavidromeAPIClient(BaseAPIClient):
         self._keep_alive_timer = threading.Timer(interval, self._keep_alive)
         self._keep_alive_timer.daemon = True  # 设置为守护线程，防止主线程退出时阻塞
         self._keep_alive_timer.start()
-        logger.debug(f"Navidrome 保活定时器启动，时间间隔：{interval} 秒")
+        logger.info(f"Navidrome 保活定时器启动，时间间隔：{interval} 秒")
         
     def _make_request(self, method, endpoint, params=None, data=None, headers=None):
         """发送 API 请求"""
