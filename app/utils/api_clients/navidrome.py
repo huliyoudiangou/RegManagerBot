@@ -5,10 +5,9 @@ from datetime import datetime, timedelta
 from .base import BaseAPIClient
 from config import settings
 from app.utils.logger import logger
-from dateutil import parser, tz
 
-# 需要安装的模块：requests, python-dateutil
-# pip install requests python-dateutil
+# 需要安装的模块：requests
+# pip install requests
 
 class NavidromeAPIClient(BaseAPIClient):
     """
@@ -34,7 +33,7 @@ class NavidromeAPIClient(BaseAPIClient):
             response = self.session.post(url, json=data)
             response.raise_for_status()
             token = response.json().get("token")
-            logger.info(f"Navidrome 登录成功，获取到 token: {token}")
+            logger.info(f"Navidrome 登录成功")
             self.session.headers.update({"x-nd-authorization": f"Bearer {token}"})
             return token
         except requests.exceptions.RequestException as e:
@@ -75,7 +74,7 @@ class NavidromeAPIClient(BaseAPIClient):
             self._start_clean_expired_users()
     
     def _get_expired_users(self):
-        """获取过期用户和即将过期的用户"""
+        """获取过期用户和即将过期的用户(不包括管理员)"""
         expired_users = []
         warning_users = []
         users = self.get_users()
@@ -83,38 +82,47 @@ class NavidromeAPIClient(BaseAPIClient):
             now = datetime.now().astimezone()
             local_tz = now.tzinfo # 获取本地时区
             for user_data in users['data']:
-                last_login_at = user_data.get('lastLoginAt')
-                last_access_at = user_data.get('lastAccessAt')
-                
-                def parse_datetime_str(time_str):
-                    if not time_str:
-                        return None
+                if not user_data['isAdmin']:
+                    logger.debug(f"正在检查用户: {user_data['userName']}")
+                    last_login_at = user_data.get('lastLoginAt')
+                    last_access_at = user_data.get('lastAccessAt')
+                    
+                    def parse_datetime_str(time_str):
+                        if not time_str:
+                            return None
 
-                    try:
-                        time_str = time_str.replace('Z', '+00:00')
-                        if '.' in time_str:
-                            time_str = time_str[:time_str.find('.')]  # 删除微秒部分
+                        try:
+                            time_str = time_str.replace('Z', '+00:00')
+                            if '.' in time_str:
+                                time_str = time_str[:time_str.find('.')]  # 删除微秒部分
 
-                        dt = datetime.fromisoformat(time_str)
-                        return dt.astimezone(local_tz).replace(second=0, microsecond=0)
-                    except Exception as e:
-                        logger.error(f"解析时间字符串失败: {time_str}，错误信息为 {e}")
-                        return None
+                            dt = datetime.fromisoformat(time_str)
+                            return dt.astimezone(local_tz).replace(second=0, microsecond=0)
+                        except Exception as e:
+                            logger.error(f"解析时间字符串失败: {time_str}，错误信息为 {e}")
+                            return None
 
-                last_login_time = parse_datetime_str(last_login_at)
-                last_access_time = parse_datetime_str(last_access_at)
-                
-                # 获取最后登录或访问时间
-                last_time = max(last_login_time, last_access_time) if last_login_time and last_access_time else last_login_time if last_login_time else last_access_time if last_access_time else None
-                
-                if last_time:
-                   if (now - last_time) > timedelta(days=settings.EXPIRED_DAYS):
+                    last_login_time = parse_datetime_str(last_login_at)
+                    last_access_time = parse_datetime_str(last_access_at)
+                    
+                    # 获取最后登录或访问时间
+                    last_time = max(last_login_time, last_access_time) if last_login_time and last_access_time else last_login_time if last_login_time else last_access_time if last_access_time else None
+                    
+                    if last_time:
+                        if (now - last_time) > timedelta(days=settings.EXPIRED_DAYS):
+                            logger.info(f"发现过期用户: {user_data['userName']}")
+                            expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
+                        elif (now - last_time) > timedelta(days=settings.EXPIRED_DAYS - settings.WARNING_DAYS):
+                            logger.info(f"发现即将过期用户: {user_data['userName']}")
+                            warning_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
+                        else:
+                            logger.info(f"该用户正常: {user_data['userName']}")
+                    else:
+                        # 如果 lastLoginAt 和 lastAccessAt 都是 None，则立即删除
+                        logger.info(f"该用户从未登录过: {user_data['userName']}")
                         expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
-                   elif (now - last_time) > timedelta(days=settings.EXPIRED_DAYS - settings.WARNING_DAYS):
-                      warning_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
                 else:
-                    # 如果 lastLoginAt 和 lastAccessAt 都是 None，则立即删除
-                   expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
+                    logger.info(f"发现管理员账号：{user_data['userName']}")
         return {'expired':expired_users, 'warning':warning_users}
     
     def _keep_alive(self):
@@ -157,7 +165,6 @@ class NavidromeAPIClient(BaseAPIClient):
             response = self.session.request(method, url, params=params, json=data, headers=_headers)
             # 根据状态码返回不同的结果
             if response.status_code == 200:
-                logger.info(f"Navidrome API 请求成功: {method} {endpoint}")
                 return {"status": "success", "data": response.json(), "headers": response.headers}
 
             elif response.status_code == 401:

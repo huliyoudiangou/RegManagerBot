@@ -64,7 +64,7 @@ def toggle_invite_code_system_command(message):
     """开启/关闭邀请码系统 (管理员命令)"""
     settings.INVITE_CODE_SYSTEM_ENABLED = not settings.INVITE_CODE_SYSTEM_ENABLED
     logger.info(f"邀请码系统状态已更改: {settings.INVITE_CODE_SYSTEM_ENABLED}")
-    bot.reply_to(message, f"邀请码系统已{'开启' if settings.INVITE_CODE_SYSTEM_ENABLED == True else '关闭'}")
+    bot.reply_to(message, f"邀请码系统已{'开启' if settings.INVITE_CODE_SYSTEM_ENABLED else '关闭'}")
 
 @bot.message_handler(commands=['set_score'])
 @admin_required
@@ -342,8 +342,8 @@ def get_stats_command(message):
       
       # 获取 Navidrome 用户数量
       navidrome_users = navidrome_api_client.get_users()
-      web_user_count = len(navidrome_users['data']) if navidrome_users and navidrome_users['status'] == 'success' else 0
-    
+    #   web_user_count = len(navidrome_users['data']) if navidrome_users and navidrome_users['status'] == 'success' else 0
+      web_user_count = navidrome_users['headers']['x-total-count']
       # 获取 Navidrome 歌曲总数
       songs = navidrome_api_client.get_songs()
       song_count = int(songs['x-total-count']) if songs and 'x-total-count' in songs else 0
@@ -388,7 +388,7 @@ def toggle_expired_user_clean_command(message):
     UserService.start_clean_expired_users()
 
     logger.info(f"过期用户清理定时任务已更改: {settings.ENABLE_EXPIRED_USER_CLEAN}")
-    bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN == True else '关闭'}")
+    bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
 
 @bot.message_handler(commands=['get_expired_users'])
 @admin_required
@@ -409,7 +409,8 @@ def get_expired_users_command(message):
             count = count + 1
         response += f"-----------\n"
         response += f"已过期的用户一共有：{count}位！\n"
-        bot.reply_to(message, response)
+        # bot.reply_to(message, response)
+        bot.reply_to(message, f"已过期的用户列表成功，共有{count}位！")
         logger.info(f"管理员获取已过期的用户列表成功，共有{count}位！")
     else:
         bot.reply_to(message, "没有已过期的用户!")
@@ -433,7 +434,8 @@ def get_expiring_users_command(message):
             response += f"{count+1}: {user['username']}\n"
         response += f"-----------\n"
         response += f"即将过期的用户一共有：{count}位！\n"
-        bot.reply_to(message, response)
+        # bot.reply_to(message, response)
+        bot.reply_to(message, f"即将过期的用户列表成功，共有{count}位！")
         logger.info(f"管理员获取即将过期的用户列表成功: 共有{count}位！")
     else:
         bot.reply_to(message, "没有即将过期的用户!")
@@ -446,6 +448,10 @@ def clean_expired_users_command(message):
     telegram_id = message.from_user.id
     logger.info(f"管理员请求清理过期用户: telegram_id={telegram_id}")
 
-    UserService.clean_expired_users()
-    bot.reply_to(message, "已执行过期用户清理!")
-    logger.info(f"管理员清理过期用户成功: telegram_id={telegram_id}")
+    user_list = UserService.clean_expired_users()
+    if user_list:
+        bot.reply_to(message, f"已执行过期用户清理,一共清理用户{len(user_list)}位！")
+        logger.info(f"管理员清理过期用户成功: telegram_id={telegram_id}")
+    else:
+        bot.reply_to(message, "未发现过期用户！")
+        logger.info(f"没有用户过期！")

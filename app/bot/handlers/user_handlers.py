@@ -96,7 +96,7 @@ def register_command(message):
 
     # 只有当用户不存在于 Web 应用时才需要注册
     if user and user.navidrome_user_id:
-        bot.reply_to(message, "您已经注册过了!")
+        bot.reply_to(message, "您已经注册过了, 如想重新注册，请先执行/deleteuser删除本地用户再注册!")
         return
 
     args = message.text.split()[1:]
@@ -192,10 +192,10 @@ def delete_user_command(message):
             bot.reply_to(message, "您的账户已成功删除!")
         else:
             logger.error(f"用户删除失败: telegram_id={telegram_id}, service_name={service_name}")
-            bot.reply_to(message, "删除账户失败，请重试!")
+            bot.reply_to(message, "删除服务器账户失败，本地账户已删除!")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
-        bot.reply_to(message, "未找到您的账户信息!")
+        bot.reply_to(message, "未找到您的账户信息，如已在服务器注册，请使用/bind命令绑定!")
 
 @bot.message_handler(commands=['score'])
 def score_command(message):

@@ -24,11 +24,11 @@ EMBY_API_KEY = os.getenv("EMBY_API_KEY")  # Emby API 密钥
 # --- 其他配置 ---
 INVITE_CODE_LENGTH = int(os.getenv("INVITE_CODE_LENGTH", 8))  # 邀请码长度，默认为 8
 INVITE_CODE_EXPIRATION_DAYS = int(os.getenv("INVITE_CODE_EXPIRATION_DAYS", 7))  # 邀请码过期时间（天），默认为 7
-INVITE_CODE_SYSTEM_ENABLED=os.getenv("INVITE_CODE_SYSTEM_ENABLED", False)
+INVITE_CODE_SYSTEM_ENABLED=bool(os.getenv("INVITE_CODE_SYSTEM_ENABLED", False) == 'True')
 INVITE_CODE_PRICE=int(os.getenv("INVITE_CODE_PRICE", 100))
 
 # --- 清理不活跃用户 ---
 EXPIRED_DAYS = int(os.getenv("EXPIRED_DAYS", 30))  # 用户过期时间（天），默认为 30
 WARNING_DAYS = int(os.getenv("WARNING_DAYS", 3)) #  提前警告天数，默认为3
 CLEAN_INTERVAL = int(os.getenv("CLEAN_INTERVAL", 2592000))  # 清理过期用户的时间间隔（秒），默认为 30 天
-ENABLE_EXPIRED_USER_CLEAN = os.getenv("ENABLE_EXPIRED_USER_CLEAN", False) # 是否开启定时任务，默认关闭
+ENABLE_EXPIRED_USER_CLEAN = bool(os.getenv("ENABLE_EXPIRED_USER_CLEAN", 'False') == 'True') # 是否开启定时任务，默认关闭

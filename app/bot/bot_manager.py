@@ -14,7 +14,7 @@ class BotManager:
             telebot.types.BotCommand("help", "可用命令"),
             telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
             telebot.types.BotCommand("info", "查看个人信息"),
-            telebot.types.BotCommand("deleteuser", "删除用户"),
+            # telebot.types.BotCommand("deleteuser", "删除用户"),
             telebot.types.BotCommand("score", "查看我的积分"),
             telebot.types.BotCommand("checkin", "签到"),
             telebot.types.BotCommand("buyinvite", "购买邀请码"),
@@ -37,7 +37,7 @@ class BotManager:
             telebot.types.BotCommand("toggle_expired_user_clean", "切换自动清理状态 (管理员)"),
             telebot.types.BotCommand("get_expiring_users", "获取不活跃的用户 (管理员)"),
             telebot.types.BotCommand("get_expired_users", "获取已过期的用户 (管理员)"),
-            telebot.types.BotCommand("clean_expired_users", "清理不活跃的用户 (管理员)")
+            # telebot.types.BotCommand("clean_expired_users", "清理不活跃的用户 (管理员)")
         ]
         # 设置Bot命令
         self.bot.set_my_commands(commands)

@@ -86,6 +86,7 @@ class UserService:
           logger.info(f"本地用户删除成功: user_id={user.id}")
           return True
         else:
+          user.delete()
           logger.error(f"Navidrome 用户删除失败: {result}")
           return False
 
@@ -283,9 +284,11 @@ class UserService:
             for user in expired_users['warning']:
                 logger.warning(f"用户将在3天后过期，请注意: navidrome_user_id={user['navidrome_user_id']}")
         if 'expired' in expired_users and expired_users['expired']:
+            user_list = []
             for user in expired_users['expired']:
                 logger.info(f"删除过期用户: navidrome_user_id={user['navidrome_user_id']}")
                 navidrome_api_client.delete_user(user['navidrome_user_id'])
+                user_list.append(user['username'])
                 navi = NavidromeUser.get_by_navidrome_id(user['navidrome_user_id'])
                 if navi:
                     logger.info(f"删除本地过期用户: telegram_id={navi.telegram_id}")
@@ -293,6 +296,7 @@ class UserService:
                 else:
                     logger.warning("本地无用户信息，无需删除！")
                     pass
+            return user_list
                 
 
     @staticmethod
