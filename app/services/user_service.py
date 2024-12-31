@@ -2,6 +2,8 @@ from app.models import User, NavidromeUser
 from app.utils.api_clients import navidrome_api_client
 from app.utils.logger import logger
 from config import settings
+from datetime import datetime
+import pytz
 
 # 需要安装的模块：无
 
@@ -310,3 +312,72 @@ class UserService:
           """启动和关闭清理系统"""
           logger.debug("准备关闭/开启清理系统")
           navidrome_api_client._start_clean_expired_users()
+    
+    @staticmethod
+    def get_users_by_register_time(start_time=None, end_time=None):
+      """
+      获取指定注册时间范围内注册的用户
+      Args:
+        start_time:  开始时间，日期字符串，例如 '2024-12-25'
+        end_time: 结束时间，日期字符串，例如 '2024-12-30'
+      Returns:
+        符合条件的用户列表
+      """
+      logger.info(f"获取指定注册时间范围内注册的用户, start_time={start_time}, end_time={end_time}")
+      if start_time is None and end_time is None:
+          logger.info(f"未指定时间区间，获取所有用户的列表")
+          return UserService.get_all_users()
+          
+      try:
+        start_date = datetime.strptime(start_time, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_time, "%Y-%m-%d").date()
+      except ValueError:
+        logger.warning(f"时间格式错误, 请使用 'YYYY-MM-DD'格式, start_time={start_time}, end_time={end_time}")
+        return []
+      users = UserService.get_all_users()
+      if not users:
+        logger.warning("没有用户，无法获取签到用户列表！")
+        return []
+
+      user_list = [user for user in users if hasattr(user, 'id') and user.id and User.get_by_id(user.id).create_time and start_date <= User.get_by_id(user.id).create_time.date() <= end_date]
+      logger.info(f"获取指定注册时间范围内注册的用户成功, start_time={start_time}, end_time={end_time}, count={len(user_list)}")
+      return user_list
+  
+    @staticmethod
+    def get_sign_in_users(time_range="today"):
+        """
+        获取指定时间范围内签到的用户
+    
+        Args:
+            time_range: 时间范围，例如 "today", "yesterday", "2024-12-25"
+    
+        Returns:
+            符合条件的用户列表
+        """
+        logger.info(f"获取签到用户列表，时间范围: {time_range}")
+        shanghai_tz = pytz.timezone('Asia/Shanghai')
+        now_shanghai = datetime.now(shanghai_tz)
+        users = UserService.get_all_users()
+        if not users:
+            logger.warning("没有用户，无法获取签到用户列表！")
+            return []
+        
+        user_list = []
+        if time_range == "today":
+          user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == now_shanghai.date() ]
+        elif time_range == "yesterday":
+          yesterday_shanghai = now_shanghai - datetime.timedelta(days=1)
+          user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == yesterday_shanghai.date() ]
+        elif isinstance(time_range, str) and len(time_range) == 10 and time_range[4] == "-" and time_range[7] == "-":
+            try:
+                target_date = datetime.strptime(time_range, "%Y-%m-%d").date()
+                user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == target_date]
+            except ValueError:
+               logger.warning(f"时间格式错误，请使用YYYY-MM-DD格式，使用today查询，time_range={time_range}")
+               user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == now_shanghai.date() ]
+        else:
+          logger.warning(f"不支持的时间范围: {time_range}, 使用today查询")
+          user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == now_shanghai.date()]
+
+        logger.info(f"成功获取签到用户列表: {time_range}, count={len(user_list)}")
+        return user_list

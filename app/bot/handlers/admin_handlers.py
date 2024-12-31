@@ -455,3 +455,101 @@ def clean_expired_users_command(message):
     else:
         bot.reply_to(message, "未发现过期用户！")
         logger.info(f"没有用户过期！")
+
+
+@bot.message_handler(commands=['random_give_score_by_checkin_time'])
+@admin_required
+def random_give_score_by_checkin_time_command(message):
+    """
+    根据签到时间给用户随机增加积分 (管理员命令)
+    /random_give_score_by_checkin_time <today|yesterday|2025-01-01>[可选] <max_score>[可选]
+    """
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求根据签到时间随机增加用户积分: telegram_id={telegram_id}")
+
+    args = message.text.split()[1:]
+    logger.debug(f"参数为{args}")
+    max_score = 10
+    user_range = "today"
+    if len(args) == 0:
+        logger.info("为今天所有签到的用户增加随机积分，最大积分为10分！")
+        users = UserService.get_sign_in_users(user_range)
+    elif len(args) == 1:
+        logger.info(f"为今天签到所有签到的用户增加随机积分，最大积分为{max_score}分！")
+        max_score = args[0]
+        users = UserService.get_sign_in_users(user_range)
+    elif len(args) == 2:
+        logger.info(f"为{user_range}内所有签到的用户增加随机积分，最大积分为{max_score}分！")
+        user_range, max_score = args
+        users = UserService.get_sign_in_users(user_range)
+    else:
+        bot.reply_to(message, "参数错误，请提供签到时间范围和最大积分数，格式为：/random_give_score_by_checkin_time <all|today|yesterday|weekly|month> <max_score>")
+        return
+
+    try:
+        max_score = int(max_score)
+    except ValueError:
+        bot.reply_to(message, "参数错误，最大积分数必须是整数！")
+        return
+
+    if users:
+        for user in users:
+            score = ScoreService._generate_random_score(max_score=max_score)
+            ScoreService.add_score(user_id=user.id, score=score)
+            logger.info(f"为用户增加随机积分: telegram_id={telegram_id}, score={score}, range={user_range}")
+        bot.reply_to(message, f"已为{len(users)}个用户随机增加积分，范围: {user_range}，最大积分: {max_score}!")
+    else:
+        bot.reply_to(message, "没有用户符合条件，无法增加积分")
+        logger.info(f"没有用户符合条件，无法增加积分, range={user_range}")
+
+@bot.message_handler(commands=['add_random_score'])
+@admin_required
+def add_random_score_command(message):
+    """
+    根据注册时间范围给用户随机增加积分 (管理员命令)
+     /add_random_score <start_time> <end_time> <max_score>
+     start_time和end_time格式必须是 YYYY-MM-DD
+    """
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求根据注册时间范围随机增加用户积分: telegram_id={telegram_id}")
+
+    args = message.text.split()[1:]
+    max_score = 10
+    if len(args) == 0:
+        logger.info(f"为注册的所有用户增加随机积分！最大积分为10分")
+        users = UserService.get_users_by_register_time()
+    elif len(args) == 1:
+        max_score = args[0]
+        logger.info(f"为注册的所有用户增加随机积分！最大积分为{max_score}")
+        users = UserService.get_users_by_register_time()
+    #######
+    # 数据库忘记未实现相关表, 待处理。
+    #######
+    # elif len(args) == 2:
+    #     start_time, end_time = args
+    #     logger.info(f"为{start_time}-{end_time}期间注册所有用户增加随机积分！最大积分为10分")
+    #     start_time, end_time = args
+    #     users = UserService.get_users_by_register_time(start_time, end_time)
+    # elif len(args) == 3:
+    #     start_time, end_time, max_score = args
+    #     logger.info(f"为{start_time}-{end_time}期间注册所有用户增加随机积分！最大积分为{max_score}分")
+    #     users = UserService.get_users_by_register_time(start_time, end_time)
+    else:
+        logger.warning(f"提供的参数错误！")
+        bot.reply_to(message, "参数错误，请提供注册时间范围的开始时间、结束时间和最大积分数，格式为：/random_give_score_by_range_time <start_time>[可选] <end_time>[可选] <max_score>[可选]")
+        
+    try:
+        max_score = int(max_score)
+    except ValueError:
+        bot.reply_to(message, "参数错误，最大积分数必须是整数！")
+        return
+    
+    if users:
+        for user in users:
+            score = ScoreService._generate_random_score(max_score=max_score)
+            ScoreService.add_score(user_id=user.id, score=score)
+            logger.info(f"为用户增加随机积分: telegram_id={telegram_id}, score={score}")
+        bot.reply_to(message, f"已为{len(users)}个用户随机增加积分, 最大积分: {max_score}!")
+    else:
+      bot.reply_to(message, "没有用户符合条件，无法增加积分")
+    #   logger.info(f"没有用户符合条件，无法增加积分，start_time={start_time}, end_time={end_time}")

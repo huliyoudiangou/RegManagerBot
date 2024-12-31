@@ -117,7 +117,7 @@ class ScoreService:
             max_score: 签到可获得的最大积分，默认为 10
 
         Returns:
-            签到结果，如果签到成功则返回 True，如果用户不存在或已签到则返回 False
+            签到结果，如果签到成功则返回 sign_in_score，如果用户不存在或已签到则返回 False
         """
         logger.debug(f"用户签到: user_id={user_id}")
         user = UserService.get_user_by_id(user_id)
@@ -138,7 +138,7 @@ class ScoreService:
             user.last_sign_in_date = now_shanghai
             user.save()
             logger.debug(f"用户签到成功: user_id={user_id}, 获得积分={sign_in_score}, 总积分={user.score}, 时间={now_shanghai}")
-            return True
+            return sign_in_score
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
             return False
@@ -248,3 +248,11 @@ class ScoreService:
         else:
           logger.warning(f"未获取到活动信息, event_id={event_id}")
           return None
+    
+    @staticmethod
+    def _generate_random_score(max_score=10):
+        """生成随机积分"""
+        logger.info(f"生成随机积分, max_score={max_score}")
+        score = random.randint(1, max_score)
+        logger.info(f"生成随机积分成功: score={score}")
+        return score

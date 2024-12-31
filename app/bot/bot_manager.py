@@ -30,6 +30,8 @@ class BotManager:
             telebot.types.BotCommand("add_score", "增加用户积分 (管理员)"),
             telebot.types.BotCommand("reduce_score", "减少用户积分 (管理员)"),
             telebot.types.BotCommand("set_price", "设置积分价格 (管理员)"),
+            telebot.types.BotCommand("add_random_score", "为符合条件的用户增加随机积分 (管理员)"),
+            telebot.types.BotCommand("random_score_by_checkin", "为签到用户增加随机积分 (管理员)"),
             telebot.types.BotCommand("userinfo", "获取用户信息 (管理员)"),
             telebot.types.BotCommand("userinfo_by_username", "通过用户名获取用户信息 (管理员)"),
             telebot.types.BotCommand("stats", "获取注册状态 (管理员)"),
@@ -74,7 +76,9 @@ class BotManager:
         bot.register_message_handler(admin_handlers.get_expiring_users_command, commands=['get_expiring_users']) # 注册获取即将过期用户的命令
         bot.register_message_handler(admin_handlers.get_expired_users_command, commands=['get_expired_users']) # 注册获取已过期用户列表的命令
         bot.register_message_handler(admin_handlers.clean_expired_users_command, commands=['clean_expired_users']) # 注册立即清理过期用户的命令
-
+        bot.register_message_handler(admin_handlers.add_random_score_command, commands=['add_random_score']) # 注册随机增加积分命令
+        bot.register_message_handler(admin_handlers.random_give_score_by_checkin_time_command, commands=['random_score_by_checkin']) # 注册随机赠送积分命令
+        
     def get_bot(self):
        return self.bot
 
