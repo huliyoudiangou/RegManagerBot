@@ -1,5 +1,5 @@
 # 用户命令处理器
-
+import json
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService
@@ -8,6 +8,7 @@ from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
 from app.bot.validators import user_exists
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 # 需要安装的模块：无
@@ -475,5 +476,51 @@ def reset_username_command(message):
         bot.reply_to(message, "用户重名，请重新选择用户名！")
         
             
+@bot.message_handler(commands=['random_score'])
+@user_exists(service_name='navidrome')
+def random_score_command(message):
+    """发送带有按钮的菜单"""
+    args = message.text.split()[1:]
+    if len(args) != 2:
+        bot.reply_to(message, "参数错误，请提供参数，格式为：/random_score <participants_count> <total_score>")
+        return
+    try:
+        participants_count = int(args[0])
+        total_score = int(args[1])
+    except ValueError:
+        bot.reply_to(message, "参数错误，参与人数和总积分数必须是整数！")
+        return
+    event_id = ScoreService.create_random_score_event(create_user_id=message.from_user.id, telegram_chat_id=message.chat.id, total_score=total_score, participants_count=participants_count)
+    if not event_id:
+      bot.reply_to(message, "创建积分活动失败")
+      return
 
+    keyboard = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("点击抽积分", callback_data=f"random_score_{event_id}")]
+        ]
+    )
+    bot.reply_to(message, "点击按钮参与抽奖！", reply_markup=keyboard)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("random_score_"))
+def handle_random_score_callback(call):
+    """处理随机积分的按钮点击事件"""
+    
+    event_id = int(call.data.split("_")[2])
+    user_id = call.from_user.id
+    
+    score = ScoreService.use_random_score(event_id=event_id, user_id=user_id)
+    if score:
+        bot.send_message(call.message.chat.id, f"恭喜您，获得{score}积分！")
+        event_data = ScoreService.get_random_score_event(event_id)
+        if event_data and event_data['is_finished']:
+           score_result = json.loads(event_data['score_result'])
+           response = f"积分已经分发完毕, 中奖信息如下：\n"
+           for user_id, score in score_result.items():
+             response += f"用户id: {user_id}, 获取积分： {score}\n"
+           bot.send_message(call.message.chat.id, response)
+    elif score == 0:
+       bot.send_message(call.message.chat.id, f"积分已经分发完毕")
+    else:
+        bot.send_message(call.message.chat.id, "您已经获取过奖励！")
         

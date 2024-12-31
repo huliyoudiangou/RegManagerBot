@@ -20,11 +20,11 @@ class BotManager:
             telebot.types.BotCommand("reset_password", "重置密码"),
             telebot.types.BotCommand("reset_username", "重置用户名"),
             telebot.types.BotCommand("give", "赠送积分"),
+            telebot.types.BotCommand("random_score", "发送积分红包"),
             telebot.types.BotCommand("bind", "绑定账号"),
             telebot.types.BotCommand("unbind", "解绑账号"),
             telebot.types.BotCommand("generate_code", "生成邀请码 (管理员)"),
             telebot.types.BotCommand("invite", "查看所有邀请码 (管理员)"),
-            telebot.types.BotCommand("toggle_invite_code_system", "开启/关闭邀请码系统 (管理员)"),
             telebot.types.BotCommand("set_score", "设置用户积分 (管理员)"),
             telebot.types.BotCommand("get_score", "查看用户积分 (管理员)"),
             telebot.types.BotCommand("add_score", "增加用户积分 (管理员)"),
@@ -33,6 +33,7 @@ class BotManager:
             telebot.types.BotCommand("userinfo", "获取用户信息 (管理员)"),
             telebot.types.BotCommand("userinfo_by_username", "通过用户名获取用户信息 (管理员)"),
             telebot.types.BotCommand("stats", "获取注册状态 (管理员)"),
+            telebot.types.BotCommand("toggle_invite_code_system", "开启/关闭邀请码系统 (管理员)"),
             telebot.types.BotCommand("toggle_expired_user_clean", "切换自动清理状态 (管理员)"),
             telebot.types.BotCommand("get_expiring_users", "获取不活跃的用户 (管理员)"),
             telebot.types.BotCommand("get_expired_users", "获取已过期的用户 (管理员)"),
@@ -55,6 +56,7 @@ class BotManager:
         bot.register_message_handler(user_handlers.give_score_command, commands=['give'])
         bot.register_message_handler(user_handlers.bind_command, commands=['bind'])
         bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])
+        bot.register_message_handler(user_handlers.random_score_command, commands=['random_score']) # 注册随机增加积分命令
     
          # 注册管理员命令处理函数
         bot.register_message_handler(admin_handlers.generate_invite_code_command, commands=['generate_code'])
