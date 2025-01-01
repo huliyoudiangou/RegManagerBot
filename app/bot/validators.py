@@ -5,6 +5,7 @@ from app.services.invite_code_service import InviteCodeService
 from app.utils.logger import logger
 from datetime import datetime
 from app.bot.core.bot_instance import bot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 # 需要安装的模块：无
 
 def user_exists(service_name, negate=False):
@@ -100,5 +101,38 @@ def score_enough(service_name):
                 bot.reply_to(message, "积分不足!")
                 return
 
+        return wrapper
+    return decorator
+
+def confirmation_required(message_text):
+    """
+    要求用户确认的装饰器
+
+    Args:
+        message_text: 提示信息
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(message, *args, **kwargs):
+            keyboard = InlineKeyboardMarkup(
+                [
+                    [InlineKeyboardButton("是", callback_data="confirm_yes"),
+                    InlineKeyboardButton("否", callback_data="confirm_no")]
+                ]
+            )
+            bot.reply_to(message, message_text, reply_markup=keyboard)
+            
+            def callback_handler(call):
+              """
+              处理按钮点击回调
+              """
+              if call.data == "confirm_yes":
+                  bot.edit_message_text(text=f"已确认：{message_text}", chat_id=call.message.chat.id, message_id=call.message.id)
+                  return func(message, *args, **kwargs)
+              elif call.data == "confirm_no":
+                  bot.edit_message_text(text=f"已取消：{message_text}", chat_id=call.message.chat.id, message_id=call.message.id)
+                  logger.debug("用户取消了操作")
+                  return
+            bot.register_callback_query_handler(callback_handler, func=lambda call: call.data in ["confirm_yes", "confirm_no"])
         return wrapper
     return decorator

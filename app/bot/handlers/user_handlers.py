@@ -7,7 +7,7 @@ from app.utils.logger import logger
 from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
-from app.bot.validators import user_exists
+from app.bot.validators import user_exists, confirmation_required
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
@@ -170,6 +170,8 @@ def register_command(message):
         return
 
 @bot.message_handler(commands=['deleteuser'])
+@user_exists(service_name="navidrome")
+@confirmation_required(message_text="你确定要删除该用户吗？")
 def delete_user_command(message):
     """
     处理 /deleteuser 命令，删除用户

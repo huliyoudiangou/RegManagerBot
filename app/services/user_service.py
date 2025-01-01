@@ -112,7 +112,7 @@ class UserService:
             # 获取 Navidrome 用户信息
             # navidrome_user_info = navidrome_api_client.get_user(user.navidrome_user_id)
             # if navidrome_user_info and navidrome_user_info['status'] == 'success':
-            #   logger.info(f"获取 Navidrome 用户信息成功: {navidrome_user_info}")
+            #   logger.debug(f"获取 Navidrome 用户信息成功: {navidrome_user_info}")
             #   return user
             # else:
             #   logger.error(f"获取 Navidrome 用户信息失败: {navidrome_user_info}")
@@ -323,9 +323,9 @@ class UserService:
       Returns:
         符合条件的用户列表
       """
-      logger.info(f"获取指定注册时间范围内注册的用户, start_time={start_time}, end_time={end_time}")
+      logger.debug(f"获取指定注册时间范围内注册的用户, start_time={start_time}, end_time={end_time}")
       if start_time is None and end_time is None:
-          logger.info(f"未指定时间区间，获取所有用户的列表")
+          logger.debug(f"未指定时间区间，获取所有用户的列表")
           return UserService.get_all_users()
           
       try:
@@ -340,7 +340,7 @@ class UserService:
         return []
 
       user_list = [user for user in users if hasattr(user, 'id') and user.id and User.get_by_id(user.id).create_time and start_date <= User.get_by_id(user.id).create_time.date() <= end_date]
-      logger.info(f"获取指定注册时间范围内注册的用户成功, start_time={start_time}, end_time={end_time}, count={len(user_list)}")
+      logger.debug(f"获取指定注册时间范围内注册的用户成功, start_time={start_time}, end_time={end_time}, count={len(user_list)}")
       return user_list
   
     @staticmethod
@@ -354,7 +354,7 @@ class UserService:
         Returns:
             符合条件的用户列表
         """
-        logger.info(f"获取签到用户列表，时间范围: {time_range}")
+        logger.debug(f"获取签到用户列表，时间范围: {time_range}")
         shanghai_tz = pytz.timezone('Asia/Shanghai')
         now_shanghai = datetime.now(shanghai_tz)
         users = UserService.get_all_users()
@@ -379,5 +379,5 @@ class UserService:
           logger.warning(f"不支持的时间范围: {time_range}, 使用today查询")
           user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == now_shanghai.date()]
 
-        logger.info(f"成功获取签到用户列表: {time_range}, count={len(user_list)}")
+        logger.debug(f"成功获取签到用户列表: {time_range}, count={len(user_list)}")
         return user_list

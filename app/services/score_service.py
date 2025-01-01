@@ -146,7 +146,7 @@ class ScoreService:
     @staticmethod
     def create_random_score_event(create_user_id, telegram_chat_id, total_score, participants_count):
       """创建随机积分活动"""
-      logger.info(f"创建随机积分活动，create_user_id={create_user_id}, telegram_chat_id={telegram_chat_id}, total_score={total_score}, participants_count={participants_count}")
+      logger.debug(f"创建随机积分活动，create_user_id={create_user_id}, telegram_chat_id={telegram_chat_id}, total_score={total_score}, participants_count={participants_count}")
 
       score_list = ScoreService._generate_random_scores(total_score=total_score, participants_count=participants_count)
       data = {
@@ -157,13 +157,13 @@ class ScoreService:
               "score_list": json.dumps(score_list),
             }
       row_id = insert_data("RandomScoreEvents", data)
-      logger.info(f"创建随机积分活动成功，id={row_id}")
+      logger.debug(f"创建随机积分活动成功，id={row_id}")
       return row_id
 
     @staticmethod
     def _generate_random_scores(total_score, participants_count):
         """生成随机积分列表，使用二倍均值算法"""
-        logger.info(f"生成随机积分列表，total_score={total_score}, participants_count={participants_count}")
+        logger.debug(f"生成随机积分列表，total_score={total_score}, participants_count={participants_count}")
         if participants_count <= 0 or total_score <= 0 or participants_count > total_score:
             logger.warning("参与人数或者总积分必须大于0或总积分必须大于人数！")
             return []
@@ -185,17 +185,17 @@ class ScoreService:
           scores.append(remaining_score)
         
         random.shuffle(scores)
-        logger.info(f"生成随机积分列表成功，scores={scores}")
+        logger.debug(f"生成随机积分列表成功，scores={scores}")
         return scores
     
     @staticmethod
     def get_random_score_event(event_id):
         """根据id获取随机积分活动"""
-        logger.info(f"根据id获取随机积分活动，event_id={event_id}")
+        logger.debug(f"根据id获取随机积分活动，event_id={event_id}")
         query = f"id = ?"
         event_data = select_data("RandomScoreEvents", query, where_values = [event_id])
         if event_data:
-           logger.info(f"根据id获取随机积分活动成功，event_id={event_id}")
+           logger.debug(f"根据id获取随机积分活动成功，event_id={event_id}")
            return event_data[0]
         else:
            logger.warning(f"根据id获取随机积分活动失败，event_id={event_id}")
@@ -204,7 +204,7 @@ class ScoreService:
     @staticmethod
     def use_random_score(event_id, user_id):
         """使用随机积分"""
-        logger.info(f"使用随机积分, event_id={event_id}, user_id={user_id}")
+        logger.debug(f"使用随机积分, event_id={event_id}, user_id={user_id}")
         event_data = ScoreService.get_random_score_event(event_id)
         if event_data:
            score_list = json.loads(event_data['score_list'])
@@ -238,12 +238,12 @@ class ScoreService:
            if len(score_list) == len(score_result):
             data['is_finished'] = True
             data['end_time'] = datetime.now()
-            logger.info(f"积分分发完成, 设置is_finished=True")
+            logger.debug(f"积分分发完成, 设置is_finished=True")
 
            update_data("RandomScoreEvents", data, f"id = {event_id}")
 
            ScoreService.add_score(user_id=user.id, score=user_score)
-           logger.info(f"用户使用随机积分成功, user_id={user.id}, score={user_score}")
+           logger.debug(f"用户使用随机积分成功, user_id={user.id}, score={user_score}")
            return user_score
         else:
           logger.warning(f"未获取到活动信息, event_id={event_id}")
@@ -252,7 +252,7 @@ class ScoreService:
     @staticmethod
     def _generate_random_score(max_score=10):
         """生成随机积分"""
-        logger.info(f"生成随机积分, max_score={max_score}")
+        logger.debug(f"生成随机积分, max_score={max_score}")
         score = random.randint(1, max_score)
-        logger.info(f"生成随机积分成功: score={score}")
+        logger.debug(f"生成随机积分成功: score={score}")
         return score

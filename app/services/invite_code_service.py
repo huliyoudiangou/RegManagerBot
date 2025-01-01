@@ -108,10 +108,10 @@ class InviteCodeService:
       Returns:
        InviteCode 对象列表
       """
-      logger.info(f"根据邀请码的使用状态查询邀请码, is_used={is_used}")
+      logger.debug(f"根据邀请码的使用状态查询邀请码, is_used={is_used}")
       invite_codes = InviteCode.get_by_is_used(is_used)
       if invite_codes:
-          logger.info(f"根据邀请码的使用状态查询邀请码成功, is_used={is_used}, count={len(invite_codes)}")
+          logger.debug(f"根据邀请码的使用状态查询邀请码成功, is_used={is_used}, count={len(invite_codes)}")
           return invite_codes
       else:
           logger.warning(f"根据邀请码的使用状态查询邀请码为空, is_used={is_used}")

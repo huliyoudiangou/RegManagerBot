@@ -1,5 +1,5 @@
 # 管理员命令处理器
-from app.bot.validators import admin_required
+from app.bot.validators import admin_required, confirmation_required
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService
@@ -508,11 +508,31 @@ def get_expiring_users_command(message):
 
 @bot.message_handler(commands=['clean_expired_users'])
 @admin_required
+@confirmation_required(message_text="你确定要清理用户吗？")
 def clean_expired_users_command(message):
     """立即清理过期用户 (管理员命令)"""
     telegram_id = message.from_user.id
     logger.info(f"管理员请求清理过期用户: telegram_id={telegram_id}")
 
+    settings.EXPIRED_DAYS = 30
+    settings.WARNING_DAYS = 3
+    
+    args = message.text.split()[1:]
+
+    if len(args) == 0:
+        logger.info(f"清理30天未使用的用户")
+    elif len(args) == 1:
+        try:
+            day = int(args[0])
+        except ValueError:
+            bot.reply_to(message, "参数错误，DAY必须是整数！")
+            return
+        settings.EXPIRED_DAYS = day
+        logger.info(f"清理{day}天未使用的用户")
+    else:
+        bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
+        return
+    
     user_list = UserService.clean_expired_users()
     if user_list:
         bot.reply_to(message, f"已执行过期用户清理,一共清理用户{len(user_list)}位！")
@@ -569,6 +589,7 @@ def random_give_score_by_checkin_time_command(message):
 
 @bot.message_handler(commands=['add_random_score'])
 @admin_required
+@confirmation_required(message_text="你确定要普天同庆吗？该过程较慢，Bot响应会比较慢。")
 def add_random_score_command(message):
     """
     根据注册时间范围给用户随机增加积分 (管理员命令)
