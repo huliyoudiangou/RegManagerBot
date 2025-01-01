@@ -451,12 +451,11 @@ def get_expired_users_command(message):
         expired_users_list = paginate_list(data_list=expired_users['expired'], page_size=50)
         for expired_users in expired_users_list:
             response = "已经过期用户列表：\n"
+            response += f"-----------\n"
             for expired_user in expired_users:
-                response += f"用户名\n"
-                response += f"-----------\n"
                 response += f"{expired_user['username']}\n"
-                response += f"-----------\n"
-                response += f"已经过期的用户一共有：{len(expired_user)}位！\n"
+            response += f"-----------\n"
+            response += f"已经过期的用户一共有：{len(expired_users)}位！\n"
             bot.reply_to(message, response)     
         logger.warning(f"管理员获取已经过期的用户列表成功: 共有{len(expired_users)}位！")
     else:
@@ -496,12 +495,11 @@ def get_expiring_users_command(message):
         expiring_users_list = paginate_list(data_list=expiring_users['warning'], page_size=50)
         for expiring_users in expiring_users_list:
             response = "即将过期用户列表：\n"
+            response += f"-----------\n"
             for expiring_user in expiring_users:
-                response += f"用户名\n"
-                response += f"-----------\n"
                 response += f"{expiring_user['username']}\n"
-                response += f"-----------\n"
-                response += f"即将过期的用户一共有：{len(expiring_users)}位！\n"
+            response += f"-----------\n"
+            response += f"即将过期的用户一共有：{len(expiring_users)}位！\n"
             bot.reply_to(message, response)     
         logger.warning(f"管理员获取即将过期的用户列表成功: 共有{len(expiring_users)}位！")
     else:
