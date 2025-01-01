@@ -1,5 +1,4 @@
 # 管理员命令处理器
-import telebot
 from app.bot.validators import admin_required
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
@@ -8,6 +7,7 @@ from app.utils.logger import logger
 from config import settings
 from app.bot.core.bot_instance import bot
 from app.utils.api_clients import navidrome_api_client
+from app.utils.utils import paginate_list
 
 # 需要安装的模块：无
 
@@ -51,13 +51,39 @@ def get_all_invite_codes_command(message):
     """查看所有邀请码 (管理员命令)"""
     invite_codes = InviteCodeService.get_all_invite_codes()
     if invite_codes:
-      response = "邀请码列表：\n"
-      for invite_code in invite_codes:
-        response += f"ID: {invite_code.id}, 邀请码: {invite_code.code}, 是否已使用: {'是' if invite_code.is_used else '否'}, 创建时间: {invite_code.create_time}, 过期时间: {invite_code.expire_time}, 创建者ID: {invite_code.create_user_id}\n"
-      bot.reply_to(message, response)
+        invite_codes_list = paginate_list(data_list=invite_codes, page_size=20)
+        for invite_codes in invite_codes_list:
+            response = "邀请码列表：\n"
+            for invite_code in invite_codes:
+                response += f"ID: {invite_code.id}, 邀请码: {invite_code.code}, 是否已使用: {'是' if invite_code.is_used else '否'}, 创建时间: {invite_code.create_time}, 过期时间: {invite_code.expire_time}, 创建者ID: {invite_code.create_user_id}\n"
+                response += f"--------\n"
+                response += f"生成总数为：{len(invite_codes)}"
+            bot.reply_to(message, response)
     else:
       bot.reply_to(message, "获取邀请码列表失败，请重试！")
 
+@bot.message_handler(commands=['unused_invite_codes'])
+@admin_required
+def get_unused_invite_codes_command(message):
+    """获取未使用的邀请码列表 (管理员命令)"""
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求获取未使用的邀请码列表: telegram_id={telegram_id}")
+    
+    invite_codes = InviteCodeService.get_invite_code_by_is_used(is_used=False)
+    if invite_codes:
+        invite_codes_list = paginate_list(data_list=invite_codes, page_size=20)
+        for invite_codes in invite_codes_list:
+            response = "未使用的邀请码：\n"
+            for invite_code in invite_codes:
+                response += f"<code>{invite_code.code}</code>\n"
+                response += f"--------\n"
+                response += f"未使用总数为：{len(invite_codes)}"
+            bot.reply_to(message, response, parse_mode='HTML') # 发送HTML格式的消息，支持点击复制
+        logger.info(f"管理员获取未使用的邀请码列表成功: telegram_id={telegram_id}, count={len(invite_codes)}")
+    else:
+        bot.reply_to(message, "没有找到未使用的邀请码！")
+        logger.warning(f"没有找到未使用的邀请码: telegram_id={telegram_id}")
+            
 @bot.message_handler(commands=['toggle_invite_code_system'])
 @admin_required
 def toggle_invite_code_system_command(message):

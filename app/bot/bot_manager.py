@@ -25,6 +25,7 @@ class BotManager:
             telebot.types.BotCommand("unbind", "解绑账号"),
             telebot.types.BotCommand("generate_code", "生成邀请码 (管理员)"),
             telebot.types.BotCommand("invite", "查看所有邀请码 (管理员)"),
+            telebot.types.BotCommand("unused_invite_codes", "查看所有未使用邀请码 (管理员)"),
             telebot.types.BotCommand("set_score", "设置用户积分 (管理员)"),
             telebot.types.BotCommand("get_score", "查看用户积分 (管理员)"),
             telebot.types.BotCommand("add_score", "增加用户积分 (管理员)"),
@@ -78,6 +79,7 @@ class BotManager:
         bot.register_message_handler(admin_handlers.clean_expired_users_command, commands=['clean_expired_users']) # 注册立即清理过期用户的命令
         bot.register_message_handler(admin_handlers.add_random_score_command, commands=['add_random_score']) # 注册随机增加积分命令
         bot.register_message_handler(admin_handlers.random_give_score_by_checkin_time_command, commands=['random_score_by_checkin']) # 注册随机赠送积分命令
+        bot.register_message_handler(admin_handlers.get_unused_invite_codes_command, commands=['unused_invite_codes']) # 注册获取未使用的邀请码的命令
         
     def get_bot(self):
        return self.bot

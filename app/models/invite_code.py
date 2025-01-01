@@ -105,6 +105,23 @@ class InviteCode:
 
       return [InviteCode(row['code'], row['is_used'], row['user_id'], row['create_time'], row['expire_time'], row['create_user_id'], row['id']) for row in rows]
 
+    @staticmethod
+    def get_by_is_used(is_used):
+        """根据邀请码使用状态查询"""
+        logger.info(f"查询邀请码,使用状态：is_used={is_used}")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM InviteCodes WHERE is_used = ?", (is_used,))
+        rows = cursor.fetchall()
+        close_db_connection(conn)
+        if rows:
+            logger.info(f"查询邀请码成功,使用状态：is_used={is_used}, count = {len(rows)}")
+            return [InviteCode(row['code'], row['is_used'], row['user_id'], row['create_time'], row['expire_time'], row['create_user_id'], row['id']) for row in rows]
+        else:
+            logger.warning(f"查询邀请码为空,使用状态：is_used={is_used}")
+            return None
+        
     def delete(self):
       """删除邀请码"""
       logger.info(f"删除邀请码: id={self.id}, code={self.code}")

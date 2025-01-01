@@ -97,7 +97,26 @@ class InviteCodeService:
         else:
           logger.warning("获取所有邀请码失败")
           return None
-
+    
+    @staticmethod
+    def get_invite_code_by_is_used(is_used):
+      """
+      根据邀请码的使用状态查询邀请码
+      
+      Args:
+        is_used: 是否使用
+      Returns:
+       InviteCode 对象列表
+      """
+      logger.info(f"根据邀请码的使用状态查询邀请码, is_used={is_used}")
+      invite_codes = InviteCode.get_by_is_used(is_used)
+      if invite_codes:
+          logger.info(f"根据邀请码的使用状态查询邀请码成功, is_used={is_used}, count={len(invite_codes)}")
+          return invite_codes
+      else:
+          logger.warning(f"根据邀请码的使用状态查询邀请码为空, is_used={is_used}")
+          return None
+      
     @staticmethod
     def delete_invite_code(invite_code):
       """删除邀请码"""
