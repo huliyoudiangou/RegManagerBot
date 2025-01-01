@@ -36,14 +36,14 @@ def generate_invite_code_command(message):
     for _ in range(count):
       invite_code = InviteCodeService.generate_invite_code(telegram_id)
       if invite_code:
-        invite_codes.append(invite_code.code)
+        invite_codes.append(f"<code>{invite_code.code}</code>")
       else:
         bot.reply_to(message, "邀请码生成失败，请重试！")
         return
     
     if invite_codes:
-      response = f"成功生成{count}个邀请码:\n" + "\n".join(invite_codes)
-      bot.reply_to(message, response)
+      response = f"成功生成{count}个邀请码(单击可复制):\n" + "\n".join(invite_codes)
+      bot.reply_to(message, response, parse_mode='HTML')
       
 @bot.message_handler(commands=['invite'])
 @admin_required

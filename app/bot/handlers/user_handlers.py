@@ -169,6 +169,28 @@ def register_command(message):
             bot.reply_to(message, "注册失败，请重试!")
         return
 
+@bot.message_handler(commands=['reg_score_user'])
+def reg_score_user_command(message):
+    """
+    处理 /reg_score_user 命令，注册用户
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+    logger.info(f"开始注册用户积分账号: telegram_id={telegram_id}, service_name={service_name}")
+
+    # 检查用户是否已存在
+    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    if user:
+        bot.reply_to(message, "您已经注册过了，请使用 /info 命令查看您的信息。")
+        logger.warning(f"用户已存在: telegram_id={telegram_id}, service_name={service_name}")
+        return
+
+    # 在本地数据库中创建用户
+    user = UserService.register_local_user(telegram_id=telegram_id, service_name=service_name)
+    user.save()
+    logger.info(f"本地用户创建成功: user_id={user.id}")
+    bot.reply_to(message, "本地积分账号注册成功，请使用邀请码继续注册！")
+    
 @bot.message_handler(commands=['deleteuser'])
 @user_exists(service_name="navidrome")
 @confirmation_required(message_text="你确定要删除该用户吗？")
