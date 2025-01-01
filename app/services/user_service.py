@@ -20,7 +20,7 @@ class UserService:
         return user
     
     @staticmethod
-    def register_user(telegram_id, service_name, username, password, email=None):
+    def register_user(telegram_id, service_name, username, password, email=None, code=None):
         """
         注册用户
 
@@ -33,7 +33,7 @@ class UserService:
         Returns:
             注册成功的用户对象，如果注册失败则返回 None
         """
-        logger.debug(f"开始注册用户: telegram_id={telegram_id}, service_name={service_name}， username={username}, password={password}")
+        logger.debug(f"开始注册用户: telegram_id={telegram_id}, service_name={service_name}, username={username}, password={password}")
 
         # 检查用户是否已存在
         user = User.get_by_telegram_id_and_service_name(telegram_id, service_name)
@@ -51,7 +51,7 @@ class UserService:
                 logger.debug(f"Navidrome 用户创建成功: navidrome_user_id={navidrome_user_id}")
 
                 # 在本地数据库中创建用户
-                user = NavidromeUser(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username)
+                user = NavidromeUser(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username, invite_code=code)
                 user.save()
                 logger.debug(f"本地用户创建成功: user_id={user.id}")
                 return user

@@ -19,6 +19,10 @@ def paginate_list(data_list, page_size):
         return []
     
     paginated_list = []
+    # if len(data_list) <= page_size:
+    #     paginated_list.append(data_list)
+    #     logger.debug(f"无需分页")
+    # else:
     for i in range(0, len(data_list), page_size):
         paginated_list.append(data_list[i:i + page_size])
     logger.debug(f"分页列表成功, 总页数={len(paginated_list)}, pageSize={page_size}, listSize={len(data_list)}")

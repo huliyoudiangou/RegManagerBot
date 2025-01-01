@@ -136,18 +136,18 @@ def register_command(message):
         if invite_code.expire_time < datetime.now():
           bot.reply_to(message, "邀请码已过期！")
           return
-          
-        # 使用邀请码
-        success = InviteCodeService.use_invite_code(code, telegram_id)
-        if not success:
-            bot.reply_to(message, "邀请码使用失败！")
-            return
 
         # 注册用户
-        user = UserService.register_user(telegram_id, "navidrome", username, password)
+        user = UserService.register_user(telegram_id, "navidrome", username, password, code=code)
         if user:
             logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, username={username}, code={code}")
-            bot.reply_to(message, "注册成功!")
+            bot.reply_to(message, f"使用邀请码{code}注册成功!")
+            
+            # 使用邀请码
+            success = InviteCodeService.use_invite_code(code, telegram_id)
+            if not success:
+                bot.reply_to(message, "邀请码使用失败！")
+                return
         else:
             logger.error(f"用户使用邀请码注册失败: telegram_id={telegram_id}, code={code}")
             bot.reply_to(message, "注册失败，请重试!")

@@ -78,6 +78,7 @@ class NavidromeAPIClient(BaseAPIClient):
         expired_users = []
         warning_users = []
         users = self.get_users()
+        logger.debug(f"day: {settings.EXPIRED_DAYS}, warning: {settings.WARNING_DAYS}")
         if users and users['status'] == 'success':
             now = datetime.now().astimezone()
             local_tz = now.tzinfo # 获取本地时区
@@ -107,12 +108,12 @@ class NavidromeAPIClient(BaseAPIClient):
                     
                     # 获取最后登录或访问时间
                     last_time = max(last_login_time, last_access_time) if last_login_time and last_access_time else last_login_time if last_login_time else last_access_time if last_access_time else None
-                    
+
                     if last_time:
                         if (now - last_time) > timedelta(days=settings.EXPIRED_DAYS):
                             logger.debug(f"发现过期用户: {user_data['userName']}")
                             expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
-                        elif (now - last_time) > timedelta(days=settings.EXPIRED_DAYS - settings.WARNING_DAYS):
+                        elif (now - last_time) < timedelta(days=settings.WARNING_DAYS):
                             logger.debug(f"发现即将过期用户: {user_data['userName']}")
                             warning_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
                         else:

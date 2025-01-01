@@ -422,25 +422,44 @@ def get_expired_users_command(message):
     """获取已过期的用户 (管理员命令)"""
     telegram_id = message.from_user.id
     logger.info(f"管理员请求获取已过期的用户列表: telegram_id={telegram_id}")
+    
+    settings.EXPIRED_DAYS = 30
+    settings.WARNING_DAYS = 3
+    
+    args = message.text.split()[1:]
 
+    if len(args) == 0:
+        logger.info(f"30天未使用服务的用户列表")
+    elif len(args) == 1:
+        try:
+            day = int(args[0])
+        except ValueError:
+            bot.reply_to(message, "参数错误，DAY必须是整数！")
+            return
+        settings.EXPIRED_DAYS = day
+        logger.info(f"获取距离现在已经{args[0]}天未使用服务的用户名单")
+    else:
+        bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
+        return
+
+    
     expired_users = UserService.get_expired_users()
     
     if expired_users and 'expired' in expired_users and expired_users['expired']:
-        count = 0
-        response = "已过期的用户列表：\n"
-        response += f"序号: 用户名\n"
-        response += f"-----------\n"
-        for user in expired_users['expired']:
-            response += f"{count+1}: {user['username']}\n"
-            count = count + 1
-        response += f"-----------\n"
-        response += f"已过期的用户一共有：{count}位！\n"
-        # bot.reply_to(message, response)
-        bot.reply_to(message, f"已过期的用户列表成功，共有{count}位！")
-        logger.warning(f"管理员获取已过期的用户列表成功，共有{count}位！")
+        expired_users_list = paginate_list(data_list=expired_users['expired'], page_size=50)
+        for expired_users in expired_users_list:
+            response = "已经过期用户列表：\n"
+            for expired_user in expired_users:
+                response += f"用户名\n"
+                response += f"-----------\n"
+                response += f"{expired_user['username']}\n"
+                response += f"-----------\n"
+                response += f"已经过期的用户一共有：{len(expired_user)}位！\n"
+            bot.reply_to(message, response)     
+        logger.warning(f"管理员获取已经过期的用户列表成功: 共有{len(expired_users)}位！")
     else:
-        bot.reply_to(message, "没有已过期的用户!")
-        logger.info(f"没有已过期的用户: telegram_id={telegram_id}")
+        bot.reply_to(message, "没有已经过期的用户!")
+        logger.info(f"没有已经过期的用户: telegram_id={telegram_id}")
         
 @bot.message_handler(commands=['get_expiring_users'])
 @admin_required
@@ -449,20 +468,40 @@ def get_expiring_users_command(message):
     telegram_id = message.from_user.id
     logger.info(f"管理员请求获取即将过期的用户列表: telegram_id={telegram_id}")
 
+    settings.EXPIRED_DAYS = 30
+    settings.WARNING_DAYS = 3
+    
+    args = message.text.split()[1:]
+
+    if len(args) == 0:
+        logger.info(f"获取3天后将过期的用户名单")
+    elif len(args) == 1:
+        try:
+            day = int(args[0])
+        except ValueError:
+            bot.reply_to(message, "参数错误，DAY必须是整数！")
+            return
+        settings.WARNING_DAYS = day
+        logger.info(f"获取{args[0]}天后将过期的用户名单")
+    else:
+        bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
+        return
+
+      
     expiring_users = UserService.get_expired_users()
     
     if expiring_users and 'warning' in expiring_users and expiring_users['warning']:
-        count = 0
-        response = "即将过期的用户列表：\n"
-        response += f"序号: 用户名\n"
-        response += f"-----------\n"
-        for user in expiring_users['warning']:
-            response += f"{count+1}: {user['username']}\n"
-        response += f"-----------\n"
-        response += f"即将过期的用户一共有：{count}位！\n"
-        # bot.reply_to(message, response)
-        bot.reply_to(message, f"即将过期的用户列表成功，共有{count}位！")
-        logger.warning(f"管理员获取即将过期的用户列表成功: 共有{count}位！")
+        expiring_users_list = paginate_list(data_list=expiring_users['warning'], page_size=50)
+        for expiring_users in expiring_users_list:
+            response = "即将过期用户列表：\n"
+            for expiring_user in expiring_users:
+                response += f"用户名\n"
+                response += f"-----------\n"
+                response += f"{expiring_user['username']}\n"
+                response += f"-----------\n"
+                response += f"即将过期的用户一共有：{len(expiring_users)}位！\n"
+            bot.reply_to(message, response)     
+        logger.warning(f"管理员获取即将过期的用户列表成功: 共有{len(expiring_users)}位！")
     else:
         bot.reply_to(message, "没有即将过期的用户!")
         logger.info(f"没有即将过期的用户: telegram_id={telegram_id}")
