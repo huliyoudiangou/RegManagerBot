@@ -22,7 +22,6 @@ def user_exists(service_name, negate=False):
             logger.debug(f"校验用户是否存在于本地数据库: telegram_id={telegram_id}, service_name={service_name}, negate={negate}")
 
             user = UserService.get_user_by_telegram_id(telegram_id, service_name)
-            logger.debug(f"id: {type(user.navidrome_user_id)}")
             
             if user and user.navidrome_user_id == None:
                 logger.debug(f"已有签到用户")

@@ -3,7 +3,8 @@ import json
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService
-from app.utils.logger import logger
+from app.utils.logger import logger 
+from app.utils.utils import paginate_list, get_username_by_telegram_id
 from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
@@ -291,7 +292,7 @@ def buy_invite_code_command(message):
                 invite_code = InviteCodeService.generate_invite_code(telegram_id)
                 if invite_code:
                     logger.info(f"用户购买邀请码成功: telegram_id={telegram_id}, service_name={service_name}, code={invite_code.code}, username={user.username}")
-                    bot.reply_to(message, f"购买邀请码成功，您的邀请码是：{invite_code.code}，请妥善保管！")
+                    bot.reply_to(message, f"购买邀请码成功，您的邀请码是：<code>{invite_code.code}</code>，请妥善保管！", parse_mode='HTML')
                 else:
                     logger.error(f"用户购买邀请码失败，生成邀请码失败: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
                     bot.reply_to(message, "购买邀请码失败，生成邀请码失败，请重试！")
@@ -312,7 +313,7 @@ def info_command(message):
     """
     telegram_id = message.from_user.id
     user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
-    if user and user.navidrome_user_id:
+    if user:
         logger.info(f"user: {user}")
         logger.info(f"用户信息查询成功: telegram_id={telegram_id}, user_id={user.id}")
         response = f"您的信息如下：\n" \
@@ -532,7 +533,6 @@ def handle_random_score_callback(call):
     
     event_id = int(call.data.split("_")[2])
     user_id = call.from_user.id
-    
     score = ScoreService.use_random_score(event_id=event_id, user_id=user_id)
     if score:
         bot.send_message(call.message.chat.id, f"恭喜您，获得{score}积分！")
@@ -540,11 +540,14 @@ def handle_random_score_callback(call):
         if event_data and event_data['is_finished']:
            score_result = json.loads(event_data['score_result'])
            response = f"积分已经分发完毕, 中奖信息如下：\n"
-           for user_id, score in score_result.items():
-             response += f"用户id: {user_id}, 获取积分： {score}\n"
+           for telegram_id, score in score_result.items():
+            user = UserService.get_user_by_telegram_id(telegram_id, 'navidrome')
+            response += f"{user.username}({user.telegram_id})获取积分： {score}\n"
            bot.send_message(call.message.chat.id, response)
     elif score == 0:
        bot.send_message(call.message.chat.id, f"积分已经分发完毕")
+    elif score == None:
+       bot.send_message(call.message.chat.id, f"只有注册用户才能抽积分!") 
     else:
         bot.send_message(call.message.chat.id, "您已经获取过奖励！")
         

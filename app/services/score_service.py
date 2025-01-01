@@ -208,8 +208,10 @@ class ScoreService:
         event_data = ScoreService.get_random_score_event(event_id)
         if event_data:
            score_list = json.loads(event_data['score_list'])
+           logger.info(f"score_list: {score_list}")
            if event_data['score_result']:
                score_result = json.loads(event_data['score_result'])
+               logger.info(f"score_result: {score_result}")
            else:
                score_result = {}
 

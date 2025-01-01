@@ -69,15 +69,18 @@ def get_unused_invite_codes_command(message):
     telegram_id = message.from_user.id
     logger.info(f"管理员请求获取未使用的邀请码列表: telegram_id={telegram_id}")
     
-    invite_codes = InviteCodeService.get_invite_code_by_is_used(is_used=False)
-    if invite_codes:
-        invite_codes_list = paginate_list(data_list=invite_codes, page_size=20)
+    invite_unused_codes = InviteCodeService.get_invite_code_by_is_used(is_used=False)
+    if invite_unused_codes:
+        invite_codes_list = paginate_list(data_list=invite_unused_codes, page_size=20)
         for invite_codes in invite_codes_list:
             response = "未使用的邀请码：\n"
+            response += f"--------\n"
+            response += f"邀请码：过期时间\n"
+            response += f"--------\n"
             for invite_code in invite_codes:
-                response += f"<code>{invite_code.code}</code>\n"
-                response += f"--------\n"
-                response += f"未使用总数为：{len(invite_codes)}"
+                response += f"<code>{invite_code.code}</code>: {invite_code.expire_time}\n"
+            response += f"--------\n"
+            response += f"未使用总数为：{len(invite_unused_codes)}"
             bot.reply_to(message, response, parse_mode='HTML') # 发送HTML格式的消息，支持点击复制
         logger.info(f"管理员获取未使用的邀请码列表成功: telegram_id={telegram_id}, count={len(invite_codes)}")
     else:
@@ -403,7 +406,6 @@ def get_stats_command(message):
       logger.error(f"获取注册状态失败: telegram_id={telegram_id}, error={e}")
       bot.reply_to(message, "获取注册状态失败，请重试！")
 
-
 @bot.message_handler(commands=['toggle_expired_user_clean'])
 @admin_required
 def toggle_expired_user_clean_command(message):
@@ -540,7 +542,6 @@ def clean_expired_users_command(message):
     else:
         bot.reply_to(message, "未发现过期用户！")
         logger.info(f"没有用户过期！")
-
 
 @bot.message_handler(commands=['random_give_score_by_checkin_time'])
 @admin_required

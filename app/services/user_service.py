@@ -52,7 +52,7 @@ class UserService:
 
                 # 在本地数据库中创建用户
                 if user.id:
-                    user = NavidromeUser(id=user.id, telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username, invite_code=code)
+                    user = NavidromeUser(id=user.id, score=user.score, telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username, invite_code=code)
                 else:
                     user = NavidromeUser(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username, invite_code=code)
                 user.save()
