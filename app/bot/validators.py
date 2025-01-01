@@ -23,17 +23,17 @@ def user_exists(service_name, negate=False):
 
             user = UserService.get_user_by_telegram_id(telegram_id, service_name)
             
-            if user and user.navidrome_user_id == None:
-                logger.debug(f"已有签到用户")
-                # bot.reply_to(message, "" if not negate else "已有签到用户，使用邀请码注册即可!")
-                return func(message, *args, **kwargs)
+            # if user and user.navidrome_user_id == None:
+            #     logger.debug(f"已有积分用户")
+            #     bot.reply_to(message, f"已有积分账户，请使用/use_code <邀请码>注册服务器即可")
+            #     return
                 
-            if (user and not negate) or (not user and negate):
+            if (user and not negate) or (not user and negate) or user.navidrome_user_id == None:
                 logger.debug(f"用户校验通过: telegram_id={telegram_id}, service_name={service_name}, negate={negate}, user_exists={bool(user)}")
                 return func(message, *args, **kwargs)
             else:
                 logger.warning(f"用户校验失败: telegram_id={telegram_id}, service_name={service_name}, negate={negate}, user_exists={bool(user)}")
-                bot.reply_to(message, "未找  到您的账户信息!" if not negate else "您已注册，请勿重复注册！如想重新注册，请先执行/deleteuser删除本地用户再注册!")
+                bot.reply_to(message, "未找到您的账户信息!" if not negate else "您已注册，请勿重复注册！如想重新注册，请先执行/deleteuser删除本地用户再注册!")
                 return
 
         return wrapper

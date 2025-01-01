@@ -97,9 +97,9 @@ def register_command(message):
     user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
 
     # 只有当用户不存在于 Web 应用时才需要注册
-    if user and user.navidrome_user_id:
-        bot.reply_to(message, "您已经注册过了, 如想重新注册，请先执行/deleteuser删除本地用户再注册!")
-        return
+    # if user and user.navidrome_user_id:
+    #     bot.reply_to(message, "您已经注册过了, 如想重新注册，请先执行/deleteuser删除本地用户再注册!")
+    #     return
 
     args = message.text.split()[1:]
     # 管理员注册
