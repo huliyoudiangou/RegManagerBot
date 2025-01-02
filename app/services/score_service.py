@@ -204,7 +204,7 @@ class ScoreService:
     @staticmethod
     def use_random_score(event_id, user_id, user_name):
         """使用随机积分"""
-        logger.info(f"使用随机积分, event_id={event_id}, user_id={user_id}, user_name={user_name}")
+        logger.debug(f"使用随机积分, event_id={event_id}, user_id={user_id}, user_name={user_name}")
         event_data = ScoreService.get_random_score_event(event_id)
         if event_data:
            score_list = json.loads(event_data['score_list'])
@@ -239,8 +239,9 @@ class ScoreService:
            
            user = UserService.get_user_by_telegram_id(user_id, 'navidrome')
            if user:
-            ScoreService.add_score(user_id=user.id, score=user_score)
-            logger.info(f"用户使用随机积分成功, user_id={user_id}, score={user_score}")
+               # 扣除赠送者积分，增加接收者积分
+            ScoreService.add_score(user.id, user_score)
+            logger.debug(f"已为{user.username}增加积分: {user_score}分")
            return user_score
         else:
           logger.warning(f"未获取到活动信息, event_id={event_id}")

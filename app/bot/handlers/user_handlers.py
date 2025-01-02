@@ -4,11 +4,10 @@ from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService
 from app.utils.logger import logger 
-from app.utils.utils import paginate_list, get_username_by_telegram_id
 from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
-from app.bot.validators import user_exists, confirmation_required
+from app.bot.validators import user_exists, confirmation_required, score_enough
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
@@ -578,6 +577,7 @@ def reset_username_command(message):
             
 @bot.message_handler(commands=['random_score'])
 @user_exists(service_name='navidrome')
+@score_enough(service_name='navidrome')
 @confirmation_required(f"你确定要发随机红包嘛？")
 def random_score_command(message):
     """发送带有按钮的菜单"""
@@ -595,7 +595,12 @@ def random_score_command(message):
     if not event_id:
       bot.reply_to(message, "创建积分活动失败")
       return
-
+    
+    user = UserService.get_user_by_telegram_id(message.from_user.id, 'navidrome')
+    logger.info(f"用户 {user.username} 发送了总分为{total_score}分随机积分红包，原有积分为{user.score}分, 剩余积分为{user.score - total_score}分")
+    if ScoreService.reduce_score(user.id, total_score):
+        logger.info(f"积分成功扣除")
+    
     keyboard = InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("点击抽积分", callback_data=f"random_score_{event_id}")]

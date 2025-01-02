@@ -94,7 +94,8 @@ def score_enough(service_name):
         def wrapper(message, *args, **kwargs):
             telegram_id = message.from_user.id  # 修改获取 telegram_id 的方式
             # 通过消息的文本内容获取需要的积分数量
-            required_score = int(message.text.split(" ")[1]) if len(message.text.split(" ")) > 1 else 0
+            logger.info(f"message.text.split(" ")")
+            required_score = int(message.text.split(" ")[-1]) if len(message.text.split(" ")) > 1 else 0
 
             logger.debug(f"校验用户积分是否足够: telegram_id={telegram_id}, required_score={required_score}")
             user = UserService.get_user_by_telegram_id(telegram_id, service_name)
