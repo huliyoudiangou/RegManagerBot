@@ -176,6 +176,7 @@ def reg_score_user_command(message):
     处理 /reg_score_user 命令，注册用户
     """
     telegram_id = message.from_user.id
+    username = message.from_user.username
     service_name = "navidrome"
     logger.info(f"开始注册用户积分账号: telegram_id={telegram_id}, service_name={service_name}")
 
@@ -187,10 +188,10 @@ def reg_score_user_command(message):
         return
 
     # 在本地数据库中创建用户
-    user = UserService.register_local_user(telegram_id=telegram_id, service_name=service_name)
+    user = UserService.register_local_user(telegram_id=telegram_id, service_name=service_name, username=username)
     user.save()
     logger.info(f"本地用户创建成功: user_id={user.id}")
-    bot.reply_to(message, "本地积分账号注册成功，请使用邀请码继续注册！")
+    bot.reply_to(message, f"本地积分账号注册成功，欢迎您: {username}！")
     
 @bot.message_handler(commands=['deleteuser'])
 @user_exists(service_name="navidrome")
@@ -219,6 +220,76 @@ def delete_user_command(message):
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
         bot.reply_to(message, "未找到您的账户信息，如已在服务器注册，请使用/bind命令绑定!")
 
+@bot.message_handler(commands=['use_code'])
+@user_exists(service_name="navidrome")
+def use_invite_code_command(message):
+    """
+    处理 /use_code 命令，用户使用邀请码注册
+    """
+    telegram_id = message.from_user.id
+    user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
+    if user and user.navidrome_user_id:
+        bot.reply_to(message, "您已经注册过了!")
+        return
+
+    # 从消息中提取参数
+    args = message.text.split()[1:]
+    
+    if len(args) < 1:
+        bot.reply_to(message, "请提供邀请码，格式为：/use_code <[用户名] 邀请码>")
+        return
+    
+    code = args[-1]
+    
+    # 验证邀请码的有效性
+    invite_code = InviteCodeService.get_invite_code(code)
+    if not invite_code:
+        bot.reply_to(message, "邀请码无效或已过期！")
+        return
+      
+    if invite_code.is_used:
+      bot.reply_to(message, "邀请码已被使用")
+      return
+    
+    if invite_code.expire_time < datetime.now():
+       bot.reply_to(message, "邀请码已过期")
+       return
+   
+    username = None
+    if len(args) == 2:
+        username = args[0]
+    
+    if user.username and user:
+        username = user.username
+    elif not username:
+        bot.reply_to(message, "请提供用户名，格式为：/use_code <用户名> <邀请码>")
+        return
+    
+    password = username # 密码和用户名相同
+    # 注册用户
+    user = UserService.register_user(telegram_id, "navidrome", username, password)
+    if user:
+        logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, user_name={user.username}, code={code}")
+        bot.reply_to(message, "注册成功!")
+        # 使用邀请码
+        success = InviteCodeService.use_invite_code(code, telegram_id)
+        if not success:
+            logger.warning(f"邀请码使用失败：{code}")
+        else:
+            logger.info(f"邀请码成功使用！")
+    else:
+        logger.error(f"用户使用邀请码注册失败: telegram_id={telegram_id}, code={code}")
+        if len(args) == 2:
+           new_username = args[0]
+           user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
+           if user:
+                user.username = new_username
+                user.save()
+                logger.info(f"用户名更新成功, new_username={new_username}")
+           bot.reply_to(message, f"服务器重名，注册失败，请使用新的用户名，格式为：/use_code <用户名> {code}")
+        else:
+           bot.reply_to(message, "注册失败，请重试！")
+    
 @bot.message_handler(commands=['score'])
 def score_command(message):
     """
@@ -270,6 +341,8 @@ def checkin_command(message):
         bot.reply_to(message, "未找到您的账户信息!")
 
 @bot.message_handler(commands=['buyinvite'])
+@user_exists("navidrome")
+@confirmation_required(f"你确定要购买邀请码嘛？")
 def buy_invite_code_command(message):
     """
     处理 /buyinvite 命令，用户购买邀请码
@@ -328,6 +401,7 @@ def info_command(message):
         bot.reply_to(message, "未注册用户，请先注册！")
 
 @bot.message_handler(commands=['give'])
+@confirmation_required(f"你确定要赠送积分嘛？")
 def give_score_command(message):
     """
     处理 /give 命令，用户赠送积分
@@ -434,6 +508,7 @@ def unbind_command(message):
 
 @bot.message_handler(commands=['reset_password'])
 @user_exists("navidrome")
+@confirmation_required(f"你确定要重置密码嘛？")
 def reset_password_command(message):
     """
     处理 /reset_password 命令，重置密码
@@ -503,6 +578,7 @@ def reset_username_command(message):
             
 @bot.message_handler(commands=['random_score'])
 @user_exists(service_name='navidrome')
+@confirmation_required(f"你确定要发随机红包嘛？")
 def random_score_command(message):
     """发送带有按钮的菜单"""
     args = message.text.split()[1:]

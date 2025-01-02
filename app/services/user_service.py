@@ -12,12 +12,20 @@ class UserService:
     用户服务
     """
     @staticmethod
-    def register_local_user(telegram_id, score=0, invite_code=None, id=None, navidrome_user_id=None, service_name='navidrome', username=None):
+    def register_local_user(telegram_id, navidrome_user_id=None, service_name='navidrome', username=None):
         # 在本地数据库中创建用户
-        user = NavidromeUser(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username)
-        user.save()
-        logger.debug(f"本地用户创建成功: username={username}")
-        return user
+        user = NavidromeUser.get_by_telegram_id_and_service_name(telegram_id=telegram_id, service_name=service_name)
+        if not user:
+            user = NavidromeUser(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username)
+            user.save()
+            logger.debug(f"本地用户创建成功: username={username}")
+            return user
+        else:
+            user = NavidromeUser(id=user.id, telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username)
+            user.save()
+            logger.debug(f"本地用户更新成功: username={username}")
+            return user
+            
     
     @staticmethod
     def register_user(telegram_id, service_name, username, password, email=None, code=None):
@@ -36,10 +44,10 @@ class UserService:
         logger.debug(f"开始注册用户: telegram_id={telegram_id}, service_name={service_name}， username={username}, password={password}")
 
         # 检查用户是否已存在
-        user = NavidromeUser.get_by_telegram_id_and_service_name(telegram_id, service_name)
-        if user and user.navidrome_user_id:
-            logger.warning(f"账号已注册: telegram_id={telegram_id}, service_name={service_name}")
-            return user
+        # user = NavidromeUser.get_by_telegram_id_and_service_name(telegram_id, service_name)
+        # if user and user.navidrome_user_id:
+        #     logger.warning(f"账号已注册: telegram_id={telegram_id}, service_name={service_name}")
+        #     return user
         if email is None:
             email = ""
         # 在 Navidrome 中创建用户
@@ -50,6 +58,7 @@ class UserService:
                 navidrome_user_id = result['data']['id']
                 logger.debug(f"Navidrome 用户创建成功: navidrome_user_id={navidrome_user_id}")
                 
+                user = NavidromeUser.get_by_telegram_id_and_service_name(telegram_id, service_name)
                 if not user:
                     # 在本地数据库中创建用户
                     user = NavidromeUser(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=navidrome_user_id, username=username, invite_code=code)

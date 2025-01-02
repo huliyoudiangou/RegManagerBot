@@ -23,12 +23,12 @@ def user_exists(service_name, negate=False):
 
             user = UserService.get_user_by_telegram_id(telegram_id, service_name)
             
-            # if user and user.navidrome_user_id == None:
-            #     logger.debug(f"已有积分用户")
-            #     bot.reply_to(message, f"已有积分账户，请使用/use_code <邀请码>注册服务器即可")
-            #     return
+            if user and user.navidrome_user_id == None:
+                logger.debug(f"已有积分用户，验证通过")
+                # bot.reply_to(message, f"已有积分账户，请使用/use_code <邀请码>注册服务器即可")
+                return func(message, *args, **kwargs)
                 
-            if (user and not negate) or (not user and negate) or user.navidrome_user_id == None:
+            if (user and not negate) or (not user and negate):
                 logger.debug(f"用户校验通过: telegram_id={telegram_id}, service_name={service_name}, negate={negate}, user_exists={bool(user)}")
                 return func(message, *args, **kwargs)
             else:
@@ -110,35 +110,93 @@ def score_enough(service_name):
         return wrapper
     return decorator
 
-def confirmation_required(message_text):
-    """
-    要求用户确认的装饰器
+# def confirmation_required(message_text):
+#     """
+#     要求用户确认的装饰器
 
-    Args:
-        message_text: 提示信息
-    """
+#     Args:
+#         message_text: 提示信息
+#     """
+#     def decorator(func):
+#         @wraps(func)
+#         def wrapper(message, *args, **kwargs):
+            
+#             keyboard = InlineKeyboardMarkup(
+#                 [
+#                     [InlineKeyboardButton("是", callback_data="confirm_yes"),
+#                     InlineKeyboardButton("否", callback_data="confirm_no")]
+#                 ]
+#             )
+#             sent_message = bot.reply_to(message, message_text, reply_markup=keyboard)
+            
+#             bot.register_callback_query_handler(
+#                 lambda call: call.message.id == sent_message.id, # 只有当前消息触发的回调才会生效
+#                 lambda call: _handle_confirmation_callback(call, func, message, sent_message, message_text, *args, **kwargs)
+#                 )
+#         return wrapper
+#     return decorator
+
+
+# def _handle_confirmation_callback(call, func, message, sent_message, message_text, *args, **kwargs):
+#     """
+#     处理按钮点击回调
+#     """
+#     bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.id, reply_markup=None) #移除按钮
+#     if call.data == "confirm_yes":
+#         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
+#         return func(message, *args, **kwargs)
+#     elif call.data == "confirm_no":
+#         if call.message.text != f"已取消：{message_text}":
+#             bot.edit_message_text(text=f"已取消：{message_text}", chat_id=call.message.chat.id, message_id=call.message.id)
+#         logger.debug("用户取消了操作")
+#         return
+    
+# 用于存储用户会话信息
+user_sessions = {}
+
+def confirmation_required(message_text):
     def decorator(func):
         @wraps(func)
         def wrapper(message, *args, **kwargs):
-            keyboard = InlineKeyboardMarkup(
-                [
-                    [InlineKeyboardButton("是", callback_data="confirm_yes"),
-                    InlineKeyboardButton("否", callback_data="confirm_no")]
-                ]
-            )
-            bot.reply_to(message, message_text, reply_markup=keyboard)
-            
-            def callback_handler(call):
-              """
-              处理按钮点击回调
-              """
-              if call.data == "confirm_yes":
-                  bot.edit_message_text(text=f"已确认：{message_text}", chat_id=call.message.chat.id, message_id=call.message.id)
-                  return func(message, *args, **kwargs)
-              elif call.data == "confirm_no":
-                  bot.edit_message_text(text=f"已取消：{message_text}", chat_id=call.message.chat.id, message_id=call.message.id)
-                  logger.debug("用户取消了操作")
-                  return
-            bot.register_callback_query_handler(callback_handler, func=lambda call: call.data in ["confirm_yes", "confirm_no"])
+            chat_id = message.chat.id
+
+            # 创建内联键盘
+            markup = InlineKeyboardMarkup()
+            button_yes = InlineKeyboardButton("是", callback_data=f"confirm_yes_{chat_id}")
+            button_no = InlineKeyboardButton("否", callback_data=f"confirm_no_{chat_id}")
+            markup.add(button_yes, button_no)
+
+            # 发送自定义的确认消息和键盘
+            msg = bot.send_message(chat_id, message_text, reply_markup=markup)
+
+            # 保存当前的命令函数和参数到会话
+            user_sessions[chat_id] = {'message': message, 'func': func, 'args': args, 'kwargs': kwargs}
+
         return wrapper
     return decorator
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('confirm'))
+def callback_query(call):
+    chat_id = call.message.chat.id
+    data = call.data
+
+    if chat_id in user_sessions:
+        # 获取存储的函数信息
+        command_info = user_sessions[chat_id]
+        message = command_info['message']
+        func = command_info['func']
+        args = command_info['args']
+        kwargs = command_info['kwargs']
+
+        if data == f"confirm_yes_{chat_id}":
+            # 用户选择“是”，执行原始命令
+            func(message, *args, **kwargs)
+            logger.debug("已确认，命令已执行")
+        elif data == f"confirm_no_{chat_id}":
+            # 用户选择“否”，取消操作
+            logger.debug("已取消，命令已取消")
+
+        # 清除会话信息
+        del user_sessions[chat_id]
+
+    bot.answer_callback_query(call.id)

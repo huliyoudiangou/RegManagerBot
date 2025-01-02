@@ -97,6 +97,7 @@ def toggle_invite_code_system_command(message):
 
 @bot.message_handler(commands=['set_score'])
 @admin_required
+@confirmation_required("你确定要设置积分嘛？")
 def set_score_command(message):
     """
     设置用户积分 (管理员命令)
@@ -255,6 +256,7 @@ def reduce_score_command(message):
 
 @bot.message_handler(commands=['set_price'])
 @admin_required
+@confirmation_required("你确定要设置邀请码价格嘛？")
 def set_price_command(message):
     """
     设置邀请码价格 (管理员命令)
@@ -408,6 +410,7 @@ def get_stats_command(message):
 
 @bot.message_handler(commands=['toggle_expired_user_clean'])
 @admin_required
+@confirmation_required("你确定要更改清理用户系统状态嘛？")
 def toggle_expired_user_clean_command(message):
     """开启/关闭过期用户清理定时任务 (管理员命令)"""
     settings.ENABLE_EXPIRED_USER_CLEAN = not settings.ENABLE_EXPIRED_USER_CLEAN
@@ -508,7 +511,7 @@ def get_expiring_users_command(message):
 
 @bot.message_handler(commands=['clean_expired_users'])
 @admin_required
-@confirmation_required(message_text="你确定要清理用户吗？")
+@confirmation_required("你确定要清理用户嘛？")
 def clean_expired_users_command(message):
     """立即清理过期用户 (管理员命令)"""
     telegram_id = message.from_user.id

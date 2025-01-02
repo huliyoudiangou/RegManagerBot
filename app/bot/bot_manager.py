@@ -13,6 +13,7 @@ class BotManager:
             telebot.types.BotCommand("help", "可用命令"),
             telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
             telebot.types.BotCommand("reg_score_user", "注册积分用户 (可签到、送分、购买邀请码)"),
+            # telebot.types.BotCommand("use_code", "使用邀请码（已有积分账号）"),
             telebot.types.BotCommand("info", "查看个人信息"),
             telebot.types.BotCommand("deleteuser", "删除用户"),
             telebot.types.BotCommand("score", "查看我的积分"),
@@ -51,6 +52,7 @@ class BotManager:
         bot.register_message_handler(user_handlers.help_command, commands=['help'])
         bot.register_message_handler(user_handlers.register_command, commands=['register'])
         bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
+        bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
         bot.register_message_handler(user_handlers.info_command, commands=['info'])
         bot.register_message_handler(user_handlers.delete_user_command, commands=['deleteuser'])
         bot.register_message_handler(user_handlers.score_command, commands=['score'])
