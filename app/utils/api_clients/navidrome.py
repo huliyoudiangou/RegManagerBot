@@ -197,6 +197,16 @@ class NavidromeAPIClient(BaseAPIClient):
         endpoint = "/api/user"
         return self._make_request("GET", endpoint)
 
+    def get_user_by_username(self, username):
+        """根据用户名获取 Navidrome 用户信息"""
+        users = self.get_users()
+        if users and users['status'] == 'success':
+            for index, user in enumerate(users['data']):
+                logger.info(f"index: {index}, user: {user}")
+                if user['userName'] == username:
+                    return users['data'][index]
+        return None
+    
     def create_user(self, user_data):
         """创建 Navidrome 用户"""
         endpoint = "/api/user"

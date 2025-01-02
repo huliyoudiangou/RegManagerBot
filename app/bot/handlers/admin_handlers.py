@@ -648,3 +648,36 @@ def add_random_score_command(message):
     else:
       bot.reply_to(message, "没有用户符合条件，无法增加积分")
     #   logger.info(f"没有用户符合条件，无法增加积分，start_time={start_time}, end_time={end_time}")
+    
+@bot.message_handler(commands=['userinfo_in_server'])
+@admin_required
+def get_user_info_in_server_command(message):
+    """
+    获取服务器上的用户信息 (管理员命令)
+    /user_info_in_server <username>
+    """
+    telegram_id = message.from_user.id
+    service_name = "navidrome"
+    logger.info(f"管理员获取服务器上的用户信息: telegram_id={telegram_id}, service_name={service_name}")
+
+    args = message.text.split()[1:]
+    if len(args) != 1:
+        bot.reply_to(message, "参数错误，请提供用户名，格式为：/user_info_in_server <username>")
+        return
+
+    username = args[0]
+    
+    # 调用服务层的获取服务器上用户信息方法
+    user_info = UserService.get_info_in_server(username)
+    if user_info:
+        logger.info(f"获取服务器上用户信息成功: username={username}")
+        response = f"用户信息如下：\n" \
+                f"用户名: {user_info['userName']}\n" \
+                f"注册时间: {user_info['createdAt']}\n" \
+                f"最后登录时间: {user_info['lastLoginAt']}\n" \
+                f"最后使用时间: {user_info['lastAccessAt']}\n" \
+                f"Navidrome ID: {user_info['id']}\n" 
+        bot.reply_to(message, response)
+    else:
+        logger.warning(f"获取服务器上用户信息失败: username={username}")
+        bot.reply_to(message, f"未找到用户: {username}")

@@ -396,3 +396,18 @@ class UserService:
 
         logger.debug(f"成功获取签到用户列表: {time_range}, count={len(user_list)}")
         return user_list
+
+    @staticmethod
+    def get_info_in_server(user_name):
+        """通过用户名获取服务器中注册信息
+
+        Args:
+            user_name (str): 服务器中的用户名
+        """
+        user = navidrome_api_client.get_user_by_username(user_name)
+        if user:
+            logger.debug(f"获取用户信息成功: {user}")
+            return user
+        else:
+            logger.error(f"获取用户信息失败: {user}")
+            return None
