@@ -607,23 +607,29 @@ def random_score_command(message):
 def handle_random_score_callback(call):
     """处理随机积分的按钮点击事件"""
     
+   
     event_id = int(call.data.split("_")[2])
     user_id = call.from_user.id
-    score = ScoreService.use_random_score(event_id=event_id, user_id=user_id)
+    user_name = call.from_user.username if call.from_user.username else call.from_user.first_name #优先获取用户名，如果没有就获取first_name
+    user = UserService.get_user_by_telegram_id(user_id, 'navidrome')
+    if not user:
+        bot.send_message(call.message.chat.id, f"未注册用户[{user_name}](https://t.me/{user_name})，请先注册积分账号。", parse_mode="Markdown", disable_web_page_preview=True)
+        logger.info(f"未注册用户{user_name}")
+        return
+    
+    score = ScoreService.use_random_score(event_id=event_id, user_id=user_id, user_name = user_name)
     if score:
-        bot.send_message(call.message.chat.id, f"恭喜您，获得{score}积分！")
+        bot.send_message(call.message.chat.id, f"恭喜您[{user_name}](https://t.me/{user_name})，获得{score}积分！", parse_mode="Markdown", disable_web_page_preview=True)
         event_data = ScoreService.get_random_score_event(event_id)
         if event_data and event_data['is_finished']:
            score_result = json.loads(event_data['score_result'])
            response = f"积分已经分发完毕, 中奖信息如下：\n"
-           for telegram_id, score in score_result.items():
-            user = UserService.get_user_by_telegram_id(telegram_id, 'navidrome')
-            response += f"{user.username}({user.telegram_id})获取积分： {score}\n"
-           bot.send_message(call.message.chat.id, response)
+           response += f"---------------------------\n"
+           for item in score_result:
+             response += f"用户: [{item['user_name']}](https://t.me/{item['user_name']}), 获取积分： {item['score']}\n"
+           bot.send_message(call.message.chat.id, response, parse_mode="Markdown", disable_web_page_preview=True)
     elif score == 0:
        bot.send_message(call.message.chat.id, f"积分已经分发完毕")
-    elif score == None:
-       bot.send_message(call.message.chat.id, f"只有注册用户才能抽积分!") 
     else:
-        bot.send_message(call.message.chat.id, "您已经获取过奖励！")
+        bot.send_message(call.message.chat.id, f"[{user_name}](https://t.me/{user_name})您已经获取过奖励/未注册！", parse_mode="Markdown", disable_web_page_preview=True)
         

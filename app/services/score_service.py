@@ -202,36 +202,29 @@ class ScoreService:
            return None
 
     @staticmethod
-    def use_random_score(event_id, user_id):
+    def use_random_score(event_id, user_id, user_name):
         """使用随机积分"""
-        logger.debug(f"使用随机积分, event_id={event_id}, user_id={user_id}")
+        logger.info(f"使用随机积分, event_id={event_id}, user_id={user_id}, user_name={user_name}")
         event_data = ScoreService.get_random_score_event(event_id)
         if event_data:
            score_list = json.loads(event_data['score_list'])
-           logger.info(f"score_list: {score_list}")
            if event_data['score_result']:
                score_result = json.loads(event_data['score_result'])
-               logger.info(f"score_result: {score_result}")
            else:
-               score_result = {}
+               score_result = []
 
-           if str(user_id) in score_result:
+           if any(item.get('user_id') == user_id for item in score_result):
               logger.warning(f"用户已经获取过随机积分, user_id={user_id}")
               return None
            
            if len(score_list) <= len(score_result):
               logger.warning(f"积分已经分发完毕")
               return None
-           
-           user_score = score_list[len(score_result)]
 
-           user = UserService.get_user_by_telegram_id(user_id, 'navidrome')
+           user_score_data = score_list[len(score_result)]
+           user_score = user_score_data
 
-           if not user:
-            logger.warning(f"根据id未找到用户，user_id={user_id}")
-            return None
-           
-           score_result[user_id] = user_score
+           score_result.append({"user_id": user_id, 'user_name': user_name, 'score':user_score })
            
            data = {
             "score_result": json.dumps(score_result),
@@ -243,9 +236,11 @@ class ScoreService:
             logger.debug(f"积分分发完成, 设置is_finished=True")
 
            update_data("RandomScoreEvents", data, f"id = {event_id}")
-
-           ScoreService.add_score(user_id=user.id, score=user_score)
-           logger.debug(f"用户使用随机积分成功, user_id={user.id}, score={user_score}")
+           
+           user = UserService.get_user_by_telegram_id(user_id, 'navidrome')
+           if user:
+            ScoreService.add_score(user_id=user.id, score=user_score)
+            logger.info(f"用户使用随机积分成功, user_id={user_id}, score={user_score}")
            return user_score
         else:
           logger.warning(f"未获取到活动信息, event_id={event_id}")
