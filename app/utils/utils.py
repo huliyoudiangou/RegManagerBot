@@ -29,6 +29,36 @@ def paginate_list(data_list, page_size):
     logger.debug(f"分页列表成功, 总页数={len(paginated_list)}, pageSize={page_size}, listSize={len(data_list)}")
     return paginated_list
 
+def paginate_list_text(data_list, page_size=None):
+    if page_size is not None:
+        return [data_list[i:i + page_size] for i in range(0, len(data_list), page_size)]
+
+    # Default behavior when page_size is None: paginate based on 4096 byte limit
+    result = []
+    current_chunk = []
+    current_length = 0
+
+    for item in data_list:
+        # Calculate the length of the current item plus newline character
+        item_length = len(item) + 1  # 1 for the newline character
+
+        # Check if adding this item would exceed the limit
+        if current_length + item_length > 3600:
+            # Append the current chunk to the result and reset
+            result.append(current_chunk)
+            current_chunk = []
+            current_length = 0
+
+        # Add the item to the current chunk
+        current_chunk.append(item)
+        current_length += item_length
+
+    # Don't forget to add the last chunk if it's not empty
+    if current_chunk:
+        result.append(current_chunk)
+    logger.debug(f"分页列表成功, 总页数={len(result)}, pageSize={page_size}, listSize={len(data_list)}")
+    return result
+
 def get_username_by_telegram_id(bot, chat_id, telegram_id):
     """
     根据 User ID 获取用户名

@@ -7,7 +7,7 @@ from app.utils.logger import logger
 from config import settings
 from app.bot.core.bot_instance import bot
 from app.utils.api_clients import navidrome_api_client
-from app.utils.utils import paginate_list
+from app.utils.utils import paginate_list, paginate_list_text
 
 # 需要安装的模块：无
 
@@ -47,40 +47,45 @@ def generate_invite_code_command(message):
       
 @bot.message_handler(commands=['invite'])
 @admin_required
+@confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
 def get_all_invite_codes_command(message):
     """查看所有邀请码 (管理员命令)"""
-    invite_codes = InviteCodeService.get_all_invite_codes()
-    if invite_codes:
-        invite_codes_list = paginate_list(data_list=invite_codes, page_size=20)
+    invite_all_codes = InviteCodeService.get_all_invite_codes()
+    if invite_all_codes:
+        invite_codes_list = paginate_list(data_list=invite_all_codes, page_size=20)
+        page_count = 0
         for invite_codes in invite_codes_list:
-            response = "邀请码列表：\n"
+            response = f"邀请码列表：当前第{page_count+1}页\n"
             for invite_code in invite_codes:
-                response += f"ID: {invite_code.id}, 邀请码: {invite_code.code}, 是否已使用: {'是' if invite_code.is_used else '否'}, 创建时间: {invite_code.create_time}, 过期时间: {invite_code.expire_time}, 创建者ID: {invite_code.create_user_id}\n"
+                response += f"ID: {invite_code.id}, 邀请码: {invite_code.code}, 是否已使用: {'是' if invite_code.is_used else '否'}, 创建时间: {str(invite_code.create_time)[:-7]}, 过期时间: {str(invite_code.expire_time)[:-7]}, 创建者ID: {invite_code.create_user_id}\n"
                 response += f"--------\n"
-                response += f"生成总数为：{len(invite_codes)}"
+                response += f"生成总数为：{len(invite_all_codes)},当前页有{len(invite_codes)}个未使用!"
+            page_count += 1
             bot.reply_to(message, response)
     else:
       bot.reply_to(message, "获取邀请码列表失败，请重试！")
 
 @bot.message_handler(commands=['unused_invite_codes'])
 @admin_required
+@confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
 def get_unused_invite_codes_command(message):
     """获取未使用的邀请码列表 (管理员命令)"""
     telegram_id = message.from_user.id
     logger.info(f"管理员请求获取未使用的邀请码列表: telegram_id={telegram_id}")
-    
     invite_unused_codes = InviteCodeService.get_invite_code_by_is_used(is_used=False)
     if invite_unused_codes:
-        invite_codes_list = paginate_list(data_list=invite_unused_codes, page_size=20)
+        invite_codes_list = paginate_list(data_list=invite_unused_codes, page_size=50)
+        page_count = 0
         for invite_codes in invite_codes_list:
-            response = "未使用的邀请码：\n"
+            response = f"未使用的邀请码：当前第{page_count+1}\n"
             response += f"--------\n"
             response += f"邀请码：过期时间\n"
             response += f"--------\n"
             for invite_code in invite_codes:
-                response += f"<code>{invite_code.code}</code>: {invite_code.expire_time}\n"
+                response += f"<code>{invite_code.code}</code>: {str(invite_code.expire_time)[:-7]}\n"
             response += f"--------\n"
-            response += f"未使用总数为：{len(invite_unused_codes)}"
+            response += f"未使用总数为：{len(invite_unused_codes)}, 当前页有{len(invite_codes)}个未使用!"
+            page_count += 1
             bot.reply_to(message, response, parse_mode='HTML') # 发送HTML格式的消息，支持点击复制
         logger.info(f"管理员获取未使用的邀请码列表成功: telegram_id={telegram_id}, count={len(invite_codes)}")
     else:
@@ -429,12 +434,12 @@ def get_expired_users_command(message):
     logger.info(f"管理员请求获取已过期的用户列表: telegram_id={telegram_id}")
     
     settings.EXPIRED_DAYS = 30
-    settings.WARNING_DAYS = 3
+    settings.WARNING_DAYS = 27
     
     args = message.text.split()[1:]
 
     if len(args) == 0:
-        logger.info(f"30天未使用服务的用户列表")
+        logger.info(f"{settings.EXPIRED_DAYS}天未使用服务的用户列表")
     elif len(args) == 1:
         try:
             day = int(args[0])
@@ -452,6 +457,7 @@ def get_expired_users_command(message):
     
     if expired_users and 'expired' in expired_users and expired_users['expired']:
         expired_users_list = paginate_list(data_list=expired_users['expired'], page_size=50)
+        # expired_users_list = paginate_list_text(data_list=expired_users['expired'])
         for expired_users in expired_users_list:
             response = "已经过期用户列表：\n"
             response += f"-----------\n"
@@ -473,12 +479,12 @@ def get_expiring_users_command(message):
     logger.info(f"管理员请求获取即将过期的用户列表: telegram_id={telegram_id}")
 
     settings.EXPIRED_DAYS = 30
-    settings.WARNING_DAYS = 3
+    settings.WARNING_DAYS = 27
     
     args = message.text.split()[1:]
 
     if len(args) == 0:
-        logger.info(f"获取3天后将过期的用户名单")
+        logger.info(f"获取{settings.WARNING_DAYS}天后将过期的用户名单")
     elif len(args) == 1:
         try:
             day = int(args[0])
@@ -496,6 +502,7 @@ def get_expiring_users_command(message):
     
     if expiring_users and 'warning' in expiring_users and expiring_users['warning']:
         expiring_users_list = paginate_list(data_list=expiring_users['warning'], page_size=50)
+        # expiring_users_list = paginate_list_text(data_list=expiring_users['warning'])
         for expiring_users in expiring_users_list:
             response = "即将过期用户列表：\n"
             response += f"-----------\n"

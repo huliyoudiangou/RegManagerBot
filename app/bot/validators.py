@@ -110,48 +110,7 @@ def score_enough(service_name):
 
         return wrapper
     return decorator
-
-# def confirmation_required(message_text):
-#     """
-#     要求用户确认的装饰器
-
-#     Args:
-#         message_text: 提示信息
-#     """
-#     def decorator(func):
-#         @wraps(func)
-#         def wrapper(message, *args, **kwargs):
-            
-#             keyboard = InlineKeyboardMarkup(
-#                 [
-#                     [InlineKeyboardButton("是", callback_data="confirm_yes"),
-#                     InlineKeyboardButton("否", callback_data="confirm_no")]
-#                 ]
-#             )
-#             sent_message = bot.reply_to(message, message_text, reply_markup=keyboard)
-            
-#             bot.register_callback_query_handler(
-#                 lambda call: call.message.id == sent_message.id, # 只有当前消息触发的回调才会生效
-#                 lambda call: _handle_confirmation_callback(call, func, message, sent_message, message_text, *args, **kwargs)
-#                 )
-#         return wrapper
-#     return decorator
-
-
-# def _handle_confirmation_callback(call, func, message, sent_message, message_text, *args, **kwargs):
-#     """
-#     处理按钮点击回调
-#     """
-#     bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.id, reply_markup=None) #移除按钮
-#     if call.data == "confirm_yes":
-#         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
-#         return func(message, *args, **kwargs)
-#     elif call.data == "confirm_no":
-#         if call.message.text != f"已取消：{message_text}":
-#             bot.edit_message_text(text=f"已取消：{message_text}", chat_id=call.message.chat.id, message_id=call.message.id)
-#         logger.debug("用户取消了操作")
-#         return
-    
+  
 # 用于存储用户会话信息
 user_sessions = {}
 
