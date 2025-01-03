@@ -54,7 +54,7 @@ class BotManager:
         bot.register_message_handler(user_handlers.help_command, commands=['help'])
         bot.register_message_handler(user_handlers.register_command, commands=['register'])
         bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
-        bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
+        # bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
         bot.register_message_handler(user_handlers.info_command, commands=['info'])
         bot.register_message_handler(user_handlers.delete_user_command, commands=['deleteuser'])
         bot.register_message_handler(user_handlers.score_command, commands=['score'])
