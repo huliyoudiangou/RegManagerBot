@@ -2,6 +2,7 @@ services:
   regmanagerbot:
     image: janzbff/regmanagerbot:latest
     container_name: regmanagerbot
+    user: "1000:1000"
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
