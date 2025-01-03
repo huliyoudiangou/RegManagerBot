@@ -8,33 +8,109 @@ from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
 from app.bot.validators import user_exists, confirmation_required, score_enough
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
 
-# 需要安装的模块：无
 @bot.message_handler(commands=['start'])
 def start_command(message):
     """
     处理 /start 命令
     """
     telegram_id = message.from_user.id
+    chat_id = message.chat.id
+    user_name = message.from_user.username
     logger.info(f"用户 {telegram_id} 执行了 /start 命令")
-    response = "欢迎使用注册机器人！祝您每天开心！\n\n" \
-               "本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。\n" \
-               "您可以通过以下命令进行注册和管理：\n" \
-               "- `/register <用户名> <密码>`: 注册用户 (邀请码系统关闭时)\n" \
-               "- `/register <用户名> <密码> <邀请码>`: 使用邀请码注册用户 (邀请码系统开启时)\n" \
-               "- `/info`: 查看您的个人信息\n" \
-               "- `/score`: 查看您的积分\n" \
-               "- `/checkin`: 每日签到获得积分\n" \
-               "- `/buyinvite`: 购买邀请码\n" \
-               "- `/reset_password`: 重置密码\n" \
-               "- `/reset_username`: 重置登录用户名\n" \
-               "- `/deleteuser`: 删除您的账户!!!\n" \
-               "- `/bind`: 绑定您的账户\n" \
-               "- `/unbind`: 解绑您的账户\n" \
-               "\n您可以使用 `/help` 命令获取更详细的帮助信息。"
-    bot.reply_to(message, response)
+    keyboard = InlineKeyboardMarkup(
+    [
+       [
+          InlineKeyboardButton("注册", callback_data="register"),
+          InlineKeyboardButton("个人信息", callback_data="info"),
+          InlineKeyboardButton("购买邀请码", callback_data="buyinvite"),
+          
+       ],
+       [
+         InlineKeyboardButton("签到", callback_data="checkin"),
+         InlineKeyboardButton("积分", callback_data="score"),
+         InlineKeyboardButton("Bot帮助", callback_data="help"),
+       ],
+       [
+          InlineKeyboardButton("进群链接", url="https://t.me/navidrom_talk"),
+          InlineKeyboardButton("频道链接", url="https://t.me/navidrom_notify"),
+          InlineKeyboardButton("使用教程", url="https://makifx.com/1278.html")
+       ],
+       [
+         InlineKeyboardButton("没有想听的歌？投稿/求歌", url="https://t.me/MaycyBot")
+       ]
+    ]
+)
+    img_url = "https://i.imgur.com/jci9UJm.jpeg"
+    resp = f"*倾听音乐，享受生活！欢迎 {user_name} 来到音海拾贝！*\n"
+    bot.send_photo(chat_id, img_url, resp, reply_markup=keyboard, parse_mode="Markdown")
+
+@bot.callback_query_handler(func=lambda call: call.data in ["info", "checkin", "register", "help", "intro", "score", "buyinvite"])
+def callback_handler(call):
+    # 获取正确的用户 ID
+    user_id = call.from_user.id
+    chat_id = call.message.chat.id
+    
+    # 创建一个模拟的 Message 对象，包含正确的用户信息
+    mock_message = Message(
+        message_id=call.message.message_id,
+        from_user=call.from_user,
+        date=call.message.date,
+        chat=call.message.chat,
+        content_type='text',
+        options={},
+        json_string=''
+    )
+    mock_message.text = f"/{call.data}"  # 设置模拟的命令文本
+
+    if call.data == "register":
+        message = "嗨！欢迎使用Bot注册账号！\n\n"
+        message += f"请使用格式如下注册账号：\n"
+        message += f"<code>/register</code> 用户名 密码 邀请码\n"
+        message += "--------------------------------\n"
+        message += "如还没有邀请码，可以注册积分账号，用于购买邀请码！\n"
+        message += "<code>/reg_score_user</code>(点击复制命令)\n"
+        bot.send_message(chat_id, message, parse_mode="HTML")
+    else:
+        # 根据回调的数据调用相应的命令处理函数
+        command_handlers = {
+            "info": info_command,
+            "help": help_command,
+            "checkin": checkin_command,
+            "score": score_command,
+            "buyinvite": buy_invite_code_command
+        }
+
+        # 根据映射查找并调用适当的处理函数
+        handler = command_handlers.get(call.data)
+        if handler:
+            handler(mock_message)
+              
+# @bot.message_handler(commands=['start'])
+# def start_command(message):
+#     """
+#     处理 /start 命令
+#     """
+#     telegram_id = message.from_user.id
+#     logger.info(f"用户 {telegram_id} 执行了 /start 命令")
+#     response = "欢迎使用注册机器人！祝您每天开心！\n\n" \
+#                "本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。\n" \
+#                "您可以通过以下命令进行注册和管理：\n" \
+#                "- `/register <用户名> <密码>`: 注册用户 (邀请码系统关闭时)\n" \
+#                "- `/register <用户名> <密码> <邀请码>`: 使用邀请码注册用户 (邀请码系统开启时)\n" \
+#                "- `/info`: 查看您的个人信息\n" \
+#                "- `/score`: 查看您的积分\n" \
+#                "- `/checkin`: 每日签到获得积分\n" \
+#                "- `/buyinvite`: 购买邀请码\n" \
+#                "- `/reset_password`: 重置密码\n" \
+#                "- `/reset_username`: 重置登录用户名\n" \
+#                "- `/deleteuser`: 删除您的账户!!!\n" \
+#                "- `/bind`: 绑定您的账户\n" \
+#                "- `/unbind`: 解绑您的账户\n" \
+#                "\n您可以使用 `/help` 命令获取更详细的帮助信息。"
+#     bot.reply_to(message, response)
 
 @bot.message_handler(commands=['help'])
 def help_command(message):
@@ -43,43 +119,74 @@ def help_command(message):
   """
   telegram_id = message.from_user.id
   logger.info(f"用户 {telegram_id} 执行了 /help 命令")
-  response = "本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。\n\n" \
-             "**用户命令：**\n" \
-             "- `/register <用户名> <密码>`: 注册用户 (邀请码系统关闭时)。\n" \
-             "   -  示例: `/register testuser password` \n" \
-            "- `/register <用户名> <密码> <邀请码>`: 使用邀请码注册用户(邀请码系统开启时)\n"\
-             "   -  示例: `/register testuser password abc123def` \n" \
-             "- `/info`: 查看您的个人信息。\n" \
-             "   -  示例: `/info` \n" \
-             "- `/score`: 查看您的积分。\n" \
-             "   -  示例: `/score` \n" \
-             "- `/checkin`: 每日签到获得积分。\n" \
-             "   -  示例: `/checkin` \n" \
-             "- `/buyinvite`: 购买邀请码。\n" \
-             "   -  示例: `/buyinvite` \n" \
-            "- `/deleteuser`: 删除您的账户。\n" \
-             "   -  示例: `/deleteuser` \n" \
-             "\n**管理员命令：**\n" \
-             "- `/generate_code [<数量>]`：生成指定数量的邀请码（默认为 1）。\n" \
-             "   -  示例: `/generate_code` 或 `/generate_code 10`\n" \
-             "- `/invite`：查看所有邀请码。\n" \
-             "   -  示例: `/invite` \n" \
-             "- `/toggle_invite_code_system`：开启/关闭邀请码系统。\n" \
-             "   -  示例: `/toggle_invite_code_system`\n" \
-             "- `/set_score <telegram_id> <score>`：设置用户的积分。\n" \
-             "   -  示例: `/set_score 12345 100` \n" \
-              "- `/get_score <telegram_id>` 或 `/score <telegram_id>`：查看用户的积分。\n" \
-             "   -  示例: `/get_score 12345` 或 `/score 12345` \n" \
-             "- `/add_score <telegram_id> <score>`：为用户增加积分。\n" \
-             "   -  示例: `/add_score 12345 50` \n" \
-              "- `/reduce_score <telegram_id> <score>`：减少用户的积分。\n" \
-             "   -  示例: `/reduce_score 12345 20`\n" \
-            "- `/set_price <price>`: 设置邀请码的价格。\n" \
-             "   -  示例: `/set_price 150`\n" \
-            "- `/stats`: 查看统计信息。\n" \
-             "   -  示例: `/stats` \n"
+  response = '''
+  🎵   *音海拾贝 Navidrome 用户管理机器人* 🤖
 
-  bot.reply_to(message, response)
+        本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。
+
+        📌 *用户命令*
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        🔹 `/register <用户名> <密码>` - 注册用户（邀请码系统关闭时）
+        _例如：_ `/register testuser password`
+
+        🔹 `/register <用户名> <密码> <邀请码>` - 使用邀请码注册（邀请码系统开启时）
+        _例如：_ `/register testuser password abc123def`
+
+        🔹 `/reg_score_user` - 注册积分用户，用于获取积分购买邀请码
+
+        🔹 `/info` - 查看您的个人信息
+
+        🔹 `/score` - 查看您的积分
+
+        🔹 `/give <Telegram ID> <score>` - 向注册用户赠送积分
+
+        🔹 `/checkin` - 每日签到获得积分
+
+        🔹 `/random_score <红包个数> <积分总数>` - 发送随机积分红包（发送即扣分）
+
+        🔹 `/buyinvite` - 购买邀请码
+
+        🔹 `/bind <用户名> <Navidrome ID>` - 绑定已有服务器账号到 bot 管理
+
+        🔹 `/unbind` - 解绑 Bot 管理（不会删除服务器账号）
+
+        🔹 `/reset_username <new_username>` - 重置服务器用户名
+
+        🔹 `/reset_password <new_password>` - 重置服务器密码
+
+        🔹 `/deleteuser` - 删除您的账户（不可恢复）
+
+        📌 *管理员命令*
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        🔸 `/generate_code [<数量>]` - 生成指定数量的邀请码（默认为 1）
+        _例如：_ `/generate_code` 或 `/generate_code 10`
+
+        🔸 `/invite` - 查看所有邀请码
+
+        🔸 `/toggle_invite_code_system` - 开启/关闭邀请码系统
+
+        🔸 `/set_score <telegram_id> <score>` - 设置用户的积分
+        _例如：_ `/set_score 12345 100`
+
+        🔸 `/get_score <telegram_id>` 或 `/score <telegram_id>` - 查看用户的积分
+        _例如：_ `/get_score 12345` 或 `/score 12345`
+
+        🔸 `/add_score <telegram_id> <score>` - 为用户增加积分
+        _例如：_ `/add_score 12345 50`
+
+        🔸 `/reduce_score <telegram_id> <score>` - 减少用户的积分
+        _例如：_ `/reduce_score 12345 20`
+
+        🔸 `/set_price <price>` - 设置邀请码的价格
+        _例如：_ `/set_price 150`
+
+        🔸 `/stats` - 查看统计信息
+
+        💡 _如需更多帮助，请联系管理员。_
+  '''
+  bot.reply_to(message, response, parse_mode="Markdown")
 
 @bot.message_handler(commands=['register'])
 @user_exists("navidrome", negate=True)

@@ -50,6 +50,7 @@ class BotManager:
 
         # 注册路由
         bot.register_message_handler(user_handlers.start_command, commands=['start'])
+        bot.register_message_handler(user_handlers.start_command, commands=['start'])
         bot.register_message_handler(user_handlers.help_command, commands=['help'])
         bot.register_message_handler(user_handlers.register_command, commands=['register'])
         bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
