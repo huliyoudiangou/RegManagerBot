@@ -82,3 +82,42 @@ def get_username_by_telegram_id(bot, chat_id, telegram_id):
     except ApiTelegramException as e:
         logger.error(f"获取 Telegram 用户名失败: telegram_id={telegram_id}, error={e}")
         return None
+
+
+# def delete_message_after(bot, chat_id, message_id, delay):
+#     """
+#     在指定延迟后删除消息
+
+#     Args:
+#         bot: telebot 实例
+#         chat_id: 聊天会话 ID
+#         message_id: 消息 ID
+#         delay: 延迟时间（秒）
+#     """
+#     def delete_messages():
+#          try:
+#            bot.delete_message(chat_id=chat_id, message_id=message_id)
+#            logger.debug(f"删除消息成功: chat_id={chat_id}, message_id={message_id}")
+#          except telebot.apihelper.ApiTelegramException as e:
+#             logger.warning(f"删除消息失败, chat_id={chat_id}, message_id={message_id}, error={e}")
+#     timer = threading.Timer(delay, delete_messages)
+#     timer.daemon = True # 设置为守护进程，主进程关闭的时候，子进程也会关闭
+#     timer.start()
+    
+# def send_message_with_auto_delete(bot, chat_id, text, delay=5, **kwargs):
+#     """
+#     发送自动删除的消息
+
+#     Args:
+#       bot: telebot 实例
+#         chat_id: 聊天会话 ID
+#         text: 消息文本
+#         delay: 延迟删除的时间（秒），默认为 5 秒
+#         **kwargs:  其他 send_message() 方法的参数
+#     """
+#     sent_message = bot.send_message(chat_id, text, **kwargs)
+#     if sent_message:
+#       delete_message_after(bot, sent_message.chat.id, sent_message.message_id, delay)
+#       logger.debug(f"发送自动删除消息成功, chat_id={chat_id}, message_id={sent_message.message_id}, delay={delay}")
+#     else:
+#       logger.warning(f"发送自动删除消息失败, chat_id={chat_id}")

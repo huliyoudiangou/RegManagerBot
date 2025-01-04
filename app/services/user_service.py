@@ -327,7 +327,7 @@ class UserService:
     def start_clean_expired_users():
           """启动和关闭清理系统"""
           logger.debug("准备关闭/开启清理系统")
-          navidrome_api_client._start_clean_expired_users()
+          navidrome_api_client.start_clean_expired_users()
     
     @staticmethod
     def get_users_by_register_time(start_time=None, end_time=None):
