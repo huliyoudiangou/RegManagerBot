@@ -681,3 +681,35 @@ def get_user_info_in_server_command(message):
     else:
         logger.warning(f"获取服务器上用户信息失败: username={username}")
         bot.reply_to(message, f"未找到用户: {username}")
+
+@bot.message_handler(commands=['get_score_chart'])
+@admin_required
+def get_score_chart_command(message):
+    """
+    获取积分排行榜 (管理员命令)
+    /get_score_chart <num>
+    """
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求获取积分排行榜: telegram_id={telegram_id}")
+
+    args = message.text.split()[1:]
+    limit = 10 # 默认10
+    if len(args) > 0:
+      try:
+         limit = int(args[0])
+      except ValueError:
+        bot.reply_to(message, "参数错误，排行榜用户数量必须是整数！")
+        return
+
+    score_chart = UserService.get_score_chart(limit=limit)
+    if score_chart:
+        response = "🏆 *积分排行榜*\n"
+        response += f"排名 | 用户名 | 积分\n"
+        response += "--------------------\n"
+        for user_info in score_chart:
+            response += f"第 {user_info['rank']} 名  *{user_info['username']}*  {user_info['score']}分\n"
+        bot.reply_to(message, response, parse_mode="Markdown")
+        logger.info(f"管理员获取积分排行榜成功: telegram_id={telegram_id}, 用户数量={limit}")
+    else:
+        bot.reply_to(message, "获取排行榜失败，没有用户或发生错误！")
+        logger.warning(f"获取积分排行榜失败: telegram_id={telegram_id}")

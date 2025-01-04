@@ -4,6 +4,7 @@ from app.utils.logger import logger
 from config import settings
 from datetime import datetime
 import pytz
+import operator
 
 # 需要安装的模块：无
 
@@ -411,3 +412,27 @@ class UserService:
         else:
             logger.error(f"获取用户信息失败: {user}")
             return None
+
+    @staticmethod
+    def get_score_chart(limit=10):
+      """获取积分排行榜"""
+      logger.debug(f"获取积分排行榜，limit={limit}")
+      users = UserService.get_all_users()
+      if not users:
+        logger.warning("没有用户，无法获取排行榜")
+        return []
+      
+      # 按积分降序排序
+      sorted_users = sorted(users, key=operator.attrgetter('score'), reverse=True)
+      
+      # 获取指定数量的用户
+      top_users = sorted_users[:limit]
+
+      # 创建排行榜数据列表
+      rank = 1
+      chart = []
+      for user in top_users:
+        chart.append({"rank": rank, "telegram_id": user.telegram_id, "username": user.username, "score": user.score})
+        rank += 1
+      logger.debug(f"获取积分排行榜成功, limit={limit}")
+      return chart

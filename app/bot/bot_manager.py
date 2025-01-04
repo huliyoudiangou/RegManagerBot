@@ -39,6 +39,7 @@ class BotManager:
             telebot.types.BotCommand("userinfo_by_username", "通过用户名获取用户信息 (管理员)"),
             telebot.types.BotCommand("userinfo_in_server", "通过用户名获取用户信息 (管理员)"),
             telebot.types.BotCommand("stats", "获取注册状态 (管理员)"),
+            telebot.types.BotCommand("get_score_chart", "积分排行榜 (管理员)"),
             telebot.types.BotCommand("toggle_invite_code_system", "开启/关闭邀请码系统 (管理员)"),
             telebot.types.BotCommand("toggle_expired_user_clean", "切换自动清理状态 (管理员)"),
             telebot.types.BotCommand("get_expiring_users", "获取不活跃的用户 (管理员)"),
@@ -87,6 +88,7 @@ class BotManager:
         bot.register_message_handler(admin_handlers.random_give_score_by_checkin_time_command, commands=['random_score_by_checkin']) # 注册随机赠送积分命令
         bot.register_message_handler(admin_handlers.get_unused_invite_codes_command, commands=['unused_invite_codes']) # 注册获取未使用的邀请码的命令
         bot.register_message_handler(admin_handlers.get_user_info_in_server_command, commands=['userinfo_in_server']) # 注册获取服务器用户信息的命令
+        bot.register_message_handler(admin_handlers.get_score_chart_command, commands=['get_score_chart']) # 注册获取积分排行榜的命令
         
     def get_bot(self):
        return self.bot
