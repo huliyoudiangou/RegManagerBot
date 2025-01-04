@@ -1,7 +1,10 @@
+import telebot
 from app.utils.logger import logger
 from telebot.apihelper import ApiTelegramException
-
+from app.utils.scheduler import get_scheduler
 # 需要安装的模块：无
+
+scheduler = get_scheduler()
 
 def paginate_list(data_list, page_size):
     """
@@ -84,40 +87,41 @@ def get_username_by_telegram_id(bot, chat_id, telegram_id):
         return None
 
 
-# def delete_message_after(bot, chat_id, message_id, delay):
-#     """
-#     在指定延迟后删除消息
-
-#     Args:
-#         bot: telebot 实例
-#         chat_id: 聊天会话 ID
-#         message_id: 消息 ID
-#         delay: 延迟时间（秒）
-#     """
-#     def delete_messages():
-#          try:
-#            bot.delete_message(chat_id=chat_id, message_id=message_id)
-#            logger.debug(f"删除消息成功: chat_id={chat_id}, message_id={message_id}")
-#          except telebot.apihelper.ApiTelegramException as e:
-#             logger.warning(f"删除消息失败, chat_id={chat_id}, message_id={message_id}, error={e}")
-#     timer = threading.Timer(delay, delete_messages)
-#     timer.daemon = True # 设置为守护进程，主进程关闭的时候，子进程也会关闭
-#     timer.start()
+def delete_message_after(bot, chat_id, message_ids, delay=5):
+    """
+    在指定延迟后删除消息
+    Args:
+        bot: telebot 实例
+        chat_id: 聊天会话 ID
+        message_id: 消息 ID
+        delay: 延迟时间（秒）
+    """
+    def delete_messages():
+         try:
+           bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
+           logger.debug(f"删除消息成功: chat_id={chat_id}, message_ids={message_ids}")
+         except telebot.apihelper.ApiTelegramException as e:
+            logger.warning(f"删除消息失败, chat_id={chat_id}, message_ids={message_ids}, error={e}")
     
-# def send_message_with_auto_delete(bot, chat_id, text, delay=5, **kwargs):
-#     """
-#     发送自动删除的消息
-
-#     Args:
-#       bot: telebot 实例
-#         chat_id: 聊天会话 ID
-#         text: 消息文本
-#         delay: 延迟删除的时间（秒），默认为 5 秒
-#         **kwargs:  其他 send_message() 方法的参数
-#     """
-#     sent_message = bot.send_message(chat_id, text, **kwargs)
-#     if sent_message:
-#       delete_message_after(bot, sent_message.chat.id, sent_message.message_id, delay)
-#       logger.debug(f"发送自动删除消息成功, chat_id={chat_id}, message_id={sent_message.message_id}, delay={delay}")
-#     else:
-#       logger.warning(f"发送自动删除消息失败, chat_id={chat_id}")
+    scheduler.add_delayed_job(delay=delay, job_func=delete_messages)
+    logger.debug(f"提交删除消息任务到调度器, message_id={chat_id}, delay={delay}")
+    
+def send_message_with_auto_delete(bot, chat_id, text, delay=5, message = None,  **kwargs):
+    """
+    发送自动删除的消息
+    Args:
+        bot: telebot 实例
+        chat_id: 聊天会话 ID
+        text: 消息文本
+        delay: 延迟删除的时间（秒），默认为 5 秒
+         message: 消息对象，用于获取 chat_id 和 message_id
+        **kwargs:  其他 send_message() 方法的参数
+    """
+    sent_message = bot.send_message(chat_id, text, **kwargs)
+    if sent_message:
+      if message:
+        delete_message_after(bot, message.chat.id, message.message_id, delay) # 删除请求消息
+      delete_message_after(bot, sent_message.chat.id, sent_message.message_id, delay)
+      logger.debug(f"发送自动删除消息成功, chat_id={chat_id}, message_id={sent_message.message_id}, delay={delay}")
+    else:
+      logger.warning(f"发送自动删除消息失败, chat_id={chat_id}")

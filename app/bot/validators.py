@@ -1,4 +1,5 @@
 # 校验器
+import json
 from functools import wraps
 from app.services.user_service import UserService
 from app.services.invite_code_service import InviteCodeService
@@ -6,6 +7,7 @@ from app.utils.logger import logger
 from datetime import datetime
 from app.bot.core.bot_instance import bot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from app.utils.utils import delete_message_after
 # 需要安装的模块：无
 
 def user_exists(service_name, negate=False):
@@ -130,7 +132,7 @@ def confirmation_required(message_text):
             msg = bot.send_message(chat_id, message_text, reply_markup=markup)
 
             # 保存当前的命令函数和参数到会话
-            user_sessions[chat_id] = {'message': message, 'func': func, 'args': args, 'kwargs': kwargs}
+            user_sessions[chat_id] = {'message': message, 'msg': msg, 'func': func, 'args': args, 'kwargs': kwargs}
 
         return wrapper
     return decorator
@@ -139,8 +141,16 @@ def confirmation_required(message_text):
 def callback_query(call):
     chat_id = call.message.chat.id
     data = call.data
-
+    t = type(call.message)
+    logger.info(f"call: {t} \n {call.message}")
+    # t = type(user_sessions[chat_id]['message'])
+    # logger.info(f"user: {t} \n {user_sessions[chat_id]['message']}")
     if chat_id in user_sessions:
+        message_ids = []
+        message_ids.append(user_sessions[chat_id]['message'].message_id)
+        message_ids.append(user_sessions[chat_id]['msg'].message_id)
+        # message_ids.append(call.message.from_user.id)
+        delete_message_after(bot, chat_id, message_ids)
         # 获取存储的函数信息
         command_info = user_sessions[chat_id]
         message = command_info['message']

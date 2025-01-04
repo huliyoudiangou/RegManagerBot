@@ -8,6 +8,7 @@ from config import settings
 from app.bot.core.bot_instance import bot
 from app.utils.api_clients import navidrome_api_client
 from app.utils.utils import paginate_list, paginate_list_text
+from app.utils.utils import delete_message_after
 
 # 需要安装的模块：无
 
@@ -424,7 +425,8 @@ def toggle_expired_user_clean_command(message):
     UserService.start_clean_expired_users()
 
     logger.info(f"过期用户清理定时任务已更改: {settings.ENABLE_EXPIRED_USER_CLEAN}")
-    bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
+    bot_message = bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
+    delete_message_after(bot, message.chat.id, [bot_message.message_id])
 
 @bot.message_handler(commands=['get_expired_users'])
 @admin_required

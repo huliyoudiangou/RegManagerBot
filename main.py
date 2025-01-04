@@ -2,7 +2,7 @@ from app.utils.db_utils import create_tables
 from app.bot.bot_manager import run_bot
 from config import settings
 from app.utils.logger import logger
-from app.utils.scheduler import Scheduler
+from app.utils.scheduler import create_scheduler, get_scheduler
 
 # 需要安装的模块：无
 
@@ -13,7 +13,7 @@ def init_app():
     create_tables()
     logger.info("数据库表创建完成")
     
-    scheduler = Scheduler()
+    scheduler = create_scheduler()
     scheduler.start_scheduler()
     logger.info(f"定时器已启动！")
     

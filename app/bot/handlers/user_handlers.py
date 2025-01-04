@@ -9,7 +9,7 @@ from datetime import datetime
 from app.bot.core.bot_instance import bot
 from app.bot.validators import user_exists, confirmation_required, score_enough, private_chat_only
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
-
+from app.utils.utils import delete_message_after
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
@@ -413,10 +413,11 @@ def score_command(message):
         score = ScoreService.get_user_score(user.id)
         if score is not None:
             logger.info(f"用户积分查询成功: telegram_id={telegram_id}, username={user.username}, score={score}")
-            bot.reply_to(message, f"您的积分: {score}")
+            bot_message = bot.reply_to(message, f"您的积分: {score}")
         else:
             logger.error(f"用户积分查询失败: telegram_id={telegram_id}, username={user.username}")
-            bot.reply_to(message, "查询积分失败，请重试!")
+            bot_message = bot.reply_to(message, "查询积分失败，请重试!")
+        delete_message_after(bot, message, bot_message)
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
         bot.reply_to(message, "未找到您的账户信息!")
@@ -438,10 +439,11 @@ def checkin_command(message):
         score = ScoreService.sign_in(user.id)
         if score:
             logger.info(f"用户签到成功: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
-            bot.reply_to(message, f"签到成功! 获得了{score}积分!")
+            bot_message = bot.reply_to(message, f"签到成功! 获得了{score}积分!")
         else:
             logger.warning(f"用户签到失败: telegram_id={telegram_id}, service_name={service_name}")
-            bot.reply_to(message, "签到失败，您今天已签到!")
+            bot_message = bot.reply_to(message, "签到失败，您今天已签到!")
+        delete_message_after(bot, message.chat.id, [message.message_id, bot_message.message_id])
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
         bot.reply_to(message, "未找到您的账户信息!")
@@ -640,10 +642,11 @@ def reset_password_command(message):
         result = UserService.reset_password(user, new_password=new_password)
         if result:
             logger.info(f"用户重置密码成功: telegram_id={telegram_id}, service_name={service_name}")
-            bot.reply_to(message, "密码重置成功！")
+            bot_message = bot.reply_to(message, "密码重置成功！")
         else:
             logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
-            bot.reply_to(message, "密码重置失败，请联系管理员！")
+            bot_message = bot.reply_to(message, "密码重置失败，请联系管理员！")
+            delete_message_after(bot, message, bot_message)
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
         bot.reply_to(message, "该用户未注册！")
