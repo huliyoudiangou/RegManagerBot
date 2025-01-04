@@ -160,3 +160,18 @@ def callback_query(call):
         del user_sessions[chat_id]
 
     bot.answer_callback_query(call.id)
+
+def private_chat_only(func):
+    """
+    限制命令只能在私聊中使用的装饰器
+    """
+    @wraps(func)
+    def wrapper(message, *args, **kwargs):
+        telegram_id = message.from_user.id  # 获取 telegram_id
+        if message.chat.type in ["group", "supergroup"]:  # 群组或超级群组
+            logger.debug(f"在群组中收到命令，不响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
+            return # 在群组中不执行任何操作
+        else:
+             logger.debug(f"在私聊中收到命令，正常响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
+             return func(message, *args, **kwargs)
+    return wrapper

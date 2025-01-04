@@ -7,7 +7,7 @@ from app.utils.logger import logger
 from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
-from app.bot.validators import user_exists, confirmation_required, score_enough
+from app.bot.validators import user_exists, confirmation_required, score_enough, private_chat_only
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
 
@@ -448,6 +448,7 @@ def checkin_command(message):
 
 @bot.message_handler(commands=['buyinvite'])
 @user_exists("navidrome")
+@private_chat_only
 @confirmation_required(f"你确定要购买邀请码嘛？")
 def buy_invite_code_command(message):
     """
@@ -486,6 +487,8 @@ def buy_invite_code_command(message):
         bot.reply_to(message, "未找到您的账户信息!")
 
 @bot.message_handler(commands=['info'])
+@private_chat_only
+@user_exists(service_name="navidrome")
 def info_command(message):
     """
     处理 /info 命令，用户信息查询
@@ -564,6 +567,7 @@ def give_score_command(message):
        bot.reply_to(message, f"积分赠送失败，请重试!")
 
 @bot.message_handler(commands=['bind'])
+@private_chat_only
 def bind_command(message):
     """
     处理 /bind 命令，绑定 Web 服务账户
