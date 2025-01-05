@@ -7,9 +7,12 @@ from app.utils.logger import logger
 from config import settings
 from datetime import datetime
 from app.bot.core.bot_instance import bot
-from app.bot.validators import user_exists, confirmation_required, score_enough, private_chat_only
+from app.bot.validators import user_exists, confirmation_required, score_enough, chat_type_required
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from app.utils.utils import delete_message_after
+from app.utils.message_queue import get_message_queue
+
+message_queue = get_message_queue()
 
 @bot.message_handler(commands=['start'])
 def start_command(message):
@@ -113,6 +116,7 @@ def callback_handler(call):
 #     bot.reply_to(message, response)
 
 @bot.message_handler(commands=['help'])
+@chat_type_required(["group", "supergroup"])
 def help_command(message):
   """
   处理 /help 命令，输出详细的命令使用说明
@@ -189,6 +193,7 @@ def help_command(message):
   bot.reply_to(message, response, parse_mode="Markdown")
 
 @bot.message_handler(commands=['register'])
+@chat_type_required(["group", "supergroup"])
 @user_exists("navidrome", negate=True)
 def register_command(message):
     """
@@ -417,10 +422,12 @@ def score_command(message):
         else:
             logger.error(f"用户积分查询失败: telegram_id={telegram_id}, username={user.username}")
             bot_message = bot.reply_to(message, "查询积分失败，请重试!")
-        delete_message_after(bot, message, bot_message)
+        
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
-        bot.reply_to(message, "未找到您的账户信息!")
+        bot_message = bot.reply_to(message, "未找到您的账户信息!")
+    
+    delete_message_after(bot, message.chat.id, [message.message_id, bot_message.message_id])
 
 @bot.message_handler(commands=['checkin'])
 def checkin_command(message):
@@ -443,14 +450,14 @@ def checkin_command(message):
         else:
             logger.warning(f"用户签到失败: telegram_id={telegram_id}, service_name={service_name}")
             bot_message = bot.reply_to(message, "签到失败，您今天已签到!")
-        delete_message_after(bot, message.chat.id, [message.message_id, bot_message.message_id])
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
-        bot.reply_to(message, "未找到您的账户信息!")
-
+        bot_message = bot.reply_to(message, "未找到您的账户信息!")
+    message_queue.add_message(message.chat.id, [bot_message.message_id, message.message_id])
+    
 @bot.message_handler(commands=['buyinvite'])
 @user_exists("navidrome")
-@private_chat_only
+@chat_type_required(["group", "supergroup"])
 @confirmation_required(f"你确定要购买邀请码嘛？")
 def buy_invite_code_command(message):
     """
@@ -489,7 +496,7 @@ def buy_invite_code_command(message):
         bot.reply_to(message, "未找到您的账户信息!")
 
 @bot.message_handler(commands=['info'])
-@private_chat_only
+@chat_type_required(["group", "supergroup"])
 @user_exists(service_name="navidrome")
 def info_command(message):
     """
@@ -569,7 +576,7 @@ def give_score_command(message):
        bot.reply_to(message, f"积分赠送失败，请重试!")
 
 @bot.message_handler(commands=['bind'])
-@private_chat_only
+@chat_type_required(["group", "supergroup"])
 def bind_command(message):
     """
     处理 /bind 命令，绑定 Web 服务账户
@@ -619,6 +626,7 @@ def unbind_command(message):
         bot.reply_to(message, "未找到您的账户信息！")
 
 @bot.message_handler(commands=['reset_password'])
+@chat_type_required(["group", "supergroup"])
 @user_exists("navidrome")
 @confirmation_required(f"你确定要重置密码嘛？")
 def reset_password_command(message):
@@ -688,8 +696,9 @@ def reset_username_command(message):
         logger.warning(f"用户重名: telegram_id={telegram_id}, service_name={service_name}")
         bot.reply_to(message, "用户重名，请重新选择用户名！")
         
-            
+user_sessions = {}         
 @bot.message_handler(commands=['random_score'])
+@chat_type_required(["private"])
 @user_exists(service_name='navidrome')
 @score_enough(service_name='navidrome')
 @confirmation_required(f"你确定要发随机红包嘛？")
@@ -697,17 +706,18 @@ def random_score_command(message):
     """发送带有按钮的菜单"""
     args = message.text.split()[1:]
     if len(args) != 2:
-        bot.reply_to(message, "参数错误，请提供参数，格式为：/random_score <participants_count> <total_score>")
+        bot_message = bot.reply_to(message, "参数错误，请提供参数，格式为：/random_score <participants_count> <total_score>")
+        delete_message_after(bot, message.chat.id, [bot_message.message_id])
         return
     try:
         participants_count = int(args[0])
         total_score = int(args[1])
     except ValueError:
-        bot.reply_to(message, "参数错误，参与人数和总积分数必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，参与人数和总积分数必须是整数！")
         return
     event_id = ScoreService.create_random_score_event(create_user_id=message.from_user.id, telegram_chat_id=message.chat.id, total_score=total_score, participants_count=participants_count)
     if not event_id:
-      bot.reply_to(message, "创建积分活动失败")
+      bot_message = bot.reply_to(message, "创建积分活动失败")
       return
     
     user = UserService.get_user_by_telegram_id(message.from_user.id, 'navidrome')
@@ -720,35 +730,43 @@ def random_score_command(message):
             [InlineKeyboardButton("点击抽积分", callback_data=f"random_score_{event_id}")]
         ]
     )
-    bot.reply_to(message, "点击按钮参与抽奖！", reply_markup=keyboard)
+    bot_message = bot.send_message(message, "点击按钮参与抽奖！", reply_markup=keyboard)
+    user_sessions[message.chat.id] = {"message": message, "msg": bot_message}
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("random_score_"))
 def handle_random_score_callback(call):
     """处理随机积分的按钮点击事件"""
-    
-   
     event_id = int(call.data.split("_")[2])
     user_id = call.from_user.id
+    chat_id = call.message.chat.id
     user_name = call.from_user.username if call.from_user.username else call.from_user.first_name #优先获取用户名，如果没有就获取first_name
     user = UserService.get_user_by_telegram_id(user_id, 'navidrome')
     if not user:
-        bot.send_message(call.message.chat.id, f"未注册用户[{user_name}](https://t.me/{user_name})，请先注册积分账号。", parse_mode="Markdown", disable_web_page_preview=True)
+        bot_message = bot.send_message(call.message.chat.id, f"未注册用户[{user_name}](https://t.me/{user_name})，请先注册积分账号。", parse_mode="Markdown", disable_web_page_preview=True)
         logger.info(f"未注册用户{user_name}")
+        delete_message_after(bot, chat_id, [bot_message.message_id])
         return
     
+    message_ids = []
     score = ScoreService.use_random_score(event_id=event_id, user_id=user_id, user_name = user_name)
     if score:
         bot.send_message(call.message.chat.id, f"恭喜您：[{user_name}](https://t.me/{user_name})，获得{score}积分！", parse_mode="Markdown", disable_web_page_preview=True)
         event_data = ScoreService.get_random_score_event(event_id)
         if event_data and event_data['is_finished']:
            score_result = json.loads(event_data['score_result'])
-           response = f"积分已经分发完毕, 中奖信息如下：\n"
-           response += f"---------------------------\n"
+           response = f"积分分发完毕, 中奖信息如下：\n"
+           response += f"-----------------------\n"
            for item in score_result:
              response += f"用户: [{item['user_name']}](https://t.me/{item['user_name']})，获取积分： {item['score']}分\n"
            bot.send_message(call.message.chat.id, response, parse_mode="Markdown", disable_web_page_preview=True)
+           if user_sessions[chat_id]:
+               message_ids.append(user_sessions[chat_id]['msg'].message_id)
+            #    delete_message_after(bot, chat_id, [user_sessions[chat_id]['msg'].message_id])  
     elif score == 0:
-       bot.send_message(call.message.chat.id, f"积分已经分发完毕")
+       bot_message = bot.send_message(call.message.chat.id, f"积分已经分发完毕")
+       message_ids.append(bot_message.message_id)
     else:
-        bot.send_message(call.message.chat.id, f"[{user_name}](https://t.me/{user_name})您已经获取过奖励, 请勿重复点击！", parse_mode="Markdown", disable_web_page_preview=True)
-        
+       bot_message = bot.send_message(call.message.chat.id, f"[{user_name}](https://t.me/{user_name})您已经获取过奖励, 请勿重复点击！", parse_mode="Markdown", disable_web_page_preview=True)
+       message_ids.append(bot_message.message_id)
+       
+    delete_message_after(bot, chat_id, message_ids, 1)

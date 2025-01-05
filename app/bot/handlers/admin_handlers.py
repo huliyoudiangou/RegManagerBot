@@ -1,5 +1,5 @@
 # 管理员命令处理器
-from app.bot.validators import admin_required, confirmation_required
+from app.bot.validators import admin_required, confirmation_required, chat_type_required
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService

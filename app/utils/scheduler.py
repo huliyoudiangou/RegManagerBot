@@ -8,7 +8,6 @@ from app.utils.logger import logger
 # pip install schedule
 
 _scheduler = None
-
 class Scheduler:
     """
     定时任务管理
@@ -86,6 +85,7 @@ class Scheduler:
         schedule_job = schedule.every(delay).seconds.do(run_job)
         self.jobs[job_name] = schedule_job
         logger.info(f"添加延迟执行任务成功， job_name= {job_name}")
+
 
 def create_scheduler():
     """创建定时任务实例，并赋值给全局变量_scheduler"""

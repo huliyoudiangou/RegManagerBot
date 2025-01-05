@@ -8,6 +8,7 @@ from datetime import datetime
 from app.bot.core.bot_instance import bot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from app.utils.utils import delete_message_after
+
 # 需要安装的模块：无
 
 def user_exists(service_name, negate=False):
@@ -96,7 +97,6 @@ def score_enough(service_name):
         def wrapper(message, *args, **kwargs):
             telegram_id = message.from_user.id  # 修改获取 telegram_id 的方式
             # 通过消息的文本内容获取需要的积分数量
-            logger.info(f"message.text.split(" ")")
             required_score = int(message.text.split(" ")[-1]) if len(message.text.split(" ")) > 1 else 0
 
             logger.debug(f"校验用户积分是否足够: telegram_id={telegram_id}, required_score={required_score}")
@@ -143,14 +143,13 @@ def callback_query(call):
     data = call.data
     t = type(call.message)
     logger.info(f"call: {t} \n {call.message}")
-    # t = type(user_sessions[chat_id]['message'])
-    # logger.info(f"user: {t} \n {user_sessions[chat_id]['message']}")
+
     if chat_id in user_sessions:
         message_ids = []
         message_ids.append(user_sessions[chat_id]['message'].message_id)
         message_ids.append(user_sessions[chat_id]['msg'].message_id)
-        # message_ids.append(call.message.from_user.id)
-        delete_message_after(bot, chat_id, message_ids)
+
+        # delete_message_after(bot, chat_id, message_ids)
         # 获取存储的函数信息
         command_info = user_sessions[chat_id]
         message = command_info['message']
@@ -165,7 +164,7 @@ def callback_query(call):
         elif data == f"confirm_no_{chat_id}":
             # 用户选择“否”，取消操作
             logger.debug("已取消，命令已取消")
-
+        delete_message_after(bot, chat_id, message_ids)
         # 清除会话信息
         del user_sessions[chat_id]
 
@@ -185,3 +184,28 @@ def private_chat_only(func):
              logger.debug(f"在私聊中收到命令，正常响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
              return func(message, *args, **kwargs)
     return wrapper
+
+def chat_type_required(not_chat_type=None):
+    """
+    限制命令只能在非指定 chat_type 使用的装饰器
+
+    Args:
+      not_chat_type: str | list 指定不允许的chat_type, 例如: ["private", "group", "supergroup"]
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(message, *args, **kwargs):
+            telegram_id = message.from_user.id
+            if not_chat_type:
+              if isinstance(not_chat_type, str):
+                not_chat_type_list = [not_chat_type]
+              else:
+                not_chat_type_list = not_chat_type
+              if message.chat.type in not_chat_type_list:  # 群组或超级群组
+                  logger.debug(f"在{not_chat_type}中收到命令，不响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
+                  return
+            
+            logger.debug(f"在{message.chat.type}中收到命令，正常响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
+            return func(message, *args, **kwargs)
+        return wrapper
+    return decorator

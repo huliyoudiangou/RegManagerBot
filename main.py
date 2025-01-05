@@ -3,6 +3,7 @@ from app.bot.bot_manager import run_bot
 from config import settings
 from app.utils.logger import logger
 from app.utils.scheduler import create_scheduler, get_scheduler
+from app.utils.message_cleaner import create_message_cleaner, get_message_cleaner
 
 # 需要安装的模块：无
 
@@ -16,6 +17,10 @@ def init_app():
     scheduler = create_scheduler()
     scheduler.start_scheduler()
     logger.info(f"定时器已启动！")
+    
+    message_cleaner = create_message_cleaner()
+    message_cleaner.start() # 启动消息清理器
+    logger.info(f"消息管理器已启动！")
     
     logger.info(f"邀请码系统已{'开启' if settings.INVITE_CODE_SYSTEM_ENABLED else '关闭'}")
     logger.info(f"定时清理用户系统已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
