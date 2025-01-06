@@ -1,6 +1,8 @@
 # 校验器
 import json
 from functools import wraps
+
+import telebot
 from app.services.user_service import UserService
 from app.services.invite_code_service import InviteCodeService
 from app.utils.logger import logger
@@ -8,6 +10,10 @@ from datetime import datetime
 from app.bot.core.bot_instance import bot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from app.utils.utils import delete_message_after
+from app.utils.message_queue import get_message_queue
+from config import settings
+
+message_queue = get_message_queue()
 
 # 需要安装的模块：无
 
@@ -129,10 +135,11 @@ def confirmation_required(message_text):
             markup.add(button_yes, button_no)
 
             # 发送自定义的确认消息和键盘
-            msg = bot.send_message(chat_id, message_text, reply_markup=markup)
-
+            bot.send_message(chat_id, message_text, reply_markup=markup)
+            # logger.info(f"msg: {msg.message_id}")
+            # logger.info(f"yes: {message.message_id}")
             # 保存当前的命令函数和参数到会话
-            user_sessions[chat_id] = {'message': message, 'msg': msg, 'func': func, 'args': args, 'kwargs': kwargs}
+            user_sessions[chat_id] = {'message': message, 'func': func, 'args': args, 'kwargs': kwargs}
 
         return wrapper
     return decorator
@@ -141,15 +148,7 @@ def confirmation_required(message_text):
 def callback_query(call):
     chat_id = call.message.chat.id
     data = call.data
-    t = type(call.message)
-    logger.info(f"call: {t} \n {call.message}")
-
     if chat_id in user_sessions:
-        message_ids = []
-        message_ids.append(user_sessions[chat_id]['message'].message_id)
-        message_ids.append(user_sessions[chat_id]['msg'].message_id)
-
-        # delete_message_after(bot, chat_id, message_ids)
         # 获取存储的函数信息
         command_info = user_sessions[chat_id]
         message = command_info['message']
@@ -164,11 +163,14 @@ def callback_query(call):
         elif data == f"confirm_no_{chat_id}":
             # 用户选择“否”，取消操作
             logger.debug("已取消，命令已取消")
-        delete_message_after(bot, chat_id, message_ids)
         # 清除会话信息
+        if settings.ENABLE_MESSAGE_CLEANER:
+            message_queue.add_message(user_sessions[chat_id]['message'])
         del user_sessions[chat_id]
 
     bot.answer_callback_query(call.id)
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(call.message)
 
 def private_chat_only(func):
     """

@@ -9,9 +9,10 @@ from app.bot.core.bot_instance import bot
 from app.utils.api_clients import navidrome_api_client
 from app.utils.utils import paginate_list, paginate_list_text
 from app.utils.utils import delete_message_after
+from app.utils.message_cleaner import get_message_cleaner
+from app.utils.message_queue import get_message_queue
 
-# 需要安装的模块：无
-
+message_queue = get_message_queue()
 
 @bot.message_handler(commands=['generate_code'])
 @admin_required
@@ -26,11 +27,11 @@ def generate_invite_code_command(message):
       try:
           count = int(args[0])
       except ValueError:
-        bot.reply_to(message, "参数错误，邀请码数量必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，邀请码数量必须是整数！")
         return
 
     if count <= 0:
-        bot.reply_to(message, "邀请码数量必须大于 0！")
+        bot_message = bot.reply_to(message, "邀请码数量必须大于 0！")
         return
 
     invite_codes = []
@@ -39,12 +40,12 @@ def generate_invite_code_command(message):
       if invite_code:
         invite_codes.append(f"<code>{invite_code.code}</code>")
       else:
-        bot.reply_to(message, "邀请码生成失败，请重试！")
+        bot_message = bot.reply_to(message, "邀请码生成失败，请重试！")
         return
     
     if invite_codes:
       response = f"成功生成{count}个邀请码(单击可复制):\n" + "\n".join(invite_codes)
-      bot.reply_to(message, response, parse_mode='HTML')
+      bot_message = bot.reply_to(message, response, parse_mode='HTML')
       
 @bot.message_handler(commands=['invite'])
 @admin_required
@@ -62,9 +63,9 @@ def get_all_invite_codes_command(message):
                 response += f"--------\n"
                 response += f"生成总数为：{len(invite_all_codes)},当前页有{len(invite_codes)}个未使用!"
             page_count += 1
-            bot.reply_to(message, response)
+            bot_message = bot.reply_to(message, response)
     else:
-      bot.reply_to(message, "获取邀请码列表失败，请重试！")
+      bot_message = bot.reply_to(message, "获取邀请码列表失败，请重试！")
 
 @bot.message_handler(commands=['unused_invite_codes'])
 @admin_required
@@ -87,10 +88,10 @@ def get_unused_invite_codes_command(message):
             response += f"--------\n"
             response += f"未使用总数为：{len(invite_unused_codes)}, 当前页有{len(invite_codes)}个未使用!"
             page_count += 1
-            bot.reply_to(message, response, parse_mode='HTML') # 发送HTML格式的消息，支持点击复制
+            bot_message = bot.reply_to(message, response, parse_mode='HTML') # 发送HTML格式的消息，支持点击复制
         logger.info(f"管理员获取未使用的邀请码列表成功: telegram_id={telegram_id}, count={len(invite_codes)}")
     else:
-        bot.reply_to(message, "没有找到未使用的邀请码！")
+        bot_message = bot.reply_to(message, "没有找到未使用的邀请码！")
         logger.warning(f"没有找到未使用的邀请码: telegram_id={telegram_id}")
             
 @bot.message_handler(commands=['toggle_invite_code_system'])
@@ -99,8 +100,14 @@ def toggle_invite_code_system_command(message):
     """开启/关闭邀请码系统 (管理员命令)"""
     settings.INVITE_CODE_SYSTEM_ENABLED = not settings.INVITE_CODE_SYSTEM_ENABLED
     logger.info(f"邀请码系统状态已更改: {settings.INVITE_CODE_SYSTEM_ENABLED}")
-    bot.reply_to(message, f"邀请码系统已{'开启' if settings.INVITE_CODE_SYSTEM_ENABLED else '关闭'}")
-
+    bot_message = bot.reply_to(message, f"邀请码系统已{'开启' if settings.INVITE_CODE_SYSTEM_ENABLED else '关闭'}")
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
+    
+    message_queue.add_message(message)
+    message_queue.add_message(bot_message)  
+    
 @bot.message_handler(commands=['set_score'])
 @admin_required
 @confirmation_required("你确定要设置积分嘛？")
@@ -116,7 +123,7 @@ def set_score_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 2:
-        bot.reply_to(message, "参数错误，请提供用户 Telegram ID 和积分数，格式为：/set_score <telegram_id> <score>")
+        bot_message = bot.reply_to(message, "参数错误，请提供用户 Telegram ID 和积分数，格式为：/set_score <telegram_id> <score>")
         return
 
     try:
@@ -124,7 +131,7 @@ def set_score_command(message):
         target_telegram_id = int(target_telegram_id)
         score = int(score)
     except ValueError:
-        bot.reply_to(message, "参数错误，用户 Telegram ID 和积分数必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，用户 Telegram ID 和积分数必须是整数！")
         return
 
     # 查找本地数据库中的用户
@@ -134,14 +141,18 @@ def set_score_command(message):
         user = ScoreService.update_user_score(user.id, score)
         if user:
             logger.info(f"用户积分设置成功: user_id={user.id}, score={user.score}")
-            bot.reply_to(message, f"用户 {target_telegram_id} 的积分已设置为: {score}")
+            bot_message = bot.reply_to(message, f"用户 {target_telegram_id} 的积分已设置为: {score}")
         else:
             logger.error(f"用户积分设置失败: telegram_id={target_telegram_id}")
-            bot.reply_to(message, "设置积分失败，请重试！")
+            bot_message = bot.reply_to(message, "设置积分失败，请重试！")
     else:
         logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
-        bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+        bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
 
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
+    
 @bot.message_handler(commands=['get_score', 'score'])
 @admin_required
 def get_score_command(message):
@@ -156,13 +167,13 @@ def get_score_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 1:
-        bot.reply_to(message, "参数错误，请提供用户 Telegram ID，格式为：/score <telegram_id>")
+        bot_message = bot.reply_to(message, "参数错误，请提供用户 Telegram ID，格式为：/score <telegram_id>")
         return
 
     try:
         target_telegram_id = int(args[0])
     except ValueError:
-        bot.reply_to(message, "参数错误，用户 Telegram ID 必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，用户 Telegram ID 必须是整数！")
         return
 
     # 查找本地数据库中的用户
@@ -172,13 +183,17 @@ def get_score_command(message):
         score = ScoreService.get_user_score(user.id)
         if score is not None:
             logger.info(f"用户积分查询成功: telegram_id={target_telegram_id}, score={score}")
-            bot.reply_to(message, f"用户 {target_telegram_id} 的积分: {score}")
+            bot_message = bot.reply_to(message, f"用户 {target_telegram_id} 的积分: {score}")
         else:
             logger.error(f"用户积分查询失败: telegram_id={target_telegram_id}")
-            bot.reply_to(message, "查询积分失败，请重试！")
+            bot_message = bot.reply_to(message, "查询积分失败，请重试！")
     else:
         logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
-        bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+        bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+    
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
 
 @bot.message_handler(commands=['add_score'])
 @admin_required
@@ -194,7 +209,7 @@ def add_score_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 2:
-        bot.reply_to(message, "参数错误，请提供用户 Telegram ID 和积分数，格式为：/add_score <telegram_id> <score>")
+        bot_message = bot.reply_to(message, "参数错误，请提供用户 Telegram ID 和积分数，格式为：/add_score <telegram_id> <score>")
         return
 
     try:
@@ -202,7 +217,7 @@ def add_score_command(message):
         target_telegram_id = int(target_telegram_id)
         score = int(score)
     except ValueError:
-        bot.reply_to(message, "参数错误，用户 Telegram ID 和积分数必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，用户 Telegram ID 和积分数必须是整数！")
         return
 
     # 查找本地数据库中的用户
@@ -212,13 +227,17 @@ def add_score_command(message):
         user = ScoreService.add_score(user.id, score)
         if user:
             logger.info(f"用户积分增加成功: user_id={user.id}, score={user.score}")
-            bot.reply_to(message, f"已为用户 {target_telegram_id} 增加积分: {score}")
+            bot_message = bot.reply_to(message, f"已为用户 {target_telegram_id} 增加积分: {score}")
         else:
             logger.error(f"用户积分增加失败: telegram_id={target_telegram_id}")
-            bot.reply_to(message, "增加积分失败，请重试！")
+            bot_message = bot.reply_to(message, "增加积分失败，请重试！")
     else:
         logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
-        bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+        bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+    
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
 
 @bot.message_handler(commands=['reduce_score'])
 @admin_required
@@ -234,7 +253,7 @@ def reduce_score_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 2:
-        bot.reply_to(message, "参数错误，请提供用户 Telegram ID 和积分数，格式为：/reduce_score <telegram_id> <score>")
+        bot_message = bot.reply_to(message, "参数错误，请提供用户 Telegram ID 和积分数，格式为：/reduce_score <telegram_id> <score>")
         return
 
     try:
@@ -242,7 +261,7 @@ def reduce_score_command(message):
         target_telegram_id = int(target_telegram_id)
         score = int(score)
     except ValueError:
-        bot.reply_to(message, "参数错误，用户 Telegram ID 和积分数必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，用户 Telegram ID 和积分数必须是整数！")
         return
 
     # 查找本地数据库中的用户
@@ -252,13 +271,17 @@ def reduce_score_command(message):
         user = ScoreService.reduce_score(user.id, score)
         if user:
             logger.info(f"用户积分减少成功: user_id={user.id}, score={user.score}")
-            bot.reply_to(message, f"已为用户 {target_telegram_id} 减少积分: {score}")
+            bot_message = bot.reply_to(message, f"已为用户 {target_telegram_id} 减少积分: {score}")
         else:
             logger.error(f"用户积分减少失败: telegram_id={target_telegram_id}")
-            bot.reply_to(message, "减少积分失败，请重试！")
+            bot_message = bot.reply_to(message, "减少积分失败，请重试！")
     else:
         logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
-        bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+        bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+    
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
 
 @bot.message_handler(commands=['set_price'])
 @admin_required
@@ -273,20 +296,24 @@ def set_price_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 1:
-        bot.reply_to(message, "参数错误，请提供价格，格式为：/set_price <price>")
+        bot_message = bot.reply_to(message, "参数错误，请提供价格，格式为：/set_price <price>")
         return
 
     try:
         price = int(args[0])
     except ValueError:
-        bot.reply_to(message, "价格必须是整数！")
+        bot_message = bot.reply_to(message, "价格必须是整数！")
         return
 
     config_name = "INVITE_CODE_PRICE" # 直接指定配置项
     # 更新配置
     setattr(settings, config_name, price) # 只更新 config 对象中的值
     logger.info(f"配置项 {config_name} 已更新为 {price}")
-    bot.reply_to(message, f"邀请码积分价格已更新为 {price}")
+    bot_message = bot.reply_to(message, f"邀请码积分价格已更新为 {price}")
+    
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
 
 @bot.message_handler(commands=['userinfo'])
 @admin_required
@@ -301,13 +328,13 @@ def get_user_info_by_telegram_id_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 1:
-        bot.reply_to(message, "参数错误，请提供用户 Telegram ID，格式为：/userinfo <telegram_id>")
+        bot_message = bot.reply_to(message, "参数错误，请提供用户 Telegram ID，格式为：/userinfo <telegram_id>")
         return
 
     try:
         target_telegram_id = int(args[0])
     except ValueError:
-        bot.reply_to(message, "参数错误，用户 Telegram ID 必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，用户 Telegram ID 必须是整数！")
         return
 
     # 查找本地数据库中的用户
@@ -320,10 +347,14 @@ def get_user_info_by_telegram_id_command(message):
                  f"积分: {user.score}\n" \
                  f"本地数据库ID: {user.id}\n" \
                  f"Navidrome用户ID: {user.navidrome_user_id}"
-       bot.reply_to(message, response)
+       bot_message = bot.reply_to(message, response)
     else:
         logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
-        bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+        bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+    
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
 
 @bot.message_handler(commands=['userinfo_by_username'])
 @admin_required
@@ -338,7 +369,7 @@ def get_user_info_by_username_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 1:
-        bot.reply_to(message, "参数错误，请提供用户名，格式为：/userinfo_by_username <username>")
+        bot_message = bot.reply_to(message, "参数错误，请提供用户名，格式为：/userinfo_by_username <username>")
         return
 
     username = args[0]
@@ -353,14 +384,18 @@ def get_user_info_by_username_command(message):
                 f"积分: {user.score}\n" \
                 f"本地数据库ID: {user.id}\n" \
                 f"Navidrome用户ID: {user.navidrome_user_id}"
-        bot.reply_to(message, response)
+        bot_message = bot.reply_to(message, response)
         return
 
     # 如果没有找到用户，返回错误信息
     else:
-        bot.reply_to(message, f"未找到用户: {username}")
+        bot_message = bot.reply_to(message, f"未找到用户: {username}")
         logger.warning(f"未找到用户: username={username}")
     
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
+      
 @bot.message_handler(commands=['stats'])
 @admin_required
 def get_stats_command(message):
@@ -408,11 +443,14 @@ def get_stats_command(message):
       response += f"-------\n"
       response += f"清理系统的状态为：{settings.ENABLE_EXPIRED_USER_CLEAN}\n"
       response += f"邀请码系统的状态为：{settings.INVITE_CODE_SYSTEM_ENABLED}\n"
-      bot.reply_to(message, response)
+      bot_message = bot.reply_to(message, response)
       logger.info(f"管理员获取注册状态成功: telegram_id={telegram_id}, 本地注册用户数量={local_user_count},  Navidrome Web 应用用户数量={web_user_count}, 歌曲总数={song_count}, 专辑总数={album_count}, 艺术家总数={artist_count}, 电台总数={radio_count}")
     except Exception as e:
       logger.error(f"获取注册状态失败: telegram_id={telegram_id}, error={e}")
-      bot.reply_to(message, "获取注册状态失败，请重试！")
+      bot_message = bot.reply_to(message, "获取注册状态失败，请重试！")
+    
+    message_queue.add_message(message)
+    message_queue.add_message(bot_message, delay=10)
 
 @bot.message_handler(commands=['toggle_expired_user_clean'])
 @admin_required
@@ -425,8 +463,12 @@ def toggle_expired_user_clean_command(message):
     UserService.start_clean_expired_users()
 
     logger.info(f"过期用户清理定时任务已更改: {settings.ENABLE_EXPIRED_USER_CLEAN}")
-    bot_message = bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
+    bot_message = bot_message = bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
     delete_message_after(bot, message.chat.id, [bot_message.message_id])
+    
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
 
 @bot.message_handler(commands=['get_expired_users'])
 @admin_required
@@ -446,12 +488,12 @@ def get_expired_users_command(message):
         try:
             day = int(args[0])
         except ValueError:
-            bot.reply_to(message, "参数错误，DAY必须是整数！")
+            bot_message = bot.reply_to(message, "参数错误，DAY必须是整数！")
             return
         settings.EXPIRED_DAYS = day
         logger.info(f"获取距离现在已经{args[0]}天未使用服务的用户名单")
     else:
-        bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
+        bot_message = bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
         return
 
     
@@ -467,10 +509,10 @@ def get_expired_users_command(message):
                 response += f"{expired_user['username']}\n"
             response += f"-----------\n"
             response += f"已经过期的用户一共有：{len(expired_users)}位！\n"
-            bot.reply_to(message, response)     
+            bot_message = bot.reply_to(message, response)     
         logger.warning(f"管理员获取已经过期的用户列表成功: 共有{len(expired_users)}位！")
     else:
-        bot.reply_to(message, "没有已经过期的用户!")
+        bot_message = bot.reply_to(message, "没有已经过期的用户!")
         logger.info(f"没有已经过期的用户: telegram_id={telegram_id}")
         
 @bot.message_handler(commands=['get_expiring_users'])
@@ -491,12 +533,12 @@ def get_expiring_users_command(message):
         try:
             day = int(args[0])
         except ValueError:
-            bot.reply_to(message, "参数错误，DAY必须是整数！")
+            bot_message = bot.reply_to(message, "参数错误，DAY必须是整数！")
             return
         settings.WARNING_DAYS = day
         logger.info(f"获取{args[0]}天后将过期的用户名单")
     else:
-        bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
+        bot_message = bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
         return
 
       
@@ -512,10 +554,10 @@ def get_expiring_users_command(message):
                 response += f"{expiring_user['username']}\n"
             response += f"-----------\n"
             response += f"即将过期的用户一共有：{len(expiring_users)}位！\n"
-            bot.reply_to(message, response)     
+            bot_message = bot.reply_to(message, response)     
         logger.warning(f"管理员获取即将过期的用户列表成功: 共有{len(expiring_users)}位！")
     else:
-        bot.reply_to(message, "没有即将过期的用户!")
+        bot_message = bot.reply_to(message, "没有即将过期的用户!")
         logger.info(f"没有即将过期的用户: telegram_id={telegram_id}")
 
 @bot.message_handler(commands=['clean_expired_users'])
@@ -537,20 +579,20 @@ def clean_expired_users_command(message):
         try:
             day = int(args[0])
         except ValueError:
-            bot.reply_to(message, "参数错误，DAY必须是整数！")
+            bot_message = bot.reply_to(message, "参数错误，DAY必须是整数！")
             return
         settings.EXPIRED_DAYS = day
         logger.info(f"清理{day}天未使用的用户")
     else:
-        bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
+        bot_message = bot.reply_to(message, "参数错误，请提供整数格式的过期时间！")
         return
     
     user_list = UserService.clean_expired_users()
     if user_list:
-        bot.reply_to(message, f"已执行过期用户清理,一共清理用户{len(user_list)}位！")
+        bot_message = bot.reply_to(message, f"已执行过期用户清理,一共清理用户{len(user_list)}位！")
         logger.info(f"管理员清理过期用户成功: telegram_id={telegram_id}")
     else:
-        bot.reply_to(message, "未发现过期用户！")
+        bot_message = bot.reply_to(message, "未发现过期用户！")
         logger.info(f"没有用户过期！")
 
 @bot.message_handler(commands=['random_give_score_by_checkin_time'])
@@ -579,13 +621,13 @@ def random_give_score_by_checkin_time_command(message):
         user_range, max_score = args
         users = UserService.get_sign_in_users(user_range)
     else:
-        bot.reply_to(message, "参数错误，请提供签到时间范围和最大积分数，格式为：/random_give_score_by_checkin_time <all|today|yesterday|weekly|month> <max_score>")
+        bot_message = bot.reply_to(message, "参数错误，请提供签到时间范围和最大积分数，格式为：/random_give_score_by_checkin_time <all|today|yesterday|weekly|month> <max_score>")
         return
 
     try:
         max_score = int(max_score)
     except ValueError:
-        bot.reply_to(message, "参数错误，最大积分数必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，最大积分数必须是整数！")
         return
 
     if users:
@@ -593,10 +635,14 @@ def random_give_score_by_checkin_time_command(message):
             score = ScoreService._generate_random_score(max_score=max_score)
             ScoreService.add_score(user_id=user.id, score=score)
             logger.info(f"为用户增加随机积分: telegram_id={telegram_id}, score={score}, range={user_range}")
-        bot.reply_to(message, f"已为{len(users)}个用户随机增加积分，范围: {user_range}，最大积分: {max_score}!")
+        bot_message = bot.reply_to(message, f"已为{len(users)}个用户随机增加积分，范围: {user_range}，最大积分: {max_score}!")
     else:
-        bot.reply_to(message, "没有用户符合条件，无法增加积分")
+        bot_message = bot.reply_to(message, "没有用户符合条件，无法增加积分")
         logger.info(f"没有用户符合条件，无法增加积分, range={user_range}")
+    
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)
 
 @bot.message_handler(commands=['add_random_score'])
 @admin_required
@@ -633,12 +679,12 @@ def add_random_score_command(message):
     #     users = UserService.get_users_by_register_time(start_time, end_time)
     else:
         logger.warning(f"提供的参数错误！")
-        bot.reply_to(message, "参数错误，请提供注册时间范围的开始时间、结束时间和最大积分数，格式为：/random_give_score_by_range_time <start_time>[可选] <end_time>[可选] <max_score>[可选]")
+        bot_message = bot.reply_to(message, "参数错误，请提供注册时间范围的开始时间、结束时间和最大积分数，格式为：/random_give_score_by_range_time <start_time>[可选] <end_time>[可选] <max_score>[可选]")
         
     try:
         max_score = int(max_score)
     except ValueError:
-        bot.reply_to(message, "参数错误，最大积分数必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，最大积分数必须是整数！")
         return
     
     if users:
@@ -646,9 +692,9 @@ def add_random_score_command(message):
             score = ScoreService._generate_random_score(max_score=max_score)
             ScoreService.add_score(user_id=user.id, score=score)
             logger.info(f"为用户增加随机积分: telegram_id={telegram_id}, score={score}")
-        bot.reply_to(message, f"已为{len(users)}个用户随机增加积分, 最大积分: {max_score}!")
+        bot_message = bot.reply_to(message, f"已为{len(users)}个用户随机增加积分, 最大积分: {max_score}!")
     else:
-      bot.reply_to(message, "没有用户符合条件，无法增加积分")
+      bot_message = bot.reply_to(message, "没有用户符合条件，无法增加积分")
     #   logger.info(f"没有用户符合条件，无法增加积分，start_time={start_time}, end_time={end_time}")
     
 @bot.message_handler(commands=['userinfo_in_server'])
@@ -664,7 +710,7 @@ def get_user_info_in_server_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 1:
-        bot.reply_to(message, "参数错误，请提供用户名，格式为：/user_info_in_server <username>")
+        bot_message = bot.reply_to(message, "参数错误，请提供用户名，格式为：/user_info_in_server <username>")
         return
 
     username = args[0]
@@ -679,11 +725,13 @@ def get_user_info_in_server_command(message):
                 f"最后登录时间: {user_info['lastLoginAt']}\n" \
                 f"最后使用时间: {user_info['lastAccessAt']}\n" \
                 f"Navidrome ID: {user_info['id']}\n" 
-        bot.reply_to(message, response)
+        bot_message = bot.reply_to(message, response)
     else:
         logger.warning(f"获取服务器上用户信息失败: username={username}")
-        bot.reply_to(message, f"未找到用户: {username}")
-
+        bot_message = bot.reply_to(message, f"未找到用户: {username}")
+    message_queue.add_message(message)
+    message_queue.add_message(bot_message, delay=10)  
+    
 @bot.message_handler(commands=['get_score_chart'])
 @admin_required
 def get_score_chart_command(message):
@@ -700,7 +748,7 @@ def get_score_chart_command(message):
       try:
          limit = int(args[0])
       except ValueError:
-        bot.reply_to(message, "参数错误，排行榜用户数量必须是整数！")
+        bot_message = bot.reply_to(message, "参数错误，排行榜用户数量必须是整数！")
         return
 
     score_chart = UserService.get_score_chart(limit=limit)
@@ -710,8 +758,30 @@ def get_score_chart_command(message):
         response += "--------------------\n"
         for user_info in score_chart:
             response += f"第 {user_info['rank']} 名  *{user_info['username']}*  {user_info['score']}分\n"
-        bot.reply_to(message, response, parse_mode="Markdown")
+        bot_message = bot.reply_to(message, response, parse_mode="Markdown")
         logger.info(f"管理员获取积分排行榜成功: telegram_id={telegram_id}, 用户数量={limit}")
     else:
-        bot.reply_to(message, "获取排行榜失败，没有用户或发生错误！")
+        bot_message = bot.reply_to(message, "获取排行榜失败，没有用户或发生错误！")
         logger.warning(f"获取积分排行榜失败: telegram_id={telegram_id}")
+
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message, delay=60)
+    
+@bot.message_handler(commands=['toggle_clean_msg_system'])
+@admin_required
+def toggle_clean_msg_system_command(message):
+    """开启/关闭清理消息系统 (管理员命令)"""
+    settings.ENABLE_MESSAGE_CLEANER = not settings.ENABLE_MESSAGE_CLEANER
+    logger.info(f"消息清理系统已更改: {settings.ENABLE_MESSAGE_CLEANER}")
+    message_cleaner = get_message_cleaner()
+    if settings.ENABLE_MESSAGE_CLEANER:
+        message_cleaner.start() # 启动消息清理器
+        logger.info(f"消息管理器已启动！")
+    else:
+        message_cleaner.stop()
+        logger.info(f"消息管理器已关闭！")
+    bot_message = bot.reply_to(message, f"消息清理系统已{'开启' if settings.ENABLE_MESSAGE_CLEANER else '关闭'}")
+    if settings.ENABLE_MESSAGE_CLEANER:
+      message_queue.add_message(message)
+      message_queue.add_message(bot_message)

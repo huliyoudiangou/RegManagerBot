@@ -21,8 +21,8 @@ logger.add(os.path.join(log_dir, "warning.log"), rotation="10 MB", level="WARNIN
 logger.add(os.path.join(log_dir, "info.log"), rotation="1 week", level="INFO", format="{time} {level} {message}")  # 信息日志
 logger.add(os.path.join(log_dir, "debug.log"), rotation="1 week", level="DEBUG", format="{time} {level} {message}", backtrace=True, diagnose=True)  # 调试日志
 
-# logger.remove() # 移除默认控制台输出
-# logger.add(sys.stdout, level="DEBUG", format="<green>{time}</green> <level>{level: <8}</level> <level>{message}</level>") # 添加控制台输出，级别为 INFO
+logger.remove() # 移除默认控制台输出
+logger.add(sys.stdout, level="INFO", format="<green>{time}</green> <level>{level: <8}</level> <level>{message}</level>") # 添加控制台输出，级别为 INFO
 # 使用示例
 if __name__ == "__main__":
     logger.debug("这是一条调试日志")

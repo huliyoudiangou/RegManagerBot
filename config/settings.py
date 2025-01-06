@@ -32,3 +32,6 @@ EXPIRED_DAYS = int(os.getenv("EXPIRED_DAYS", 30))  # 用户过期时间（天）
 WARNING_DAYS = int(os.getenv("WARNING_DAYS", 27)) #  提前警告天数，默认为3
 CLEAN_INTERVAL = int(os.getenv("CLEAN_INTERVAL", 2592000))  # 清理过期用户的时间间隔（秒），默认为 30 天
 ENABLE_EXPIRED_USER_CLEAN = bool(os.getenv("ENABLE_EXPIRED_USER_CLEAN", 'False') == 'True') # 是否开启定时任务，默认关闭
+
+DELAY_INTERVAL = int(os.getenv("DELAY_INTERVAL", 5))
+ENABLE_MESSAGE_CLEANER = bool(os.getenv("ENABLE_MESSAGE_CLEANER", 'False') == 'True') # 是否开启消息清理系统，默认关闭

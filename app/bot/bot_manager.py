@@ -3,10 +3,11 @@ from app.utils.logger import logger
 from app.bot.handlers import user_handlers, admin_handlers
 from app.bot.core.bot_instance import bot
 # 需要安装的模块：无
+
 class BotManager:
     def __init__(self):
         self.bot = bot
-
+        
         # 定义命令列表
         commands = [
             telebot.types.BotCommand("start", "简介"),
@@ -42,9 +43,11 @@ class BotManager:
             telebot.types.BotCommand("get_score_chart", "积分排行榜 (管理员)"),
             telebot.types.BotCommand("toggle_invite_code_system", "开启/关闭邀请码系统 (管理员)"),
             telebot.types.BotCommand("toggle_expired_user_clean", "切换自动清理状态 (管理员)"),
+            telebot.types.BotCommand("toggle_clean_msg_system", "切换自动清除消息 (管理员)"),
             telebot.types.BotCommand("get_expiring_users", "获取不活跃的用户 (管理员)"),
             telebot.types.BotCommand("get_expired_users", "获取已过期的用户 (管理员)"),
             telebot.types.BotCommand("clean_expired_users", "清理不活跃的用户 (管理员)")
+            
         ]
         # 设置Bot命令
         self.bot.set_my_commands(commands)
@@ -89,7 +92,8 @@ class BotManager:
         bot.register_message_handler(admin_handlers.get_unused_invite_codes_command, commands=['unused_invite_codes']) # 注册获取未使用的邀请码的命令
         bot.register_message_handler(admin_handlers.get_user_info_in_server_command, commands=['userinfo_in_server']) # 注册获取服务器用户信息的命令
         bot.register_message_handler(admin_handlers.get_score_chart_command, commands=['get_score_chart']) # 注册获取积分排行榜的命令
-        
+        bot.register_message_handler(admin_handlers.toggle_clean_msg_system_command, commands=['toggle_clean_msg_system']) # 注册获取积分排行榜的命令
+    
     def get_bot(self):
        return self.bot
 

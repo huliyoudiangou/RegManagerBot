@@ -1,13 +1,15 @@
 from app.utils.logger import logger
 from datetime import datetime, timedelta
-
+from config import settings
 # 需要安装的模块：无
 
 
 class Message:
-    def __init__(self, chat_id, message_id, delay, create_time=None):
+    def __init__(self, chat_id, message_id, delay=settings.DELAY_INTERVAL, create_time=None):
         self.chat_id = chat_id
-        self.message_id = message_id
+        # if isinstance(message_id, str):
+        #     self.message_id = list(message_id)
+        # self.message_id = message_id
         self.delay = delay
         self.create_time = create_time if create_time else datetime.now()
         
@@ -21,13 +23,19 @@ class MessageQueue:
     def __init__(self):
         self.messages = {}
 
-    def add_message(self, chat_id, message_id, delay=5):
+    def add_message(self, message, delay=settings.DELAY_INTERVAL):
         """添加待删除的消息"""
+        if not settings.ENABLE_MESSAGE_CLEANER:
+          logger.debug("清除消息已经关闭")
+          return
+        
+        chat_id = message.chat.id
+        message_id = message.message_id 
         if chat_id not in self.messages:
             self.messages[chat_id] = {}
         self.messages[chat_id][message_id] =  Message(chat_id=chat_id, message_id=message_id, delay=delay)
         logger.debug(f"添加待删除的消息, chat_id={chat_id}, message_id={message_id}, delay={delay}")
-
+    
     def get_messages_to_delete(self):
         """获取需要删除的消息"""
         messages_to_delete = {}
@@ -43,10 +51,13 @@ class MessageQueue:
             del self.messages[chat_id]
         return messages_to_delete
     
-    def get_all_messages(self):
-        """获取所有消息，测试用"""
-        return self.messages
-    
+    def close(self):
+        """清空消息列表"""
+        global _message_queue
+        self.messages = None
+        _message_queue = None
+        logger.info("消息队列已关闭")
+     
 def create_message_queue():
     """创建MessageQueue实例"""
     global _message_queue
