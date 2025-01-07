@@ -8,6 +8,8 @@ load_dotenv()
 # --- 数据库配置 ---
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/db.sqlite3")  # 数据库连接 URL，默认为 SQLite
 
+# --- 服务类型配置 ---
+SERVICE_TYPE = os.getenv("SERVICE_TYPE")  # 支持的服务类型列表
 # --- Telegram Bot 配置 ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # Telegram Bot Token
 ADMIN_TELEGRAM_IDS = [int(id) for id in os.getenv("ADMIN_TELEGRAM_IDS", "").split(",") if id]  # 管理员 Telegram ID 列表，用逗号分隔
@@ -20,6 +22,9 @@ NAVIDROME_API_PASSWORD = os.getenv("NAVIDROME_API_PASSWORD")  # Navidrome API �
 # --- Emby 配置 ---
 EMBY_API_URL = os.getenv("EMBY_API_URL")  # Emby API 地址
 EMBY_API_KEY = os.getenv("EMBY_API_KEY")  # Emby API 密钥
+EMBY_API_USERNAME = os.getenv("EMBY_API_USERNAME")  # Navidrome API 用户名
+EMBY_API_PASSWORD = os.getenv("EMBY_API_PASSWORD")  # Navidrome API 密码
+EMBY_COPY_FROM_ID = os.getenv("EMBY_COPY_FROM_ID", None) # Emby Create User Configure From User ID
 
 # --- 其他配置 ---
 INVITE_CODE_LENGTH = int(os.getenv("INVITE_CODE_LENGTH", 8))  # 邀请码长度，默认为 8

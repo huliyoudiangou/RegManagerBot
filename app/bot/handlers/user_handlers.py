@@ -199,7 +199,7 @@ def help_command(message):
 
 @bot.message_handler(commands=['register'])
 @chat_type_required(["group", "supergroup"])
-@user_exists("navidrome", negate=True)
+@user_exists("emby", negate=True)
 def register_command(message):
     """
     处理 /register 命令，用户注册
@@ -210,10 +210,10 @@ def register_command(message):
     3. 邀请码系统关闭：/register <用户名> <密码> <任意邀请码> (为了统一格式，可以随意填写邀请码，但不使用)
     """
     telegram_id = message.from_user.id
-    user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
+    user = UserService.get_user_by_telegram_id(telegram_id)
 
     # 只有当用户不存在于 Web 应用时才需要注册
-    # if user and user.navidrome_user_id:
+    # if user and user.service_user_id:
     #     bot_message = bot.reply_to(message, "您已经注册过了, 如想重新注册，请先执行/deleteuser删除本地用户再注册!")
     #     return
 
@@ -225,7 +225,7 @@ def register_command(message):
             return
         username, password = args
         # 调用 UserService.register_user 方法注册用户
-        user = UserService.register_user(telegram_id, "navidrome", username, password)
+        user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
         if user:
             logger.info(f"管理员注册成功: telegram_id={telegram_id}, user_id={user.id}")
             bot_message = bot.reply_to(message, "管理员注册成功!")
@@ -255,7 +255,7 @@ def register_command(message):
           return
 
         # 注册用户
-        user = UserService.register_user(telegram_id, "navidrome", username, password, code=code)
+        user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password, code=code)
         if user:
             logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, username={username}, code={code}")
             bot_message = bot.reply_to(message, f"使用邀请码{code}注册成功!")
@@ -277,7 +277,7 @@ def register_command(message):
             return
         username, password = args[:2]  # 只取前两个参数作为用户名和密码
         # 调用 UserService.register_user 方法注册用户
-        user = UserService.register_user(telegram_id, "navidrome", username, password)
+        user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
         if user:
             logger.info(f"用户注册成功: telegram_id={telegram_id}, username={username}")
             bot_message = bot.reply_to(message, "注册成功!")
@@ -293,18 +293,17 @@ def reg_score_user_command(message):
     """
     telegram_id = message.from_user.id
     username = message.from_user.username
-    service_name = "navidrome"
-    logger.info(f"开始注册用户积分账号: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"开始注册用户积分账号: telegram_id={telegram_id}, service_type={settings.SERVICE_TYPE}")
 
     # 检查用户是否已存在
-    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
         bot_message = bot.reply_to(message, "您已经注册过了，请使用 /info 命令查看您的信息。")
-        logger.warning(f"用户已存在: telegram_id={telegram_id}, service_name={service_name}")
+        logger.warning(f"用户已存在: telegram_id={telegram_id}, service_type={user.service_type}")
         return
 
     # 在本地数据库中创建用户
-    user = UserService.register_local_user(telegram_id=telegram_id, service_name=service_name, username=username)
+    user = UserService.register_local_user(telegram_id=telegram_id, username=username)
     user.save()
     logger.info(f"本地用户创建成功: user_id={user.id}")
     bot_message = bot.reply_to(message, f"本地积分账号注册成功，欢迎您: {username}！")
@@ -313,44 +312,44 @@ def reg_score_user_command(message):
       message_queue.add_message(bot_message)
     
 @bot.message_handler(commands=['deleteuser'])
-@user_exists(service_name="navidrome")
+@user_exists(service_type=settings.SERVICE_TYPE)
 @confirmation_required(message_text="你确定要删除该用户吗？")
 def delete_user_command(message):
     """
     处理 /deleteuser 命令，删除用户
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"  # 假设要删除的是 Navidrome 账号
+    service_type = settings.SERVICE_TYPE  # 假设要删除的是 Navidrome 账号
 
-    logger.info(f"用户请求删除账户: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户请求删除账户: telegram_id={telegram_id}, service_type={service_type}")
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
         # 调用服务层的删除用户方法
         success = UserService.delete_user(user)
         if success:
-            logger.info(f"用户删除成功: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
+            logger.info(f"用户删除成功: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
             bot_message = bot.reply_to(message, "您的账户已成功删除!")
         else:
-            logger.error(f"用户删除失败: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
+            logger.error(f"用户删除失败: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
             bot_message = bot.reply_to(message, "删除服务器账户失败，本地账户已删除!")
     else:
-        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, "未找到您的账户信息，如已在服务器注册，请使用/bind命令绑定!")
     if settings.ENABLE_MESSAGE_CLEANER:
       message_queue.add_message(message)
       message_queue.add_message(bot_message)
       
 @bot.message_handler(commands=['use_code'])
-@user_exists(service_name="navidrome")
+@user_exists(service_type=settings.SERVICE_TYPE)
 def use_invite_code_command(message):
     """
     处理 /use_code 命令，用户使用邀请码注册
     """
     telegram_id = message.from_user.id
-    user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
-    if user and user.navidrome_user_id:
+    user = UserService.get_user_by_telegram_id(telegram_id)
+    if user and user.service_user_id:
         bot_message = bot.reply_to(message, "您已经注册过了!")
         return
 
@@ -389,7 +388,7 @@ def use_invite_code_command(message):
     
     password = username # 密码和用户名相同
     # 注册用户
-    user = UserService.register_user(telegram_id, "navidrome", username, password)
+    user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
     if user:
         logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, user_name={user.username}, code={code}")
         bot_message = bot.reply_to(message, "注册成功!")
@@ -403,7 +402,7 @@ def use_invite_code_command(message):
         logger.error(f"用户使用邀请码注册失败: telegram_id={telegram_id}, code={code}")
         if len(args) == 2:
            new_username = args[0]
-           user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
+           user = UserService.get_user_by_telegram_id(telegram_id)
            if user:
                 user.username = new_username
                 user.save()
@@ -418,12 +417,12 @@ def score_command(message):
     处理 /score 命令，查询用户积分
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"  # 假设查询的是 Navidrome 账号的积分
+    service_type = settings.SERVICE_TYPE  # 假设查询的是 Navidrome 账号的积分
 
-    logger.info(f"用户查询积分: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户查询积分: telegram_id={telegram_id}, service_type={service_type}")
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
         # 调用服务层的获取用户积分方法
         score = ScoreService.get_user_score(user.id)
@@ -435,7 +434,7 @@ def score_command(message):
             bot_message = bot_message = bot.reply_to(message, "查询积分失败，请重试!")
         
     else:
-        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot_message = bot.reply_to(message, "未找到您的账户信息!")
     
     if settings.ENABLE_MESSAGE_CLEANER:
@@ -449,23 +448,23 @@ def checkin_command(message):
     处理 /checkin 命令，用户签到
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"  # 假设是 Navidrome 账号签到
+    service_type = settings.SERVICE_TYPE  # 假设是 Navidrome 账号签到
 
-    logger.info(f"用户请求签到: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户请求签到: telegram_id={telegram_id}, service_type={service_type}")
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
         # 调用服务层的签到方法
         score = ScoreService.sign_in(user.id)
         if score:
-            logger.info(f"用户签到成功: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
+            logger.info(f"用户签到成功: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
             bot_message = bot_message = bot.reply_to(message, f"签到成功! 获得了{score}积分!")
         else:
-            logger.warning(f"用户签到失败: telegram_id={telegram_id}, service_name={service_name}")
+            logger.warning(f"用户签到失败: telegram_id={telegram_id}, service_type={service_type}")
             bot_message = bot_message = bot.reply_to(message, "签到失败，您今天已签到!")
     else:
-        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot_message = bot.reply_to(message, "未找到您的账户信息!")
     
     if not settings.ENABLE_MESSAGE_CLEANER:
@@ -477,7 +476,7 @@ def checkin_command(message):
       message_queue.add_message(bot_message)
       
 @bot.message_handler(commands=['buyinvite'])
-@user_exists("navidrome")
+@user_exists(settings.SERVICE_TYPE)
 @chat_type_required(["group", "supergroup"])
 @confirmation_required(f"你确定要购买邀请码嘛？")
 def buy_invite_code_command(message):
@@ -485,12 +484,12 @@ def buy_invite_code_command(message):
     处理 /buyinvite 命令，用户购买邀请码
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"用户请求购买邀请码: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户请求购买邀请码: telegram_id={telegram_id}, service_type={service_type}")
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
         # 从配置文件中获取购买邀请码所需积分
         required_score = settings.INVITE_CODE_PRICE
@@ -501,31 +500,31 @@ def buy_invite_code_command(message):
                 # 生成邀请码
                 invite_code = InviteCodeService.generate_invite_code(telegram_id)
                 if invite_code:
-                    logger.info(f"用户购买邀请码成功: telegram_id={telegram_id}, service_name={service_name}, code={invite_code.code}, username={user.username}")
+                    logger.info(f"用户购买邀请码成功: telegram_id={telegram_id}, service_type={service_type}, code={invite_code.code}, username={user.username}")
                     bot_message = bot.reply_to(message, f"购买邀请码成功，您的邀请码是：<code>{invite_code.code}</code>，请妥善保管！", parse_mode='HTML')
                 else:
-                    logger.error(f"用户购买邀请码失败，生成邀请码失败: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
+                    logger.error(f"用户购买邀请码失败，生成邀请码失败: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
                     bot_message = bot.reply_to(message, "购买邀请码失败，生成邀请码失败，请重试！")
             else:
-                logger.error(f"用户购买邀请码失败，扣除积分失败: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
+                logger.error(f"用户购买邀请码失败，扣除积分失败: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
                 bot_message = bot.reply_to(message, "购买邀请码失败，扣除积分失败，请重试！")
         else:
-            logger.warning(f"用户购买邀请码失败，积分不足: telegram_id={telegram_id}, service_name={service_name}, username={user.username}")
+            logger.warning(f"用户购买邀请码失败，积分不足: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
             bot_message = bot.reply_to(message, f"购买邀请码失败，您的积分不足，邀请码需要 {required_score} 积分！")
     else:
-        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, "未找到您的账户信息!")
     message_queue.add_message(message)
     
 @bot.message_handler(commands=['info'])
 @chat_type_required(["group", "supergroup"])
-@user_exists(service_name="navidrome")
+@user_exists(service_type=settings.SERVICE_TYPE)
 def info_command(message):
     """
     处理 /info 命令，用户信息查询
     """
     telegram_id = message.from_user.id
-    user = UserService.get_user_by_telegram_id(telegram_id, "navidrome")
+    user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
         logger.info(f"user: {user}")
         logger.info(f"用户信息查询成功: telegram_id={telegram_id}, user_id={user.id}")
@@ -534,7 +533,7 @@ def info_command(message):
                    f"用户名: {user.username}\n" \
                    f"积分: {user.score}\n" \
                    f"本地数据库ID: {user.id}\n" \
-                   f"Navidrome用户ID: {user.navidrome_user_id}"
+                   f"Navidrome用户ID: {user.service_user_id}"
         bot_message = bot.reply_to(message, response)
     else:
         logger.error(f"用户信息查询失败: telegram_id={telegram_id}")
@@ -552,9 +551,9 @@ def give_score_command(message):
      /give <telegram_id> <score>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"用户请求赠送积分: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户请求赠送积分: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 2:
@@ -574,13 +573,13 @@ def give_score_command(message):
       return
 
     # 检查赠送者是否存在
-    sender = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    sender = UserService.get_user_by_telegram_id(telegram_id)
     if not sender:
        bot_message = bot.reply_to(message, "未找到您的账户信息!")
        return
     
     # 检查接收者是否存在
-    receiver = UserService.get_user_by_telegram_id(receiver_telegram_id, service_name)
+    receiver = UserService.get_user_by_telegram_id(receiver_telegram_id, service_type)
     if not receiver:
         bot_message = bot.reply_to(message, f"未找到接收者 {receiver_telegram_id} 的账户信息！")
         return
@@ -613,9 +612,9 @@ def bind_command(message):
     /bind <username> <user_id>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"用户请求绑定账户: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户请求绑定账户: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 2:
@@ -627,11 +626,11 @@ def bind_command(message):
     # 验证用户
     result = UserService.auth_user_by_id(user_id, username)
     if result:
-        logger.info(f"用户绑定账户成功: telegram_id={telegram_id}, service_name={service_name}, username={username}, user_id={user_id}")
+        logger.info(f"用户绑定账户成功: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
         bot_message = bot.reply_to(message, "账户绑定成功!")
-        user = UserService.register_local_user(telegram_id=telegram_id, service_name=service_name, navidrome_user_id=user_id, username=username)
+        user = UserService.register_local_user(telegram_id=telegram_id, service_type=service_type, service_user_id=user_id, username=username)
     else:
-        logger.error(f"用户绑定账户失败: telegram_id={telegram_id}, service_name={service_name}, username={username}, user_id={user_id}")
+        logger.error(f"用户绑定账户失败: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
         bot_message = bot.reply_to(message, "账户绑定失败，请重试!")
 
 @bot.message_handler(commands=['unbind'])
@@ -640,19 +639,19 @@ def unbind_command(message):
     处理 /unbind 命令，解绑 Web 服务账户并删除本地用户
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"用户请求解绑账户: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户请求解绑账户: telegram_id={telegram_id}, service_type={service_type}")
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
         # 删除本地用户
         UserService.delete_local_user(user)
-        logger.info(f"用户解绑成功: telegram_id={telegram_id}, service_name={service_name}")
+        logger.info(f"用户解绑成功: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, "解绑成功！已删除您的本地账户信息。")
     else:
-        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, "未找到您的账户信息！")
     
     if settings.ENABLE_MESSAGE_CLEANER:
@@ -661,16 +660,16 @@ def unbind_command(message):
     
 @bot.message_handler(commands=['reset_password'])
 @chat_type_required(["group", "supergroup"])
-@user_exists("navidrome")
+@user_exists(settings.SERVICE_TYPE)
 @confirmation_required(f"你确定要重置密码嘛？")
 def reset_password_command(message):
     """
     处理 /reset_password 命令，重置密码
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"用户请求重置密码: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户请求重置密码: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 1:
@@ -678,33 +677,33 @@ def reset_password_command(message):
         return
 
     new_password = args[0]
-    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
-    if user and UserService.auth_user_by_id(user.navidrome_user_id, user.username):
+    user = UserService.get_user_by_telegram_id(telegram_id)
+    if user and UserService.auth_user_by_id(user.service_user_id, user.username):
         # 重置密码
         result = UserService.reset_password(user, new_password=new_password)
         if result:
-            logger.info(f"用户重置密码成功: telegram_id={telegram_id}, service_name={service_name}")
+            logger.info(f"用户重置密码成功: telegram_id={telegram_id}, service_type={service_type}")
             bot_message = bot_message = bot.reply_to(message, "密码重置成功！")
         else:
-            logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+            logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
             bot_message = bot_message = bot.reply_to(message, "密码重置失败，请联系管理员！")
             delete_message_after(bot, message, bot_message)
     else:
-        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, "该用户未注册！")
     
         
 
 @bot.message_handler(commands=['reset_username'])
-@user_exists("navidrome")
+@user_exists(settings.SERVICE_TYPE)
 def reset_username_command(message):
     """
     处理 /reset_username 命令，重置用户名
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"用户请求重置用户名: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"用户请求重置用户名: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 1:
@@ -712,23 +711,23 @@ def reset_username_command(message):
         return
 
     new_username = args[0]
-    user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(telegram_id)
     if user and user.username != new_username:
-        if UserService.auth_user_by_id(user.navidrome_user_id, user.username):
+        if UserService.auth_user_by_id(user.service_user_id, user.username):
             # 重置用户名
             result = UserService.reset_username(user, new_username=new_username)
             if result:
                 UserService.update_user_name(user, new_username)
-                logger.info(f"用户重置用户名成功: telegram_id={telegram_id}, service_name={service_name}")
+                logger.info(f"用户重置用户名成功: telegram_id={telegram_id}, service_type={service_type}")
                 bot_message = bot.reply_to(message, f"用户名重置成功，请使用{new_username}登录！")
             else:
-                logger.warning(f"服务器出错: telegram_id={telegram_id}, service_name={service_name}")
+                logger.warning(f"服务器出错: telegram_id={telegram_id}, service_type={service_type}")
                 bot_message = bot.reply_to(message, "服务器出错，请联系管理员！")
         else:
-            logger.warning(f"服务器无该用户: telegram_id={telegram_id}, service_name={service_name}")
+            logger.warning(f"服务器无该用户: telegram_id={telegram_id}, service_type={service_type}")
             bot_message = bot.reply_to(message, "服务器找不到该用户！")
     else:
-        logger.warning(f"用户重名: telegram_id={telegram_id}, service_name={service_name}")
+        logger.warning(f"用户重名: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, "用户重名，请重新选择用户名！")
     
     if settings.ENABLE_MESSAGE_CLEANER:
@@ -737,8 +736,8 @@ def reset_username_command(message):
              
 @bot.message_handler(commands=['random_score'])
 @chat_type_required(["private"])
-@user_exists(service_name='navidrome')
-@score_enough(service_name='navidrome')
+@user_exists(service_type=settings.SERVICE_TYPE)
+@score_enough(service_type=settings.SERVICE_TYPE)
 @confirmation_required(f"你确定要发随机红包嘛？")
 def random_score_command(message):
     """发送带有按钮的菜单"""
@@ -761,7 +760,7 @@ def random_score_command(message):
       message_queue.add_message(bot_message, delay=1)
       return
     
-    user = UserService.get_user_by_telegram_id(message.from_user.id, 'navidrome')
+    user = UserService.get_user_by_telegram_id(message.from_user.id)
     logger.info(f"用户 {user.username} 发送了总分为{total_score}分随机积分红包，原有积分为{user.score}分, 剩余积分为{user.score - total_score}分")
     if ScoreService.reduce_score(user.id, total_score):
         logger.info(f"积分成功扣除{total_score}分")
@@ -785,7 +784,7 @@ def handle_random_score_callback(call):
     user_id = call.from_user.id
     user_name = call.from_user.username if call.from_user.username else call.from_user.first_name #优先获取用户名，如果没有就获取first_name
     
-    user = UserService.get_user_by_telegram_id(user_id, 'navidrome')
+    user = UserService.get_user_by_telegram_id(user_id)
     if not user:
         bot_message = bot.send_message(call.message.chat.id, f"未注册用户[{user_name}](https://t.me/{user_name})，请使用`/reg_score_user`注册积分账号。", parse_mode="Markdown", disable_web_page_preview=True)
         logger.info(f"未注册用户{user_name}")

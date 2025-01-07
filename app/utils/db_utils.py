@@ -26,13 +26,14 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS Users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             telegram_id INTEGER UNIQUE NOT NULL,
-            service_name TEXT NOT NULL,
+            service_type TEXT NOT NULL,
             username TEXT,
             score INTEGER DEFAULT 0,
             invite_code TEXT,
-            navidrome_user_id TEXT,
-            emby_user_id TEXT,
+            service_user_id TEXT,
+            service_name TEXT,
             last_sign_in_date DATETIME,
+            create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(telegram_id, service_name) 
         )
     """)

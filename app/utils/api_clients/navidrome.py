@@ -72,8 +72,8 @@ class NavidromeAPIClient(BaseAPIClient):
                     logger.warning(f"用户名：{user['username']}将在3天后过期，请注意！")
             if 'expired' in expired_users and expired_users['expired']:
               for user in expired_users['expired']:
-                logger.info(f"删除过期用户: username={user['username']}, navidrome_user_id: {user['navidrome_user_id']}")
-                self.delete_user(user['navidrome_user_id'])
+                logger.info(f"删除过期用户: username={user['username']}, service_user_id: {user['service_user_id']}")
+                self.delete_user(user['service_user_id'])
           else:
             logger.error(f"无法获取token, 无法执行清理过期用户")
 
@@ -117,16 +117,16 @@ class NavidromeAPIClient(BaseAPIClient):
                     if last_time:
                         if (now - last_time) > timedelta(days=settings.EXPIRED_DAYS):
                             logger.debug(f"发现过期用户: {user_data['userName']}")
-                            expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
+                            expired_users.append({'service_user_id': user_data['id'], 'username': user_data['userName']})
                         elif (now - last_time) < timedelta(days=settings.WARNING_DAYS):
                             logger.debug(f"发现即将过期用户: {user_data['userName']}")
-                            warning_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
+                            warning_users.append({'service_user_id': user_data['id'], 'username': user_data['userName']})
                         else:
                             logger.debug(f"该用户正常: {user_data['userName']}")
                     else:
                         # 如果 lastLoginAt 和 lastAccessAt 都是 None，则立即删除
                         logger.debug(f"该用户从未登录过: {user_data['userName']}")
-                        expired_users.append({'navidrome_user_id': user_data['id'], 'username': user_data['userName']})
+                        expired_users.append({'service_user_id': user_data['id'], 'username': user_data['userName']})
                 else:
                     logger.debug(f"发现管理员账号：{user_data['userName']}")
         return {'expired':expired_users, 'warning':warning_users}

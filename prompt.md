@@ -45,7 +45,7 @@
 ### 用户表：Users结构
 - id: 用户id
 - telegram_id: telegram id
-- service_name: web应用名称 #用以区分不同的web应用
+- service_type: web应用名称 #用以区分不同的web应用
 - score: 用户积分
 - invite_code: 邀请码
 

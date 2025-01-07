@@ -17,31 +17,31 @@ message_queue = get_message_queue()
 
 # 需要安装的模块：无
 
-def user_exists(service_name, negate=False):
+def user_exists(service_type, negate=False):
     """
     验证用户是否存在于本地数据库的装饰器
      Args:
-        service_name: 服务名称，例如 "navidrome"
+        service_type: 服务名称，例如 "navidrome"
         negate: 是否取反，默认为 False
     """
     def decorator(func):
         @wraps(func)
         def wrapper(message, *args, **kwargs):
             telegram_id = message.from_user.id
-            logger.debug(f"校验用户是否存在于本地数据库: telegram_id={telegram_id}, service_name={service_name}, negate={negate}")
+            logger.debug(f"校验用户是否存在于本地数据库: telegram_id={telegram_id}, service_type={service_type}, negate={negate}")
 
-            user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+            user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
             
-            if user and user.navidrome_user_id == None:
+            if user and user.service_user_id == None:
                 logger.debug(f"已有积分用户，验证通过")
                 # bot.reply_to(message, f"已有积分账户，请使用/use_code <邀请码>注册服务器即可")
                 return func(message, *args, **kwargs)
                 
             if (user and not negate) or (not user and negate):
-                logger.debug(f"用户校验通过: telegram_id={telegram_id}, service_name={service_name}, negate={negate}, user_exists={bool(user)}")
+                logger.debug(f"用户校验通过: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
                 return func(message, *args, **kwargs)
             else:
-                logger.warning(f"用户校验失败: telegram_id={telegram_id}, service_name={service_name}, negate={negate}, user_exists={bool(user)}")
+                logger.warning(f"用户校验失败: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
                 bot.reply_to(message, "未找到您的账户信息!" if not negate else "您已注册，请勿重复注册！如想重新注册，请先执行/deleteuser删除本地用户再注册!")
                 return
 
@@ -91,12 +91,12 @@ def invite_code_valid(func):
 
     return wrapper
 
-def score_enough(service_name):
+def score_enough(service_type):
     """
     验证用户积分是否足够的装饰器
 
     Args:
-        service_name: 服务名称
+        service_type: 服务名称
     """
     def decorator(func):
         @wraps(func)
@@ -106,7 +106,7 @@ def score_enough(service_name):
             required_score = int(message.text.split(" ")[-1]) if len(message.text.split(" ")) > 1 else 0
 
             logger.debug(f"校验用户积分是否足够: telegram_id={telegram_id}, required_score={required_score}")
-            user = UserService.get_user_by_telegram_id(telegram_id, service_name)
+            user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
 
             if user and user.score >= required_score:
                 logger.debug(f"用户积分足够: telegram_id={telegram_id}, score={user.score}, required_score={required_score}")

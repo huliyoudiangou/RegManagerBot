@@ -117,9 +117,9 @@ def set_score_command(message):
     /set_score <telegram_id> <score>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"管理员设置用户积分: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"管理员设置用户积分: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 2:
@@ -135,7 +135,7 @@ def set_score_command(message):
         return
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(target_telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(target_telegram_id, service_type)
     if user:
         # 调用服务层的设置用户积分方法
         user = ScoreService.update_user_score(user.id, score)
@@ -146,7 +146,7 @@ def set_score_command(message):
             logger.error(f"用户积分设置失败: telegram_id={target_telegram_id}")
             bot_message = bot.reply_to(message, "设置积分失败，请重试！")
     else:
-        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
 
     if settings.ENABLE_MESSAGE_CLEANER:
@@ -161,9 +161,9 @@ def get_score_command(message):
     /score <telegram_id>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"管理员查看用户积分: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"管理员查看用户积分: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 1:
@@ -177,7 +177,7 @@ def get_score_command(message):
         return
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(target_telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(target_telegram_id, service_type)
     if user:
         # 调用服务层的获取用户积分方法
         score = ScoreService.get_user_score(user.id)
@@ -188,7 +188,7 @@ def get_score_command(message):
             logger.error(f"用户积分查询失败: telegram_id={target_telegram_id}")
             bot_message = bot.reply_to(message, "查询积分失败，请重试！")
     else:
-        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
     
     if settings.ENABLE_MESSAGE_CLEANER:
@@ -203,9 +203,9 @@ def add_score_command(message):
     /add_score <telegram_id> <score>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"管理员增加用户积分: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"管理员增加用户积分: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 2:
@@ -221,7 +221,7 @@ def add_score_command(message):
         return
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(target_telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(target_telegram_id, service_type)
     if user:
         # 调用服务层的增加用户积分方法
         user = ScoreService.add_score(user.id, score)
@@ -232,7 +232,7 @@ def add_score_command(message):
             logger.error(f"用户积分增加失败: telegram_id={target_telegram_id}")
             bot_message = bot.reply_to(message, "增加积分失败，请重试！")
     else:
-        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
     
     if settings.ENABLE_MESSAGE_CLEANER:
@@ -247,9 +247,9 @@ def reduce_score_command(message):
     /reduce_score <telegram_id> <score>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
+    service_type = settings.SERVICE_TYPE
 
-    logger.info(f"管理员减少用户积分: telegram_id={telegram_id}, service_name={service_name}")
+    logger.info(f"管理员减少用户积分: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 2:
@@ -265,7 +265,7 @@ def reduce_score_command(message):
         return
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(target_telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(target_telegram_id, service_type)
     if user:
         # 调用服务层的减少用户积分方法
         user = ScoreService.reduce_score(user.id, score)
@@ -276,7 +276,7 @@ def reduce_score_command(message):
             logger.error(f"用户积分减少失败: telegram_id={target_telegram_id}")
             bot_message = bot.reply_to(message, "减少积分失败，请重试！")
     else:
-        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
     
     if settings.ENABLE_MESSAGE_CLEANER:
@@ -323,8 +323,8 @@ def get_user_info_by_telegram_id_command(message):
     /userinfo <telegram_id>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
-    logger.info(f"管理员根据 Telegram ID 查询用户信息: telegram_id={telegram_id}, service_name={service_name}")
+    service_type = settings.SERVICE_TYPE
+    logger.info(f"管理员根据 Telegram ID 查询用户信息: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 1:
@@ -338,7 +338,7 @@ def get_user_info_by_telegram_id_command(message):
         return
 
     # 查找本地数据库中的用户
-    user = UserService.get_user_by_telegram_id(target_telegram_id, service_name)
+    user = UserService.get_user_by_telegram_id(target_telegram_id, service_type)
     if user:
        logger.info(f"用户查询成功: telegram_id={target_telegram_id}, user_id={user.id}")
        response = f"用户信息如下：\n" \
@@ -346,10 +346,10 @@ def get_user_info_by_telegram_id_command(message):
                  f"用户名: {user.username}\n" \
                  f"积分: {user.score}\n" \
                  f"本地数据库ID: {user.id}\n" \
-                 f"Navidrome用户ID: {user.navidrome_user_id}"
+                 f"Navidrome用户ID: {user.service_user_id}"
        bot_message = bot.reply_to(message, response)
     else:
-        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_name={service_name}")
+        logger.warning(f"用户不存在: telegram_id={target_telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, f"未找到用户: {target_telegram_id}")
     
     if settings.ENABLE_MESSAGE_CLEANER:
@@ -364,8 +364,8 @@ def get_user_info_by_username_command(message):
     /userinfo_by_username <username>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
-    logger.info(f"管理员根据用户名查询用户信息: telegram_id={telegram_id}, service_name={service_name}")
+    service_type = settings.SERVICE_TYPE
+    logger.info(f"管理员根据用户名查询用户信息: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 1:
@@ -383,7 +383,7 @@ def get_user_info_by_username_command(message):
                 f"用户名: {user.username}\n" \
                 f"积分: {user.score}\n" \
                 f"本地数据库ID: {user.id}\n" \
-                f"Navidrome用户ID: {user.navidrome_user_id}"
+                f"Navidrome用户ID: {user.service_user_id}"
         bot_message = bot.reply_to(message, response)
         return
 
@@ -404,8 +404,8 @@ def get_stats_command(message):
     /stats
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
-    logger.info(f"管理员查询统计信息: telegram_id={telegram_id}, service_name={service_name}")
+    service_type = 'navidrome'
+    logger.info(f"管理员查询统计信息: telegram_id={telegram_id}, service_type={service_type}")
     
     try:
       # 获取本地数据库用户数量
@@ -414,7 +414,6 @@ def get_stats_command(message):
       
       # 获取 Navidrome 用户数量
       navidrome_users = navidrome_api_client.get_users()
-    #   web_user_count = len(navidrome_users['data']) if navidrome_users and navidrome_users['status'] == 'success' else 0
       web_user_count = navidrome_users['headers']['x-total-count']
       # 获取 Navidrome 歌曲总数
       songs = navidrome_api_client.get_songs()
@@ -705,8 +704,8 @@ def get_user_info_in_server_command(message):
     /user_info_in_server <username>
     """
     telegram_id = message.from_user.id
-    service_name = "navidrome"
-    logger.info(f"管理员获取服务器上的用户信息: telegram_id={telegram_id}, service_name={service_name}")
+    service_type = settings.SERVICE_TYPE
+    logger.info(f"管理员获取服务器上的用户信息: telegram_id={telegram_id}, service_type={service_type}")
 
     args = message.text.split()[1:]
     if len(args) != 1:
