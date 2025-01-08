@@ -236,8 +236,9 @@ class NavidromeAPIClient(BaseAPIClient):
                 "email": ""
                 }
         if password:
-            data['changePassword'] = "true"
+            data['changePassword'] = True
             data['password'] = password
+        logger.debug(f"data: {data}")
         return self._make_request("PUT", endpoint, data=data)
 
     def delete_user(self, user_id):

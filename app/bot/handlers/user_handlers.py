@@ -687,11 +687,12 @@ def reset_password_command(message):
         else:
             logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
             bot_message = bot_message = bot.reply_to(message, "密码重置失败，请联系管理员！")
-            delete_message_after(bot, message, bot_message)
+
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot_message = bot.reply_to(message, "该用户未注册！")
-    
+    message_queue.add_message(message)
+    message_queue.add_message(bot_message)
         
 
 @bot.message_handler(commands=['reset_username'])
