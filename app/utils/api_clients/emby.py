@@ -123,13 +123,21 @@ class EmbyAPIClient(BaseAPIClient):
         logger.debug(f"Emby 创建用户: {data}")
         return self._make_request("POST", endpoint, data=data)
 
-    def update_user(self, user_id, user_data):
-        """更新 Emby 用户信息(太麻烦)"""
+    def update_user(self, user_id, username=None, password=None):
+        """更新 Emby 用户信息(目前只更新用户名和密码)"""
         endpoint = f"/Users/{user_id}"
         # 更新时需要把用户的id也传进去
-        data = user_data.copy()
-        data['Id'] = user_id
-        return self._make_request("POST", endpoint, data=data)
+        if username and not password:
+            data = {
+                "Name": f"{username}",
+                "Configuration": {},
+                "Policy": {},
+                "Type": "User"
+                }
+            result = self._make_request("POST", endpoint, data=data)
+        elif password:
+            result = self.update_password(user_id, password)
+        return result
 
     def delete_user(self, user_id):
         """删除 Emby 用户"""

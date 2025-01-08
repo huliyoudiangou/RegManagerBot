@@ -1,5 +1,5 @@
 from app.models import User, ServiceUser
-from app.utils.api_clients import navidrome_api_client, emby_api_client
+from app.utils.api_clients import navidrome_api_client, emby_api_client, service_api_client
 from app.utils.logger import logger
 from config import settings
 from datetime import datetime
@@ -15,7 +15,7 @@ class UserService:
     @staticmethod
     def register_local_user(telegram_id, service_user_id=None, service_type=settings.SERVICE_TYPE, username=None):
         # 在本地数据库中创建用户
-        user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id=telegram_id, service_type=service_type)
+        user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id=telegram_id)
         if not user:
             user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username)
             user.save()
@@ -42,60 +42,50 @@ class UserService:
             注册成功的用户对象，如果注册失败则返回 None
         """
         logger.debug(f"开始注册用户: telegram_id={telegram_id}, service_type={service_type}， username={username}, password={password}")
-
+        
+        
         if email is None:
             email = ""
         # 在 Navidrome 中创建用户
         if service_type == "navidrome":
             user_data = {"userName": username, "password": password, "email": email}  # 假设邮箱为用户名@example.com
-            result = navidrome_api_client.create_user(user_data)
+            result = service_api_client.create_user(user_data)
             if result and result['status'] == 'success':
                 service_user_id = result['data']['id']
                 logger.debug(f"Navidrome 用户创建成功: service_user_id={service_user_id}")
-                
-                user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id, service_type)
-                if not user:
-                    # 在本地数据库中创建用户
-                    user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code)
-                    user.save()
-                    logger.debug(f"本地用户创建成功: user_id={user.id}")
-                    return user
-                else:
-                    user = ServiceUser(id=user.id, score=user.score, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code)
-                    user.save()
-                    logger.debug(f"本地用户更新成功: user_id={user.id}")
-                    return user
             else:
                 logger.error(f"Navidrome 用户创建失败: {result}")
                 return None
         elif service_type == "emby":
             user_data = {"username": username}
-            result = emby_api_client.create_user(user_data)
+            result = service_api_client.create_user(user_data)
             if result and result['status'] == 'success':
                 service_user_id = result['data']['Id']
                 logger.debug(f"Emby 用户创建成功: service_user_id={service_user_id}")
-                pw = emby_api_client.update_password(result['data']['Id'], password)
+                
+                user_data = {'password': f"{password}"}
+                pw = service_api_client.update_password(result['data']['Id'], user_data)
                 if pw and pw['status'] == 'success':
                     logger.debug(f"Emby 用户密码更新成功: service_user_id={result['data']['Id']}")
-                
-                user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id, service_type)
-                if not user:
-                    # 在本地数据库中创建用户
-                    user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code)
-                    user.save()
-                    logger.debug(f"本地用户创建成功: user_id={user.id}")
-                    return user
-                else:
-                    user = ServiceUser(id=user.id, score=user.score, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code)
-                    user.save()
-                    logger.debug(f"本地用户更新成功: user_id={user.id}")
-                    return user
             else:
                 logger.error(f"Emby 用户创建失败: {result}")
                 return None
         else:
             logger.error(f"不支持的服务名称: {service_type}")
             return None
+        
+        user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id, service_type)
+        if not user:
+            # 在本地数据库中创建用户
+            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code)
+            user.save()
+            logger.debug(f"本地用户创建成功: user_id={user.id}")
+            return user
+        else:
+            user = ServiceUser(id=user.id, score=user.score, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code)
+            user.save()
+            logger.debug(f"本地用户更新成功: user_id={user.id}")
+            return user
     
     @staticmethod
     def delete_local_user(user):
@@ -112,15 +102,7 @@ class UserService:
     @staticmethod
     def delete_user(user):
         """删除用户"""
-        if user.service_type == "navidrome":
-            # 删除 Navidrome 上的用户
-            result = navidrome_api_client.delete_user(user.service_user_id)
-        elif user.service_type == "emby":
-            result = emby_api_client.delete_user(user.service_user_id)
-        else:
-            logger.error(f"不支持的服务名称: {user.service_type}")
-            return False
-        
+        result = service_api_client.delete_user(user.service_user_id)
         if result and result['status'] == 'success':
             logger.warning(f"{user.service_type} 用户删除成功: user_id={user.service_user_id}")
             # 删除本地用户
@@ -258,29 +240,36 @@ class UserService:
     @staticmethod
     def auth_user_by_id(user_id, username):
         """认证用户绑定"""
-        user = navidrome_api_client.get_user(user_id)
+        user = service_api_client.get_user(user_id)
         if user and user['status'] == 'success':
-            if user['data']['userName'] == username:
-                logger.debug(f"用户认证成功: user_id={user_id}, name={username}")
-                return user
-            else:
-                logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
-                return False
+            match settings.SERVICE_TYPE:
+                case "navidrome":
+                    if user['data']['userName'] == username:
+                        logger.debug(f"用户认证成功: user_id={user_id}, name={username}")
+                        return user
+                    else:
+                        logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
+                        return False
+                case "emby":
+                    if user['data']['Name'] == username:
+                        logger.debug(f"用户认证成功: user_id={user_id}, name={username}")
+                        return user
+                    else:
+                        logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
+                        return False
+                case _:
+                    logger.warning("不支持的服务认证")
+                    return False
         else:
             logger.error(f"服务器未找到该用户！: {username}")
             return False
+            
 
     @staticmethod
     def reset_password(user, new_password):
         """重置密码"""
-        user_data = {
-            "id": user.service_user_id,
-            "userName": user.username,
-            "name": user.username,
-            "changePassword": "true",
-            "password": new_password
-            }
-        result = navidrome_api_client.update_user(user.service_user_id, user_data)
+        result = service_api_client.update_user(user.service_user_id, username=user.username, password=new_password)
+            
         if result and result['status'] == 'success':
             logger.debug("密码重置成功")
             return True
@@ -292,18 +281,13 @@ class UserService:
     def update_user_name(user, username):
         """更新本地数据库中的用户名"""
         logger.debug(f"用户重置为：{username}")
-        return ServiceUser.update_username(user.telegram_id, user.service_type, username)
+        return ServiceUser.update_username(user.telegram_id, username)
   
     @staticmethod
     def reset_username(user, new_username):
         """重置用户名"""
-        user_data = {
-            "id": user.service_user_id,
-            "userName": new_username,
-            "name": new_username,
-            "email": ""
-            }
-        result = navidrome_api_client.update_user(user.service_user_id, user_data)
+        result = service_api_client.update_user(user.service_user_id, username=new_username)
+            
         if result and result['status'] == 'success':
             logger.debug(f"用户重置为：{new_username}")
             return True
@@ -315,7 +299,7 @@ class UserService:
     def clean_expired_users():
         """清理过期用户"""
         logger.warning("开始清理过期用户")
-        expired_users = navidrome_api_client._get_expired_users()
+        expired_users = service_api_client._get_expired_users()
         if 'warning' in expired_users and expired_users['warning']:
             for user in expired_users['warning']:
                 logger.warning(f"用户将在3天后过期，请注意: service_user_id={user['service_user_id']}")
@@ -323,7 +307,7 @@ class UserService:
             user_list = []
             for user in expired_users['expired']:
                 logger.warning(f"删除过期用户: service_user_id={user['service_user_id']}")
-                navidrome_api_client.delete_user(user['service_user_id'])
+                service_api_client.delete_user(user['service_user_id'])
                 user_list.append(user['username'])
                 navi = ServiceUser.get_by_service_user_id(user['service_user_id'])
                 if navi:

@@ -225,12 +225,19 @@ class NavidromeAPIClient(BaseAPIClient):
         }
         return self._make_request("POST", endpoint, data=data)
 
-    def update_user(self, user_id, user_data):
+    def update_user(self, user_id, username, password=None):
         """更新 Navidrome 用户信息"""
         endpoint = f"/api/user/{user_id}"
         # 更新时需要把用户的id也传进去
-        data = user_data.copy()
-        data['id'] = user_id
+        data = {
+                "id": user_id,
+                "userName": username,
+                "name": username,
+                "email": ""
+                }
+        if password:
+            data['changePassword'] = "true"
+            data['password'] = password
         return self._make_request("PUT", endpoint, data=data)
 
     def delete_user(self, user_id):
