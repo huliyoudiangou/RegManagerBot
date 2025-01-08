@@ -39,12 +39,12 @@ class BaseAPIClient(ABC):
         pass
 
     @abstractmethod
-    def create_user(self, user_data):
+    def create_user(self, username, password):
         """创建用户"""
         pass
 
     @abstractmethod
-    def update_user(self, user_id, user_data):
+    def update_user(self, user_id, username, password):
         """更新用户信息"""
         pass
 

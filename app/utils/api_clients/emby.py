@@ -54,12 +54,12 @@ class EmbyAPIClient(BaseAPIClient):
         url = f"{self.api_url}{endpoint}"
         self.session.headers.update({"Content-Type": "application/json"})
         self.session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1"})
-        # self.session.headers.update({"X-Emby-Token": f"{self.token}"})
+ 
         # 如果 token 存在，则添加到请求头
         _headers = {"X-Emby-Token": f"{self.token}"} if self.token else {}
         if headers:
           _headers.update(headers) # 如果传入了 headers，则合并
-        logger.debug(f"""{_headers}""")
+
         response = None
         try:
             response = self.session.request(method, url, params=params, json=data, headers=_headers)
@@ -105,23 +105,26 @@ class EmbyAPIClient(BaseAPIClient):
                 if user['Name'] == username:
                     return users['data'][index]
         return None
-    
-    def create_user(self, user_data):
+        
+    def create_user(self, username, password):
         """创建 Emby 用户"""
         endpoint = "/Users/New"
         # 简化数据，只保留必要的参数
-        data = {
-            "Name": f"{user_data['username']}",
+        copy_from_user_id = settings.EMBY_COPY_FROM_ID
+        user_data = {
+            "Name": f"{username}",
+            "CopyFromUserId": copy_from_user_id,
+            "UserCopyOptions": "UserPolicy,UserConfiguration"
             }
-        if settings.EMBY_COPY_FROM_ID is not None:
-            if self.get_user(settings.EMBY_COPY_FROM_ID):
-                data['CopyFromUserId'] = settings.EMBY_COPY_FROM_ID
-                data['UserCopyOptions'] = user_data.get('UserCopyOptions', ["UserPolicy"])
-                logger.debug(f"服务器存在创建用户模板，使用模板创建用户")
-            else:
-                logger.warning(f"服务器不存在创建用户模板，使用默认配置创建用户")
+        data = {k: v for k, v in user_data.items() if v is not None}
         logger.debug(f"Emby 创建用户: {data}")
-        return self._make_request("POST", endpoint, data=data)
+        resp = self._make_request("POST", endpoint, data=data)
+        try:
+            self.update_password(resp['data']['Id'], password)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Emby API 请求失败: {e}")
+            return {"status": "error", "message": str(e)}
+        return resp
 
     def update_user(self, user_id, username=None, password=None):
         """更新 Emby 用户信息(目前只更新用户名和密码)"""

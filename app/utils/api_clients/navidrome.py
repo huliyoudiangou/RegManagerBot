@@ -212,16 +212,16 @@ class NavidromeAPIClient(BaseAPIClient):
                     return users['data'][index]
         return None
     
-    def create_user(self, user_data):
+    def create_user(self, username, password):
         """创建 Navidrome 用户"""
         endpoint = "/api/user"
         # 简化数据，只保留必要的参数
         data = {
-            "userName": user_data["userName"],
-            "name": user_data.get("name", user_data["userName"]),  # 如果 name 不存在，则使用 userName
-            "password": user_data["password"],
-            "email": user_data.get("email"),
-            "isAdmin": user_data.get("isAdmin", False),
+            "userName": username,
+            "name": username,  # 如果 name 不存在，则使用 userName
+            "password": password,
+            "email": "",
+            "isAdmin": False,
         }
         return self._make_request("POST", endpoint, data=data)
 

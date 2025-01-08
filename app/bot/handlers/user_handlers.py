@@ -10,7 +10,6 @@ from datetime import datetime
 from app.bot.core.bot_instance import bot
 from app.bot.validators import user_exists, confirmation_required, score_enough, chat_type_required
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
-from app.utils.utils import delete_message_after
 from app.utils.message_queue import get_message_queue
 
 message_queue = get_message_queue()

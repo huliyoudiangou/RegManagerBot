@@ -7,9 +7,11 @@ from app.utils.message_queue import create_message_queue
 from app.utils.message_cleaner import create_message_cleaner
 # 需要安装的模块：无
 
+        
 def init_app():
     """初始化应用"""
     logger.info("初始化应用...")
+    
     # 创建数据库表
     create_tables()
     logger.info("数据库表创建完成")

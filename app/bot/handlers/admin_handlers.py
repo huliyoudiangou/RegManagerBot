@@ -6,7 +6,7 @@ from app.services.invite_code_service import InviteCodeService
 from app.utils.logger import logger
 from config import settings
 from app.bot.core.bot_instance import bot
-from app.utils.api_clients import navidrome_api_client
+from app.utils.api_clients import service_api_client
 from app.utils.utils import paginate_list, paginate_list_text
 from app.utils.utils import delete_message_after
 from app.utils.message_cleaner import get_message_cleaner
@@ -413,22 +413,22 @@ def get_stats_command(message):
       local_user_count = len(users) if users else 0
       
       # 获取 Navidrome 用户数量
-      navidrome_users = navidrome_api_client.get_users()
+      navidrome_users = service_api_client.get_users()
       web_user_count = navidrome_users['headers']['x-total-count']
       # 获取 Navidrome 歌曲总数
-      songs = navidrome_api_client.get_songs()
+      songs = service_api_client.get_songs()
       song_count = int(songs['x-total-count']) if songs and 'x-total-count' in songs else 0
 
       # 获取 Navidrome 专辑总数
-      albums = navidrome_api_client.get_albums()
+      albums = service_api_client.get_albums()
       album_count = int(albums['x-total-count']) if albums and 'x-total-count' in albums else 0
       
       # 获取 Navidrome 艺术家总数
-      artists = navidrome_api_client.get_artists()
+      artists = service_api_client.get_artists()
       artist_count = int(artists['x-total-count']) if artists and 'x-total-count' in artists else 0
 
       # 获取 Navidrome 电台总数
-      radios = navidrome_api_client.get_radios()
+      radios = service_api_client.get_radios()
       radio_count = int(radios['x-total-count']) if radios and 'x-total-count' in radios else 0
 
       response = f"统计信息:\n" \

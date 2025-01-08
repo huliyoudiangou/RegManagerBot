@@ -26,6 +26,13 @@ EMBY_API_USERNAME = os.getenv("EMBY_API_USERNAME")  # Navidrome API 用户名
 EMBY_API_PASSWORD = os.getenv("EMBY_API_PASSWORD")  # Navidrome API 密码
 EMBY_COPY_FROM_ID = os.getenv("EMBY_COPY_FROM_ID", None) # Emby Create User Configure From User ID
 
+# --- Audiobookshelf 配置 ---
+AUDIOBOOKSHELF_API_URL = os.getenv("AUDIOBOOKSHELF_API_URL")  # Emby API 地址
+AUDIOBOOKSHELF_API_KEY = os.getenv("AUDIOBOOKSHELF_API_KEY")  # Emby API 密钥
+AUDIOBOOKSHELF_API_USERNAME = os.getenv("AUDIOBOOKSHELF_API_USERNAME")  # Navidrome API 用户名
+AUDIOBOOKSHELF_API_PASSWORD = os.getenv("AUDIOBOOKSHELF_API_PASSWORD")  # Navidrome API 密码
+AUDIOBOOKSHELF_COPY_FROM_ID = os.getenv("AUDIOBOOKSHELF_COPY_FROM_ID", None)
+
 # --- 其他配置 ---
 INVITE_CODE_LENGTH = int(os.getenv("INVITE_CODE_LENGTH", 8))  # 邀请码长度，默认为 8
 INVITE_CODE_EXPIRATION_DAYS = int(os.getenv("INVITE_CODE_EXPIRATION_DAYS", 7))  # 邀请码过期时间（天），默认为 7

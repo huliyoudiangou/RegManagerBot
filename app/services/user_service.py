@@ -1,5 +1,5 @@
 from app.models import User, ServiceUser
-from app.utils.api_clients import navidrome_api_client, emby_api_client, service_api_client
+from app.utils.api_clients import service_api_client
 from app.utils.logger import logger
 from config import settings
 from datetime import datetime
@@ -41,37 +41,23 @@ class UserService:
         Returns:
             注册成功的用户对象，如果注册失败则返回 None
         """
+        # service_type = settings.SERVICE_TYPE
         logger.debug(f"开始注册用户: telegram_id={telegram_id}, service_type={service_type}， username={username}, password={password}")
         
-        
-        if email is None:
-            email = ""
-        # 在 Navidrome 中创建用户
-        if service_type == "navidrome":
-            user_data = {"userName": username, "password": password, "email": email}  # 假设邮箱为用户名@example.com
-            result = service_api_client.create_user(user_data)
-            if result and result['status'] == 'success':
-                service_user_id = result['data']['id']
-                logger.debug(f"Navidrome 用户创建成功: service_user_id={service_user_id}")
-            else:
-                logger.error(f"Navidrome 用户创建失败: {result}")
-                return None
-        elif service_type == "emby":
-            user_data = {"username": username}
-            result = service_api_client.create_user(user_data)
-            if result and result['status'] == 'success':
-                service_user_id = result['data']['Id']
-                logger.debug(f"Emby 用户创建成功: service_user_id={service_user_id}")
-                
-                user_data = {'password': f"{password}"}
-                pw = service_api_client.update_password(result['data']['Id'], user_data)
-                if pw and pw['status'] == 'success':
-                    logger.debug(f"Emby 用户密码更新成功: service_user_id={result['data']['Id']}")
-            else:
-                logger.error(f"Emby 用户创建失败: {result}")
-                return None
+        result = service_api_client.create_user(username, password)
+        if result and result['status'] == 'success':
+            match settings.SERVICE_TYPE:
+                case "navidrome":
+                    service_user_id = result['data']['id']
+                case "emby":
+                    service_user_id = result['data']['Id']
+                case "audiobookshelf":
+                    service_user_id = result['data']['user']['id']
+                case _:
+                    logger.warning(f"不支持的服务类型：{service_type}")
+            logger.debug(f"{service_type} 用户创建成功: service_user_id={service_user_id}")
         else:
-            logger.error(f"不支持的服务名称: {service_type}")
+            logger.error(f"{service_type} 用户创建失败: {result}")
             return None
         
         user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id, service_type)
@@ -130,7 +116,7 @@ class UserService:
         user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id)
         logger.debug(f"{user}")
         if user and user.service_type:
-          if user.service_type == "navidrome" or user.service_type == "emby":
+          if user.service_type:
               logger.debug(f"获取用户信息成功: {user.username}, 服务：{user.service_type}")
               return user
 
@@ -257,6 +243,13 @@ class UserService:
                     else:
                         logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
                         return False
+                case "audiobookshelf":
+                    if user['data']['username'] == username:
+                        logger.debug(f"用户认证成功: user_id={user_id}, name={username}")
+                        return user
+                    else:
+                        logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
+                        return False
                 case _:
                     logger.warning("不支持的服务认证")
                     return False
@@ -323,14 +316,14 @@ class UserService:
     def get_expired_users():
           """获取过期用户和即将过期的用户"""
           logger.debug("获取过期用户和即将过期的用户")
-          expired_users = navidrome_api_client._get_expired_users()
+          expired_users = service_api_client._get_expired_users()
           return expired_users
     
     @staticmethod
     def start_clean_expired_users():
           """启动和关闭清理系统"""
           logger.debug("准备关闭/开启清理系统")
-          navidrome_api_client.start_clean_expired_users()
+          service_api_client.start_clean_expired_users()
     
     @staticmethod
     def get_users_by_register_time(start_time=None, end_time=None):
@@ -408,7 +401,7 @@ class UserService:
         Args:
             user_name (str): 服务器中的用户名
         """
-        user = navidrome_api_client.get_user_by_username(user_name)
+        user = service_api_client.get_user_by_username(user_name)
         if user:
             logger.debug(f"获取用户信息成功: {user}")
             return user
