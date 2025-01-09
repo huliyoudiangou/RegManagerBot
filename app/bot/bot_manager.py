@@ -14,7 +14,7 @@ class BotManager:
             telebot.types.BotCommand("help", "可用命令"),
             telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
             telebot.types.BotCommand("reg_score_user", "注册积分用户 (可签到、送分、购买邀请码)"),
-            # telebot.types.BotCommand("use_code", "使用邀请码（已有积分账号）"),
+            telebot.types.BotCommand("use_renew_code", "使用续期码"),
             telebot.types.BotCommand("info", "查看个人信息"),
             telebot.types.BotCommand("deleteuser", "删除用户"),
             telebot.types.BotCommand("score", "查看我的积分"),
@@ -26,9 +26,12 @@ class BotManager:
             telebot.types.BotCommand("random_score", "发送积分红包"),
             telebot.types.BotCommand("bind", "绑定账号"),
             telebot.types.BotCommand("unbind", "解绑账号"),
-            telebot.types.BotCommand("generate_code", "生成邀请码 (管理员)"),
+            telebot.types.BotCommand("generate_code", "生成邀请码码 (管理员)"),
+            telebot.types.BotCommand("generate_renew_code", "生成续期码 (管理员)"),
+            telebot.types.BotCommand("renew_code", "生成邀请码 (管理员)"),
             telebot.types.BotCommand("invite", "查看所有邀请码 (管理员)"),
             telebot.types.BotCommand("unused_invite_codes", "查看所有未使用邀请码 (管理员)"),
+            telebot.types.BotCommand("unused_renew_codes", "查看所有未使用续期码 (管理员)"),
             telebot.types.BotCommand("set_score", "设置用户积分 (管理员)"),
             telebot.types.BotCommand("get_score", "查看用户积分 (管理员)"),
             telebot.types.BotCommand("add_score", "增加用户积分 (管理员)"),
@@ -64,6 +67,7 @@ class BotManager:
         bot.register_message_handler(user_handlers.score_command, commands=['score'])
         bot.register_message_handler(user_handlers.checkin_command, commands=['checkin'])
         bot.register_message_handler(user_handlers.buy_invite_code_command, commands=['buyinvite'])
+        bot.register_message_handler(user_handlers.use_renew_code_command, commands=['use_renew_code'])
         bot.register_message_handler(user_handlers.reset_password_command, commands=['reset_password'])
         bot.register_message_handler(user_handlers.reset_username_command, commands=['reset_username'])
         bot.register_message_handler(user_handlers.give_score_command, commands=['give'])
@@ -73,6 +77,7 @@ class BotManager:
     
          # 注册管理员命令处理函数
         bot.register_message_handler(admin_handlers.generate_invite_code_command, commands=['generate_code'])
+        bot.register_message_handler(admin_handlers.generate_renew_codes_command, commands=['generate_renew_code'])
         bot.register_message_handler(admin_handlers.get_all_invite_codes_command, commands=['invite'])
         bot.register_message_handler(admin_handlers.toggle_invite_code_system_command, commands=['toggle_invite_code_system'])
         bot.register_message_handler(admin_handlers.set_score_command, commands=['set_score'])
@@ -90,6 +95,7 @@ class BotManager:
         bot.register_message_handler(admin_handlers.add_random_score_command, commands=['add_random_score']) # 注册随机增加积分命令
         bot.register_message_handler(admin_handlers.random_give_score_by_checkin_time_command, commands=['random_score_by_checkin']) # 注册随机赠送积分命令
         bot.register_message_handler(admin_handlers.get_unused_invite_codes_command, commands=['unused_invite_codes']) # 注册获取未使用的邀请码的命令
+        bot.register_message_handler(admin_handlers.get_unused_renew_codes_command, commands=['unused_renew_codes'])
         bot.register_message_handler(admin_handlers.get_user_info_in_server_command, commands=['userinfo_in_server']) # 注册获取服务器用户信息的命令
         bot.register_message_handler(admin_handlers.get_score_chart_command, commands=['get_score_chart']) # 注册获取积分排行榜的命令
         bot.register_message_handler(admin_handlers.toggle_clean_msg_system_command, commands=['toggle_clean_msg_system']) # 注册获取积分排行榜的命令

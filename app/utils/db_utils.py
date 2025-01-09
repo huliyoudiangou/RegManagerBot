@@ -28,10 +28,12 @@ def create_tables():
             telegram_id INTEGER UNIQUE NOT NULL,
             service_type TEXT NOT NULL,
             username TEXT,
+            service_user_id TEXT,
             score INTEGER DEFAULT 0,
             invite_code TEXT,
-            service_user_id TEXT,
             service_name TEXT,
+            status TEXT DEFAULT 'active',
+            expiration_date DATETIME, 
             last_sign_in_date DATETIME,
             create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(telegram_id, service_name) 
@@ -45,7 +47,9 @@ def create_tables():
             code TEXT UNIQUE NOT NULL,
             is_used BOOLEAN DEFAULT FALSE,
             user_id INTEGER,
+            type TEXT NOT NULL CHECK(type IN ('invite', 'renew')),
             create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+            expire_days INTEGER NOT NULL,
             expire_time DATETIME,
             create_user_id INTEGER NOT NULL,
             FOREIGN KEY (user_id) REFERENCES Users(id)

@@ -6,7 +6,7 @@ from app.services.invite_code_service import InviteCodeService
 from app.utils.message_queue import get_message_queue
 from app.utils.logger import logger 
 from config import settings
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.bot.core.bot_instance import bot
 from app.bot.validators import user_exists, confirmation_required, score_enough, chat_type_required
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
@@ -248,8 +248,8 @@ def register_command(message):
         if invite_code.is_used:
           bot_message = bot.reply_to(message, "邀请码已被使用！")
           return
-
-        if invite_code.expire_time < datetime.now():
+        expire_time = invite_code.create_time + timedelta(days=invite_code.expire_days)
+        if expire_time < datetime.now():
           bot_message = bot.reply_to(message, "邀请码已过期！")
           return
 
@@ -260,7 +260,7 @@ def register_command(message):
             bot_message = bot.reply_to(message, f"使用邀请码{code}注册成功!")
             
             # 使用邀请码
-            success = InviteCodeService.use_invite_code(code, telegram_id)
+            success = InviteCodeService.use_invite_code(code, user.id)
             if not success:
                 bot_message = bot.reply_to(message, "邀请码使用失败！")
                 return
@@ -409,7 +409,35 @@ def use_invite_code_command(message):
            bot_message = bot.reply_to(message, f"服务器重名，注册失败，请使用新的用户名，格式为：/use_code <用户名> {code}")
         else:
            bot_message = bot.reply_to(message, "注册失败，请重试！")
-    
+
+@bot.message_handler(commands=['use_renew_code'])
+@user_exists(service_type=settings.SERVICE_TYPE)
+def use_renew_code_command(message):
+    """使用续期码 (用户命令)
+    格式: /use_renew_code <code>
+    示例: /use_renew_code ABC123
+    """
+    try:
+        # 解析参数
+        args = message.text.split()[1:]
+        if len(args) < 1:
+            bot.reply_to(message, "请提供续期码！")
+            return
+
+        code = args[0]  # 续期码
+        user_id = message.from_user.id  # 用户 ID
+
+        # 使用续期码
+        success = InviteCodeService.use_invite_code(code, user_id)
+        if success:
+            bot.reply_to(message, f"续期码使用成功！您的账户已续期。")
+        else:
+            bot.reply_to(message, "续期码使用失败，请检查续期码是否正确或是否已过期。")
+
+    except Exception as e:
+        logger.error(f"使用续期码失败: {e}")
+        bot.reply_to(message, "使用续期码失败，请稍后重试！")
+
 @bot.message_handler(commands=['score'])
 def score_command(message):
     """
@@ -439,7 +467,6 @@ def score_command(message):
     if settings.ENABLE_MESSAGE_CLEANER:
       message_queue.add_message(message)
       message_queue.add_message(bot_message)
-
 
 @bot.message_handler(commands=['checkin'])
 def checkin_command(message):

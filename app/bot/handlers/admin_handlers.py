@@ -46,7 +46,45 @@ def generate_invite_code_command(message):
     if invite_codes:
       response = f"成功生成{count}个邀请码(单击可复制):\n" + "\n".join(invite_codes)
       bot_message = bot.reply_to(message, response, parse_mode='HTML')
-      
+
+@bot.message_handler(commands=['generate_renew_code'])
+@admin_required
+def generate_renew_codes_command(message):
+    """生成续期码 (管理员命令)
+    格式: /renew [续期天数] [生成数量]
+    示例: /renew 30 5
+    """
+    try:
+        # 解析参数
+        args = message.text.split()[1:]
+        expire_days = int(args[0]) if len(args) > 0 else 30  # 默认续期 30 天
+        count = int(args[1]) if len(args) > 1 else 1  # 默认生成 1 个续期码
+
+        if expire_days <= 0 or count <= 0:
+            bot.reply_to(message, "续期天数和生成数量必须大于 0！")
+            return
+
+        # 生成续期码
+        renew_codes = []
+        for _ in range(count):
+            renew_code = InviteCodeService.generate_invite_code(
+                create_user_id=message.from_user.id,
+                expire_days=expire_days,
+                code_type='renew'
+            )
+            if renew_code:
+                renew_codes.append(f"<code>{renew_code.code}</code>")
+            else:
+                bot.reply_to(message, "续期码生成失败，请重试！")
+                return
+
+        # 返回结果
+        response = f"成功生成{count}个续期码(单击可复制):\n" + "\n".join(renew_codes)
+        bot.reply_to(message, response, parse_mode='HTML')
+
+    except ValueError:
+        bot.reply_to(message, "参数错误，续期天数和生成数量必须是整数！")
+   
 @bot.message_handler(commands=['invite'])
 @admin_required
 @confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
@@ -74,7 +112,7 @@ def get_unused_invite_codes_command(message):
     """获取未使用的邀请码列表 (管理员命令)"""
     telegram_id = message.from_user.id
     logger.info(f"管理员请求获取未使用的邀请码列表: telegram_id={telegram_id}")
-    invite_unused_codes = InviteCodeService.get_invite_code_by_is_used(is_used=False)
+    invite_unused_codes = InviteCodeService.get_all_invite_codes(is_used=False)
     if invite_unused_codes:
         invite_codes_list = paginate_list(data_list=invite_unused_codes, page_size=50)
         page_count = 0
@@ -93,7 +131,34 @@ def get_unused_invite_codes_command(message):
     else:
         bot_message = bot.reply_to(message, "没有找到未使用的邀请码！")
         logger.warning(f"没有找到未使用的邀请码: telegram_id={telegram_id}")
-            
+
+@bot.message_handler(commands=['unused_renew_codes'])
+@admin_required
+@confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
+def get_unused_renew_codes_command(message):
+    """获取未使用的续期码列表 (管理员命令)"""
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求获取未使用的续期码列表: telegram_id={telegram_id}")
+    invite_unused_codes = InviteCodeService.get_all_invite_codes(code_type="renew", is_used=False)
+    if invite_unused_codes:
+        invite_codes_list = paginate_list(data_list=invite_unused_codes, page_size=50)
+        page_count = 0
+        for invite_codes in invite_codes_list:
+            response = f"未使用的续期码：当前第{page_count+1}\n"
+            response += f"--------\n"
+            response += f"续期码：过期时间\n"
+            response += f"--------\n"
+            for invite_code in invite_codes:
+                response += f"<code>{invite_code.code}</code>: {str(invite_code.expire_time)[:-7]}\n"
+            response += f"--------\n"
+            response += f"未使用总数为：{len(invite_unused_codes)}, 当前页有{len(invite_codes)}个未使用!"
+            page_count += 1
+            bot_message = bot.reply_to(message, response, parse_mode='HTML') # 发送HTML格式的消息，支持点击复制
+        logger.info(f"管理员获取未使用的续期码列表成功: telegram_id={telegram_id}, count={len(invite_codes)}")
+    else:
+        bot_message = bot.reply_to(message, "没有找到未使用的续期码！")
+        logger.warning(f"没有找到未使用的续期码: telegram_id={telegram_id}") 
+                   
 @bot.message_handler(commands=['toggle_invite_code_system'])
 @admin_required
 def toggle_invite_code_system_command(message):
