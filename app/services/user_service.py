@@ -101,7 +101,7 @@ class UserService:
             return False
 
     @staticmethod
-    def get_user_by_telegram_id(telegram_id):
+    def get_user_by_telegram_id(telegram_id, service_type=None):
         """
         根据 Telegram ID 和服务名称查询用户
 
@@ -113,7 +113,7 @@ class UserService:
             User 对象，如果用户不存在则返回 None
         """
         logger.debug(f"查询用户: telegram_id={telegram_id}")
-        user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id)
+        user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id, service_type)
         logger.debug(f"{user}")
         if user and user.service_type:
           if user.service_type:

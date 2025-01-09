@@ -23,7 +23,7 @@ class NavidromeAPIClient(BaseAPIClient):
         self.session = requests.Session()
         self.token = self._login()  # 初始化时登录并获取 token
         # self._start_keep_alive()
-        scheduler.add_job(job_name="navidrome_keep_live", interval=settings.CLEAN_INTERVAL, job_func=self._keep_alive)
+        scheduler.add_job(job_name="navidrome_keep_live", interval=settings.DELAY_INTERVAL, job_func=self._keep_alive)
         logger.info("NavidromeAPIClient 初始化完成") # 初始化时登录并获取 token
 
     def _login(self):
@@ -52,8 +52,8 @@ class NavidromeAPIClient(BaseAPIClient):
     def _setup_clean_expired_users_job(self):
         """启动清理过期用户的定时器"""
         if settings.ENABLE_EXPIRED_USER_CLEAN:
-            scheduler.add_job(job_name = "clean_expired_users", interval=settings.CLEAN_INTERVAL, job_func = self._clean_expired_users)
-            logger.info(f"Navidrome 过期用户清理定时任务启动，时间间隔：{settings.CLEAN_INTERVAL} 秒")
+            scheduler.add_job(job_name = "clean_expired_users", interval=settings.DELAY_INTERVAL, job_func = self._clean_expired_users)
+            logger.info(f"Navidrome 过期用户清理定时任务启动，时间间隔：{settings.DELAY_INTERVAL} 秒")
         else:
             logger.info("Navidrome 过期用户清理定时任务未启动")
     

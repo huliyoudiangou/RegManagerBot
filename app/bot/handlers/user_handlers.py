@@ -113,7 +113,7 @@ def callback_handler(call):
 #                "- `/bind`: 绑定您的账户\n" \
 #                "- `/unbind`: 解绑您的账户\n" \
 #                "\n您可以使用 `/help` 命令获取更详细的帮助信息。"
-#     bot_message = bot.reply_to(message, response)
+#     bot.reply_to(message, response)
 
 @bot.message_handler(commands=['help'])
 @chat_type_required(["group", "supergroup"])
@@ -190,10 +190,8 @@ def help_command(message):
 
         💡 _如需更多帮助，请联系管理员。_
     '''
-  bot_message = bot.reply_to(message, response, parse_mode="Markdown")
-  if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+  bot.reply_to(message, response, parse_mode="Markdown")
+  
       
 
 @bot.message_handler(commands=['register'])
@@ -213,76 +211,76 @@ def register_command(message):
 
     # 只有当用户不存在于 Web 应用时才需要注册
     # if user and user.service_user_id:
-    #     bot_message = bot.reply_to(message, "您已经注册过了, 如想重新注册，请先执行/deleteuser删除本地用户再注册!")
+    #     bot.reply_to(message, "您已经注册过了, 如想重新注册，请先执行/deleteuser删除本地用户再注册!")
     #     return
 
     args = message.text.split()[1:]
     # 管理员注册
     if UserService.is_admin(telegram_id):
         if len(args) != 2:
-            bot_message = bot.reply_to(message, "管理员注册，请提供用户名和密码，格式为：/register <用户名> <密码>")
+            bot.reply_to(message, "管理员注册，请提供用户名和密码，格式为：/register <用户名> <密码>")
             return
         username, password = args
         # 调用 UserService.register_user 方法注册用户
         user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
         if user:
             logger.info(f"管理员注册成功: telegram_id={telegram_id}, user_id={user.id}")
-            bot_message = bot.reply_to(message, "管理员注册成功!")
+            bot.reply_to(message, "管理员注册成功!")
         else:
             logger.error(f"管理员注册失败: telegram_id={telegram_id}")
-            bot_message = bot.reply_to(message, "管理员注册失败，请重试!")
+            bot.reply_to(message, "管理员注册失败，请重试!")
         return
 
     # 邀请码系统开启
     if settings.INVITE_CODE_SYSTEM_ENABLED:
         if len(args) != 3:
-            bot_message = bot.reply_to(message, "邀请码系统已开启，请提供用户名、密码和邀请码，格式为：/register <用户名> <密码> <邀请码>")
+            bot.reply_to(message, "邀请码系统已开启，请提供用户名、密码和邀请码，格式为：/register <用户名> <密码> <邀请码>")
             return
         username, password, code = args
         # 验证邀请码
         invite_code = InviteCodeService.get_invite_code(code)
         if not invite_code:
-            bot_message = bot.reply_to(message, "邀请码无效！")
+            bot.reply_to(message, "邀请码无效！")
             return
 
         if invite_code.is_used:
-          bot_message = bot.reply_to(message, "邀请码已被使用！")
+          bot.reply_to(message, "邀请码已被使用！")
           return
         expire_time = invite_code.create_time + timedelta(days=invite_code.expire_days)
         if expire_time < datetime.now():
-          bot_message = bot.reply_to(message, "邀请码已过期！")
+          bot.reply_to(message, "邀请码已过期！")
           return
 
         # 注册用户
         user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password, code=code)
         if user:
             logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, username={username}, code={code}")
-            bot_message = bot.reply_to(message, f"使用邀请码{code}注册成功!")
+            bot.reply_to(message, f"使用邀请码{code}注册成功!")
             
             # 使用邀请码
             success = InviteCodeService.use_invite_code(code, user.id)
             if not success:
-                bot_message = bot.reply_to(message, "邀请码使用失败！")
+                bot.reply_to(message, "邀请码使用失败！")
                 return
         else:
             logger.error(f"用户使用邀请码注册失败: telegram_id={telegram_id}, code={code}")
-            bot_message = bot.reply_to(message, "注册失败，请重试!")
+            bot.reply_to(message, "注册失败，请重试!")
         return
 
     # 邀请码系统关闭
     else:
         if len(args) < 2:
-            bot_message = bot.reply_to(message, "邀请码系统已关闭，请提供用户名和密码，格式为：/register <用户名> <密码> [邀请码]")
+            bot.reply_to(message, "邀请码系统已关闭，请提供用户名和密码，格式为：/register <用户名> <密码> [邀请码]")
             return
         username, password = args[:2]  # 只取前两个参数作为用户名和密码
         # 调用 UserService.register_user 方法注册用户
         user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
         if user:
             logger.info(f"用户注册成功: telegram_id={telegram_id}, username={username}")
-            bot_message = bot.reply_to(message, "注册成功!")
+            bot.reply_to(message, "注册成功!")
         else:
             logger.error(f"用户注册失败: telegram_id={telegram_id}")
-            bot_message = bot.reply_to(message, "注册失败，请重试!")
+            bot.reply_to(message, "注册失败，请重试!")
         return
 
 @bot.message_handler(commands=['reg_score_user'])
@@ -297,7 +295,7 @@ def reg_score_user_command(message):
     # 检查用户是否已存在
     user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
-        bot_message = bot.reply_to(message, "您已经注册过了，请使用 /info 命令查看您的信息。")
+        bot.reply_to(message, "您已经注册过了，请使用 /info 命令查看您的信息。")
         logger.warning(f"用户已存在: telegram_id={telegram_id}, service_type={user.service_type}")
         return
 
@@ -305,10 +303,8 @@ def reg_score_user_command(message):
     user = UserService.register_local_user(telegram_id=telegram_id, username=username)
     user.save()
     logger.info(f"本地用户创建成功: user_id={user.id}")
-    bot_message = bot.reply_to(message, f"本地积分账号注册成功，欢迎您: {username}！")
-    if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+    bot.reply_to(message, f"本地积分账号注册成功，欢迎您: {username}！")
+    
     
 @bot.message_handler(commands=['deleteuser'])
 @user_exists(service_type=settings.SERVICE_TYPE)
@@ -329,16 +325,14 @@ def delete_user_command(message):
         success = UserService.delete_user(user)
         if success:
             logger.info(f"用户删除成功: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
-            bot_message = bot.reply_to(message, "您的账户已成功删除!")
+            bot.reply_to(message, "您的账户已成功删除!")
         else:
             logger.error(f"用户删除失败: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
-            bot_message = bot.reply_to(message, "删除服务器账户失败，本地账户已删除!")
+            bot.reply_to(message, "删除服务器账户失败，本地账户已删除!")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
-        bot_message = bot.reply_to(message, "未找到您的账户信息，如已在服务器注册，请使用/bind命令绑定!")
-    if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+        bot.reply_to(message, "未找到您的账户信息，如已在服务器注册，请使用/bind命令绑定!")
+    
       
 @bot.message_handler(commands=['use_code'])
 @user_exists(service_type=settings.SERVICE_TYPE)
@@ -349,14 +343,14 @@ def use_invite_code_command(message):
     telegram_id = message.from_user.id
     user = UserService.get_user_by_telegram_id(telegram_id)
     if user and user.service_user_id:
-        bot_message = bot.reply_to(message, "您已经注册过了!")
+        bot.reply_to(message, "您已经注册过了!")
         return
 
     # 从消息中提取参数
     args = message.text.split()[1:]
     
     if len(args) < 1:
-        bot_message = bot.reply_to(message, "请提供邀请码，格式为：/use_code <[用户名] 邀请码>")
+        bot.reply_to(message, "请提供邀请码，格式为：/use_code <[用户名] 邀请码>")
         return
     
     code = args[-1]
@@ -364,15 +358,15 @@ def use_invite_code_command(message):
     # 验证邀请码的有效性
     invite_code = InviteCodeService.get_invite_code(code)
     if not invite_code:
-        bot_message = bot.reply_to(message, "邀请码无效或已过期！")
+        bot.reply_to(message, "邀请码无效或已过期！")
         return
       
     if invite_code.is_used:
-      bot_message = bot.reply_to(message, "邀请码已被使用")
+      bot.reply_to(message, "邀请码已被使用")
       return
     
     if invite_code.expire_time < datetime.now():
-       bot_message = bot.reply_to(message, "邀请码已过期")
+       bot.reply_to(message, "邀请码已过期")
        return
    
     username = None
@@ -382,7 +376,7 @@ def use_invite_code_command(message):
     if user.username and user:
         username = user.username
     elif not username:
-        bot_message = bot.reply_to(message, "请提供用户名，格式为：/use_code <用户名> <邀请码>")
+        bot.reply_to(message, "请提供用户名，格式为：/use_code <用户名> <邀请码>")
         return
     
     password = username # 密码和用户名相同
@@ -390,7 +384,7 @@ def use_invite_code_command(message):
     user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
     if user:
         logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, user_name={user.username}, code={code}")
-        bot_message = bot.reply_to(message, "注册成功!")
+        bot.reply_to(message, "注册成功!")
         # 使用邀请码
         success = InviteCodeService.use_invite_code(code, telegram_id)
         if not success:
@@ -406,9 +400,9 @@ def use_invite_code_command(message):
                 user.username = new_username
                 user.save()
                 logger.info(f"用户名更新成功, new_username={new_username}")
-           bot_message = bot.reply_to(message, f"服务器重名，注册失败，请使用新的用户名，格式为：/use_code <用户名> {code}")
+           bot.reply_to(message, f"服务器重名，注册失败，请使用新的用户名，格式为：/use_code <用户名> {code}")
         else:
-           bot_message = bot.reply_to(message, "注册失败，请重试！")
+           bot.reply_to(message, "注册失败，请重试！")
 
 @bot.message_handler(commands=['use_renew_code'])
 @user_exists(service_type=settings.SERVICE_TYPE)
@@ -455,18 +449,16 @@ def score_command(message):
         score = ScoreService.get_user_score(user.id)
         if score is not None:
             logger.info(f"用户积分查询成功: telegram_id={telegram_id}, username={user.username}, score={score}")
-            bot_message = bot_message = bot.reply_to(message, f"您的积分: {score}")
+            bot.reply_to(message, f"您的积分: {score}")
         else:
             logger.error(f"用户积分查询失败: telegram_id={telegram_id}, username={user.username}")
-            bot_message = bot_message = bot.reply_to(message, "查询积分失败，请重试!")
+            bot.reply_to(message, "查询积分失败，请重试!")
         
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
-        bot_message = bot_message = bot.reply_to(message, "未找到您的账户信息!")
+        bot.reply_to(message, "未找到您的账户信息!")
     
-    if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+    
 
 @bot.message_handler(commands=['checkin'])
 def checkin_command(message):
@@ -485,21 +477,19 @@ def checkin_command(message):
         score = ScoreService.sign_in(user.id)
         if score:
             logger.info(f"用户签到成功: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
-            bot_message = bot_message = bot.reply_to(message, f"签到成功! 获得了{score}积分!")
+            bot.reply_to(message, f"签到成功! 获得了{score}积分!")
         else:
             logger.warning(f"用户签到失败: telegram_id={telegram_id}, service_type={service_type}")
-            bot_message = bot_message = bot.reply_to(message, "签到失败，您今天已签到!")
+            bot.reply_to(message, "签到失败，您今天已签到!")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
-        bot_message = bot_message = bot.reply_to(message, "未找到您的账户信息!")
+        bot.reply_to(message, "未找到您的账户信息!")
     
     if not settings.ENABLE_MESSAGE_CLEANER:
           logger.debug("消息清理系统未启动")
           return
 
-    if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+    
       
 @bot.message_handler(commands=['buyinvite'])
 @user_exists(settings.SERVICE_TYPE)
@@ -527,19 +517,19 @@ def buy_invite_code_command(message):
                 invite_code = InviteCodeService.generate_invite_code(telegram_id)
                 if invite_code:
                     logger.info(f"用户购买邀请码成功: telegram_id={telegram_id}, service_type={service_type}, code={invite_code.code}, username={user.username}")
-                    bot_message = bot.reply_to(message, f"购买邀请码成功，您的邀请码是：<code>{invite_code.code}</code>，请妥善保管！", parse_mode='HTML')
+                    bot.reply_to(message, f"购买邀请码成功，您的邀请码是：<code>{invite_code.code}</code>，请妥善保管！", parse_mode='HTML')
                 else:
                     logger.error(f"用户购买邀请码失败，生成邀请码失败: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
-                    bot_message = bot.reply_to(message, "购买邀请码失败，生成邀请码失败，请重试！")
+                    bot.reply_to(message, "购买邀请码失败，生成邀请码失败，请重试！")
             else:
                 logger.error(f"用户购买邀请码失败，扣除积分失败: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
-                bot_message = bot.reply_to(message, "购买邀请码失败，扣除积分失败，请重试！")
+                bot.reply_to(message, "购买邀请码失败，扣除积分失败，请重试！")
         else:
             logger.warning(f"用户购买邀请码失败，积分不足: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
-            bot_message = bot.reply_to(message, f"购买邀请码失败，您的积分不足，邀请码需要 {required_score} 积分！")
+            bot.reply_to(message, f"购买邀请码失败，您的积分不足，邀请码需要 {required_score} 积分！")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
-        bot_message = bot.reply_to(message, "未找到您的账户信息!")
+        bot.reply_to(message, "未找到您的账户信息!")
     message_queue.add_message(message)
     
 @bot.message_handler(commands=['info'])
@@ -560,14 +550,12 @@ def info_command(message):
                    f"积分: {user.score}\n" \
                    f"本地数据库ID: {user.id}\n" \
                    f"Navidrome用户ID: {user.service_user_id}"
-        bot_message = bot.reply_to(message, response)
+        bot.reply_to(message, response)
     else:
         logger.error(f"用户信息查询失败: telegram_id={telegram_id}")
-        bot_message = bot.reply_to(message, "未注册用户，请先注册！")
+        bot.reply_to(message, "未注册用户，请先注册！")
    
-    if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+    
 
 @bot.message_handler(commands=['give'])
 @confirmation_required(f"你确定要赠送积分嘛？")
@@ -583,7 +571,7 @@ def give_score_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 2:
-        bot_message = bot.reply_to(message, "参数错误，请提供接收者 Telegram ID 和积分数，格式为：/give <telegram_id> <score>")
+        bot.reply_to(message, "参数错误，请提供接收者 Telegram ID 和积分数，格式为：/give <telegram_id> <score>")
         return
 
     try:
@@ -591,28 +579,28 @@ def give_score_command(message):
         receiver_telegram_id = int(receiver_telegram_id)
         score = int(score)
     except ValueError:
-        bot_message = bot.reply_to(message, "参数错误，接收者 Telegram ID 和积分数必须是整数！")
+        bot.reply_to(message, "参数错误，接收者 Telegram ID 和积分数必须是整数！")
         return
 
     if telegram_id == receiver_telegram_id:
-      bot_message = bot.reply_to(message, "不能给自己赠送积分！")
+      bot.reply_to(message, "不能给自己赠送积分！")
       return
 
     # 检查赠送者是否存在
     sender = UserService.get_user_by_telegram_id(telegram_id)
     if not sender:
-       bot_message = bot.reply_to(message, "未找到您的账户信息!")
+       bot.reply_to(message, "未找到您的账户信息!")
        return
     
     # 检查接收者是否存在
     receiver = UserService.get_user_by_telegram_id(receiver_telegram_id, service_type)
     if not receiver:
-        bot_message = bot.reply_to(message, f"未找到接收者 {receiver_telegram_id} 的账户信息！")
+        bot.reply_to(message, f"未找到接收者 {receiver_telegram_id} 的账户信息！")
         return
 
     # 检查赠送者积分是否足够
     if sender.score < score:
-        bot_message = bot.reply_to(message, f"您的积分不足，无法赠送 {score} 积分！")
+        bot.reply_to(message, f"您的积分不足，无法赠送 {score} 积分！")
         return
 
     # 扣除赠送者积分，增加接收者积分
@@ -621,14 +609,12 @@ def give_score_command(message):
     
     if sender and receiver:
       logger.info(f"用户赠送积分成功: sender_id={sender.id}, receiver_id={receiver.id}, score={score}")
-      bot_message = bot.reply_to(message, f"您已成功向用户 {receiver_telegram_id} 赠送 {score} 积分!")
+      bot.reply_to(message, f"您已成功向用户 {receiver_telegram_id} 赠送 {score} 积分!")
     else:
        logger.error(f"用户赠送积分失败: sender_id={sender.id}, receiver_id={receiver.id}, score={score}")
-       bot_message = bot.reply_to(message, f"积分赠送失败，请重试!")
+       bot.reply_to(message, f"积分赠送失败，请重试!")
     
-    if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+    
 
 @bot.message_handler(commands=['bind'])
 @chat_type_required(["group", "supergroup"])
@@ -644,7 +630,7 @@ def bind_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 2:
-        bot_message = bot.reply_to(message, "参数错误，请提供用户名和用户 ID，格式为：/bind <username> <user_id>")
+        bot.reply_to(message, "参数错误，请提供用户名和用户 ID，格式为：/bind <username> <user_id>")
         return
 
     username, user_id = args
@@ -653,11 +639,11 @@ def bind_command(message):
     result = UserService.auth_user_by_id(user_id, username)
     if result:
         logger.info(f"用户绑定账户成功: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
-        bot_message = bot.reply_to(message, "账户绑定成功!")
+        bot.reply_to(message, "账户绑定成功!")
         user = UserService.register_local_user(telegram_id=telegram_id, service_type=service_type, service_user_id=user_id, username=username)
     else:
         logger.error(f"用户绑定账户失败: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
-        bot_message = bot.reply_to(message, "账户绑定失败，请重试!")
+        bot.reply_to(message, "账户绑定失败，请重试!")
 
 @bot.message_handler(commands=['unbind'])
 def unbind_command(message):
@@ -675,14 +661,12 @@ def unbind_command(message):
         # 删除本地用户
         UserService.delete_local_user(user)
         logger.info(f"用户解绑成功: telegram_id={telegram_id}, service_type={service_type}")
-        bot_message = bot.reply_to(message, "解绑成功！已删除您的本地账户信息。")
+        bot.reply_to(message, "解绑成功！已删除您的本地账户信息。")
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
-        bot_message = bot.reply_to(message, "未找到您的账户信息！")
+        bot.reply_to(message, "未找到您的账户信息！")
     
-    if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+    
     
 @bot.message_handler(commands=['reset_password'])
 @chat_type_required(["group", "supergroup"])
@@ -699,7 +683,7 @@ def reset_password_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 1:
-        bot_message = bot.reply_to(message, "参数错误，请提供新密码，格式为：/reset_password <new_password>")
+        bot.reply_to(message, "参数错误，请提供新密码，格式为：/reset_password <new_password>")
         return
 
     new_password = args[0]
@@ -709,16 +693,15 @@ def reset_password_command(message):
         result = UserService.reset_password(user, new_password=new_password)
         if result:
             logger.info(f"用户重置密码成功: telegram_id={telegram_id}, service_type={service_type}")
-            bot_message = bot_message = bot.reply_to(message, "密码重置成功！")
+            bot.reply_to(message, "密码重置成功！")
         else:
             logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
-            bot_message = bot_message = bot.reply_to(message, "密码重置失败，请联系管理员！")
+            bot.reply_to(message, "密码重置失败，请联系管理员！")
 
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
-        bot_message = bot.reply_to(message, "该用户未注册！")
-    message_queue.add_message(message)
-    message_queue.add_message(bot_message)
+        bot.reply_to(message, "该用户未注册！")
+    
         
 
 @bot.message_handler(commands=['reset_username'])
@@ -734,7 +717,7 @@ def reset_username_command(message):
 
     args = message.text.split()[1:]
     if len(args) != 1:
-        bot_message = bot.reply_to(message, "参数错误，请提供新用户名，格式为：/reset_username <new_username>")
+        bot.reply_to(message, "参数错误，请提供新用户名，格式为：/reset_username <new_username>")
         return
 
     new_username = args[0]
@@ -746,20 +729,18 @@ def reset_username_command(message):
             if result:
                 UserService.update_user_name(user, new_username)
                 logger.info(f"用户重置用户名成功: telegram_id={telegram_id}, service_type={service_type}")
-                bot_message = bot.reply_to(message, f"用户名重置成功，请使用{new_username}登录！")
+                bot.reply_to(message, f"用户名重置成功，请使用{new_username}登录！")
             else:
                 logger.warning(f"服务器出错: telegram_id={telegram_id}, service_type={service_type}")
-                bot_message = bot.reply_to(message, "服务器出错，请联系管理员！")
+                bot.reply_to(message, "服务器出错，请联系管理员！")
         else:
             logger.warning(f"服务器无该用户: telegram_id={telegram_id}, service_type={service_type}")
-            bot_message = bot.reply_to(message, "服务器找不到该用户！")
+            bot.reply_to(message, "服务器找不到该用户！")
     else:
         logger.warning(f"用户重名: telegram_id={telegram_id}, service_type={service_type}")
-        bot_message = bot.reply_to(message, "用户重名，请重新选择用户名！")
+        bot.reply_to(message, "用户重名，请重新选择用户名！")
     
-    if settings.ENABLE_MESSAGE_CLEANER:
-      message_queue.add_message(message)
-      message_queue.add_message(bot_message)
+    
              
 @bot.message_handler(commands=['random_score'])
 @chat_type_required(["private"])
@@ -771,20 +752,20 @@ def random_score_command(message):
     username = message.from_user.username
     args = message.text.split()[1:]
     if len(args) != 2:
-        bot_message = bot.reply_to(message, "参数错误，请提供参数，格式为：/random_score <participants_count> <total_score>")
-        message_queue.add_message(bot_message)
+        bot.reply_to(message, "参数错误，请提供参数，格式为：/random_score <participants_count> <total_score>")
+        
         return
     try:
         participants_count = int(args[0])
         total_score = int(args[1])
     except ValueError:
-        bot_message = bot.reply_to(message, "参数错误，参与人数和总积分数必须是整数！")
-        message_queue.add_message(bot_message, delay=1)
+        bot.reply_to(message, "参数错误，参与人数和总积分数必须是整数！")
+        
         return
     event_id = ScoreService.create_random_score_event(create_user_id=message.from_user.id, telegram_chat_id=message.chat.id, total_score=total_score, participants_count=participants_count)
     if not event_id:
-      bot_message = bot.reply_to(message, "创建积分活动失败")
-      message_queue.add_message(bot_message, delay=1)
+      bot.reply_to(message, "创建积分活动失败")
+      
       return
     
     user = UserService.get_user_by_telegram_id(message.from_user.id)
@@ -801,7 +782,7 @@ def random_score_command(message):
             🧧 *随机积分红包来了~*
             _感谢 {username} 发的随机积分红包！_
           '''
-    bot_message = bot.send_message(message.chat.id, msg, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True)
+    bot.send_message(message.chat.id, msg, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True)
     message_queue.add_message(message, delay=1)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("random_score_"))
@@ -813,15 +794,15 @@ def handle_random_score_callback(call):
     
     user = UserService.get_user_by_telegram_id(user_id)
     if not user:
-        bot_message = bot.send_message(call.message.chat.id, f"未注册用户[{user_name}](https://t.me/{user_name})，请使用`/reg_score_user`注册积分账号。", parse_mode="Markdown", disable_web_page_preview=True)
+        bot.send_message(call.message.chat.id, f"未注册用户[{user_name}](https://t.me/{user_name})，请使用`/reg_score_user`注册积分账号。", parse_mode="Markdown", disable_web_page_preview=True)
         logger.info(f"未注册用户{user_name}")
-        message_queue.add_message(bot_message, delay=1)
+        
         return
     
     score = ScoreService.use_random_score(event_id=event_id, user_id=user_id, user_name = user_name)
     if score:
-        bot_message = bot.send_message(call.message.chat.id, f"恭喜您：[{user_name}](https://t.me/{user_name})，获得{score}积分！", parse_mode="Markdown", disable_web_page_preview=True)
-        message_queue.add_message(bot_message)
+        bot.send_message(call.message.chat.id, f"恭喜您：[{user_name}](https://t.me/{user_name})，获得{score}积分！", parse_mode="Markdown", disable_web_page_preview=True)
+        
         event_data = ScoreService.get_random_score_event(event_id)
         if event_data and event_data['is_finished']:
            score_result = json.loads(event_data['score_result'])
@@ -829,14 +810,13 @@ def handle_random_score_callback(call):
            response += f"-----------------------\n"
            for item in score_result:
              response += f"用户: [{item['user_name']}](https://t.me/{item['user_name']})，获取积分： {item['score']}分\n"
-           bot_message = bot.send_message(call.message.chat.id, response, parse_mode="Markdown", disable_web_page_preview=True)
-           message_queue.add_message(bot_message, delay=10)
-           message_queue.add_message(call.message, delay=1)
+           bot.send_message(call.message.chat.id, response, parse_mode="Markdown", disable_web_page_preview=True)
+           
            
     elif score == 0:
-       bot_message = bot.send_message(call.message.chat.id, f"积分已经分发完毕")
-       message_queue.add_message(bot_message, delay=1)
+       bot.send_message(call.message.chat.id, f"积分已经分发完毕")
+       
 
     else:
-       bot_message = bot.send_message(call.message.chat.id, f"[{user_name}](https://t.me/{user_name})您已经获取过奖励, 请勿重复点击！", parse_mode="Markdown", disable_web_page_preview=True)
-       message_queue.add_message(bot_message, delay=1)
+       bot.send_message(call.message.chat.id, f"[{user_name}](https://t.me/{user_name})您已经获取过奖励, 请勿重复点击！", parse_mode="Markdown", disable_web_page_preview=True)
+       

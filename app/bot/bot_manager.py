@@ -1,6 +1,6 @@
 import telebot
 from app.utils.logger import logger
-from app.bot.handlers import user_handlers, admin_handlers
+from app.bot.handlers import user_handlers, admin_handlers, admin_board
 from app.bot.core.bot_instance import bot
 # 需要安装的模块：无
 
@@ -26,30 +26,30 @@ class BotManager:
             telebot.types.BotCommand("random_score", "发送积分红包"),
             telebot.types.BotCommand("bind", "绑定账号"),
             telebot.types.BotCommand("unbind", "解绑账号"),
-            telebot.types.BotCommand("generate_code", "生成邀请码码 (管理员)"),
-            telebot.types.BotCommand("generate_renew_code", "生成续期码 (管理员)"),
-            telebot.types.BotCommand("renew_code", "生成邀请码 (管理员)"),
-            telebot.types.BotCommand("invite", "查看所有邀请码 (管理员)"),
-            telebot.types.BotCommand("unused_invite_codes", "查看所有未使用邀请码 (管理员)"),
-            telebot.types.BotCommand("unused_renew_codes", "查看所有未使用续期码 (管理员)"),
-            telebot.types.BotCommand("set_score", "设置用户积分 (管理员)"),
-            telebot.types.BotCommand("get_score", "查看用户积分 (管理员)"),
-            telebot.types.BotCommand("add_score", "增加用户积分 (管理员)"),
-            telebot.types.BotCommand("reduce_score", "减少用户积分 (管理员)"),
-            telebot.types.BotCommand("set_price", "设置积分价格 (管理员)"),
-            telebot.types.BotCommand("add_random_score", "为符合条件的用户增加随机积分 (管理员)"),
-            telebot.types.BotCommand("random_score_by_checkin", "为签到用户增加随机积分 (管理员)"),
-            telebot.types.BotCommand("userinfo", "获取用户信息 (管理员)"),
-            telebot.types.BotCommand("userinfo_by_username", "通过用户名获取用户信息 (管理员)"),
-            telebot.types.BotCommand("userinfo_in_server", "通过用户名获取用户信息 (管理员)"),
-            telebot.types.BotCommand("stats", "获取注册状态 (管理员)"),
-            telebot.types.BotCommand("get_score_chart", "积分排行榜 (管理员)"),
-            telebot.types.BotCommand("toggle_invite_code_system", "开启/关闭邀请码系统 (管理员)"),
-            telebot.types.BotCommand("toggle_expired_user_clean", "切换自动清理状态 (管理员)"),
-            telebot.types.BotCommand("toggle_clean_msg_system", "切换自动清除消息 (管理员)"),
-            telebot.types.BotCommand("get_expiring_users", "获取不活跃的用户 (管理员)"),
-            telebot.types.BotCommand("get_expired_users", "获取已过期的用户 (管理员)"),
-            telebot.types.BotCommand("clean_expired_users", "清理不活跃的用户 (管理员)")
+            # telebot.types.BotCommand("generate_code", "生成邀请码码 (管理员)"),
+            # telebot.types.BotCommand("generate_renew_code", "生成续期码 (管理员)"),
+            # telebot.types.BotCommand("renew_code", "生成邀请码 (管理员)"),
+            # telebot.types.BotCommand("invite", "查看所有邀请码 (管理员)"),
+            # telebot.types.BotCommand("unused_invite_codes", "查看所有未使用邀请码 (管理员)"),
+            # telebot.types.BotCommand("unused_renew_codes", "查看所有未使用续期码 (管理员)"),
+            # telebot.types.BotCommand("set_score", "设置用户积分 (管理员)"),
+            # telebot.types.BotCommand("get_score", "查看用户积分 (管理员)"),
+            # telebot.types.BotCommand("add_score", "增加用户积分 (管理员)"),
+            # telebot.types.BotCommand("reduce_score", "减少用户积分 (管理员)"),
+            # telebot.types.BotCommand("set_price", "设置积分价格 (管理员)"),
+            # telebot.types.BotCommand("add_random_score", "为符合条件的用户增加随机积分 (管理员)"),
+            # telebot.types.BotCommand("random_score_by_checkin", "为签到用户增加随机积分 (管理员)"),
+            # telebot.types.BotCommand("userinfo", "获取用户信息 (管理员)"),
+            # telebot.types.BotCommand("userinfo_by_username", "通过用户名获取用户信息 (管理员)"),
+            # telebot.types.BotCommand("userinfo_in_server", "通过用户名获取用户信息 (管理员)"),
+            # telebot.types.BotCommand("stats", "获取注册状态 (管理员)"),
+            # telebot.types.BotCommand("get_score_chart", "积分排行榜 (管理员)"),
+            # telebot.types.BotCommand("toggle_invite_code_system", "开启/关闭邀请码系统 (管理员)"),
+            # telebot.types.BotCommand("toggle_expired_user_clean", "切换自动清理状态 (管理员)"),
+            # telebot.types.BotCommand("toggle_clean_msg_system", "切换自动清除消息 (管理员)"),
+            # telebot.types.BotCommand("get_expiring_users", "获取不活跃的用户 (管理员)"),
+            # telebot.types.BotCommand("get_expired_users", "获取已过期的用户 (管理员)"),
+            # telebot.types.BotCommand("clean_expired_users", "清理不活跃的用户 (管理员)")
             
         ]
         # 设置Bot命令
@@ -74,31 +74,32 @@ class BotManager:
         bot.register_message_handler(user_handlers.bind_command, commands=['bind'])
         bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])
         bot.register_message_handler(user_handlers.random_score_command, commands=['random_score']) # 注册随机增加积分命令
-    
+
+        bot.register_message_handler(admin_board.admin_panel_command, commands=['admin'])
          # 注册管理员命令处理函数
-        bot.register_message_handler(admin_handlers.generate_invite_code_command, commands=['generate_code'])
-        bot.register_message_handler(admin_handlers.generate_renew_codes_command, commands=['generate_renew_code'])
-        bot.register_message_handler(admin_handlers.get_all_invite_codes_command, commands=['invite'])
-        bot.register_message_handler(admin_handlers.toggle_invite_code_system_command, commands=['toggle_invite_code_system'])
-        bot.register_message_handler(admin_handlers.set_score_command, commands=['set_score'])
-        bot.register_message_handler(admin_handlers.get_score_command, commands=['get_score', 'score'])
-        bot.register_message_handler(admin_handlers.add_score_command, commands=['add_score'])
-        bot.register_message_handler(admin_handlers.reduce_score_command, commands=['reduce_score'])
-        bot.register_message_handler(admin_handlers.set_price_command, commands=['set_price'])
-        bot.register_message_handler(admin_handlers.get_user_info_by_telegram_id_command, commands=['userinfo'])
-        bot.register_message_handler(admin_handlers.get_user_info_by_username_command, commands=['userinfo_by_username'])
-        bot.register_message_handler(admin_handlers.get_stats_command, commands=['stats'])
-        bot.register_message_handler(admin_handlers.toggle_expired_user_clean_command, commands=['toggle_expired_user_clean']) # 注册开关清理过期用户定时任务的命令
-        bot.register_message_handler(admin_handlers.get_expiring_users_command, commands=['get_expiring_users']) # 注册获取即将过期用户的命令
-        bot.register_message_handler(admin_handlers.get_expired_users_command, commands=['get_expired_users']) # 注册获取已过期用户列表的命令
-        bot.register_message_handler(admin_handlers.clean_expired_users_command, commands=['clean_expired_users']) # 注册立即清理过期用户的命令
-        bot.register_message_handler(admin_handlers.add_random_score_command, commands=['add_random_score']) # 注册随机增加积分命令
-        bot.register_message_handler(admin_handlers.random_give_score_by_checkin_time_command, commands=['random_score_by_checkin']) # 注册随机赠送积分命令
-        bot.register_message_handler(admin_handlers.get_unused_invite_codes_command, commands=['unused_invite_codes']) # 注册获取未使用的邀请码的命令
-        bot.register_message_handler(admin_handlers.get_unused_renew_codes_command, commands=['unused_renew_codes'])
-        bot.register_message_handler(admin_handlers.get_user_info_in_server_command, commands=['userinfo_in_server']) # 注册获取服务器用户信息的命令
-        bot.register_message_handler(admin_handlers.get_score_chart_command, commands=['get_score_chart']) # 注册获取积分排行榜的命令
-        bot.register_message_handler(admin_handlers.toggle_clean_msg_system_command, commands=['toggle_clean_msg_system']) # 注册获取积分排行榜的命令
+        # bot.register_message_handler(admin_handlers.generate_invite_code_command, commands=['generate_code'])
+        # bot.register_message_handler(admin_handlers.generate_renew_codes_command, commands=['generate_renew_code'])
+        # bot.register_message_handler(admin_handlers.get_all_invite_codes_command, commands=['invite'])
+        # bot.register_message_handler(admin_handlers.toggle_invite_code_system_command, commands=['toggle_invite_code_system'])
+        # bot.register_message_handler(admin_handlers.set_score_command, commands=['set_score'])
+        # bot.register_message_handler(admin_handlers.get_score_command, commands=['get_score', 'score'])
+        # bot.register_message_handler(admin_handlers.add_score_command, commands=['add_score'])
+        # bot.register_message_handler(admin_handlers.reduce_score_command, commands=['reduce_score'])
+        # bot.register_message_handler(admin_handlers.set_price_command, commands=['set_price'])
+        # bot.register_message_handler(admin_handlers.get_user_info_by_telegram_id_command, commands=['userinfo'])
+        # bot.register_message_handler(admin_handlers.get_user_info_by_username_command, commands=['userinfo_by_username'])
+        # bot.register_message_handler(admin_handlers.get_stats_command, commands=['stats'])
+        # bot.register_message_handler(admin_handlers.toggle_expired_user_clean_command, commands=['toggle_expired_user_clean']) # 注册开关清理过期用户定时任务的命令
+        # bot.register_message_handler(admin_handlers.get_expiring_users_command, commands=['get_expiring_users']) # 注册获取即将过期用户的命令
+        # bot.register_message_handler(admin_handlers.get_expired_users_command, commands=['get_expired_users']) # 注册获取已过期用户列表的命令
+        # bot.register_message_handler(admin_handlers.clean_expired_users_command, commands=['clean_expired_users']) # 注册立即清理过期用户的命令
+        # bot.register_message_handler(admin_handlers.add_random_score_command, commands=['add_random_score']) # 注册随机增加积分命令
+        # bot.register_message_handler(admin_handlers.random_give_score_by_checkin_time_command, commands=['random_score_by_checkin']) # 注册随机赠送积分命令
+        # bot.register_message_handler(admin_handlers.get_unused_invite_codes_command, commands=['unused_invite_codes']) # 注册获取未使用的邀请码的命令
+        # bot.register_message_handler(admin_handlers.get_unused_renew_codes_command, commands=['unused_renew_codes'])
+        # bot.register_message_handler(admin_handlers.get_user_info_in_server_command, commands=['userinfo_in_server']) # 注册获取服务器用户信息的命令
+        # bot.register_message_handler(admin_handlers.get_score_chart_command, commands=['get_score_chart']) # 注册获取积分排行榜的命令
+        # bot.register_message_handler(admin_handlers.toggle_clean_msg_system_command, commands=['toggle_clean_msg_system']) # 注册获取积分排行榜的命令
     
     def get_bot(self):
        return self.bot

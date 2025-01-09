@@ -42,7 +42,7 @@ INVITE_CODE_PRICE=int(os.getenv("INVITE_CODE_PRICE", 100))
 # --- 清理不活跃用户 ---
 EXPIRED_DAYS = int(os.getenv("EXPIRED_DAYS", 30))  # 用户过期时间（天），默认为 30
 WARNING_DAYS = int(os.getenv("WARNING_DAYS", 27)) #  提前警告天数，默认为3
-CLEAN_INTERVAL = int(os.getenv("CLEAN_INTERVAL", 2592000))  # 清理过期用户的时间间隔（秒），默认为 30 天
+DELAY_INTERVAL = int(os.getenv("CLEAN_INTERVAL", 2592000))  # 清理过期用户的时间间隔（秒），默认为 30 天
 ENABLE_EXPIRED_USER_CLEAN = bool(os.getenv("ENABLE_EXPIRED_USER_CLEAN", 'False') == 'True') # 是否开启定时任务，默认关闭
 
 DELAY_INTERVAL = int(os.getenv("DELAY_INTERVAL", 5))
