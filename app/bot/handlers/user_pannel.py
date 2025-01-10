@@ -13,6 +13,7 @@ from app.bot.handlers.user_handlers import (
     bind_command,
     unbind_command
 )
+from config import settings
 
 def create_user_panel():
     """创建用户面板"""
@@ -48,8 +49,11 @@ def user_panel_callback(call):
     )
     match call.data:
         case "user_register":
-            bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>", reply_markup=markup, delay=30)
-            bot.register_next_step_handler(call.message, register_user_command)
+            if not settings.INVITE_CODE_SYSTEM_ENABLED:
+                bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+                bot.register_next_step_handler(call.message, register_user_command)
+            else:
+                bot.send_message(chat_id, "注册已关闭，请用邀请码注册！")
         case "user_use_code":
             bot.send_message(chat_id, "请输入邀请码（格式：邀请码）：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, use_invite_code_command)

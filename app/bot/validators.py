@@ -24,6 +24,7 @@ def user_exists(service_type, negate=False):
     def decorator(func):
         @wraps(func)
         def wrapper(message, *args, **kwargs):
+            logger.info(f"message: {message}")
             telegram_id = message.from_user.id
             logger.debug(f"校验用户是否存在于本地数据库: telegram_id={telegram_id}, service_type={service_type}, negate={negate}")
 
@@ -62,14 +63,17 @@ def user_exist_local(func):
             if user.service_user_id == None and user.invite_code == None:
                 logger.debug(f"已有积分用户")
                 bot.reply_to(message, f"已有积分账户，请使用 更新用户 即可！")
-                return func(message, *args, **kwargs)
+                return
             elif user.service_user_id == None and user.invite_code != None:
                 logger.debug(f"已有邀请码用户")
                 bot.reply_to(message, f"已有邀请码账户，请使用 更新用户 即可！")
                 return 
             else:
                 logger.warning(f"用户校验通过: telegram_id={telegram_id}")
-                return func(message, *args, **kwargs)                           
+                return func(message, *args, **kwargs)
+        else:
+            logger.info(f"用户校验通过")
+            return func(message, *args, **kwargs)
     return wrapper
 
 def admin_required(func):

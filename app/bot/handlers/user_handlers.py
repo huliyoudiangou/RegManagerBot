@@ -114,7 +114,7 @@ def register_user_command(message):
         logger.error(f"用户注册失败: telegram_id={telegram_id}")
         bot.send_message(message.chat.id, "注册失败，请重试!")
 
-@user_exist_local
+@user_exists(service_type=settings.SERVICE_TYPE)
 def update_user_command(message):
     if message.text.startswith('/'):
         args = message.text.split()[1:]
@@ -380,7 +380,6 @@ def score_command(message):
         bot.reply_to(message, "未找到您的账户信息!")
     
     
-
 @bot.message_handler(commands=['checkin'])
 def checkin_command(message):
     """
@@ -410,8 +409,7 @@ def checkin_command(message):
           logger.debug("消息清理系统未启动")
           return
 
-    
-      
+         
 @bot.message_handler(commands=['buyinvite'])
 @user_exists(settings.SERVICE_TYPE)
 @chat_type_required(["group", "supergroup"])
@@ -460,6 +458,7 @@ def info_command(message):
     """
     处理 /info 命令，用户信息查询
     """
+    logger.info(f"message: {message}")
     telegram_id = message.from_user.id
     user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
