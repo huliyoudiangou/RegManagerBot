@@ -23,7 +23,7 @@ class NavidromeAPIClient(BaseAPIClient):
         self.session = requests.Session()
         self.token = self._login()  # 初始化时登录并获取 token
         # self._start_keep_alive()
-        scheduler.add_job(job_name="navidrome_keep_live", interval=settings.DELAY_INTERVAL, job_func=self._keep_alive)
+        scheduler.add_job(job_name="navidrome_keep_live", interval=3600, job_func=self._keep_alive)
         logger.info("NavidromeAPIClient 初始化完成") # 初始化时登录并获取 token
 
     def _login(self):

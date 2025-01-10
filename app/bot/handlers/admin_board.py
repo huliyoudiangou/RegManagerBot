@@ -125,19 +125,19 @@ def admin_panel_callback(call):
         case "admin_status_management":
             bot.edit_message_text("状态管理：", chat_id, call.message.message_id, reply_markup=create_status_management_panel())
         case "admin_get_user_info_by_id":
-            bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, get_user_info_by_telegram_id_command)
         case "admin_get_user_info_by_username":
-            bot.send_message(chat_id, "请输入用户名：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入用户名：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, get_user_info_by_username_command)
         case "admin_get_user_info_in_server":
-            bot.send_message(chat_id, "请输入用户名：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入用户名：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, get_user_info_in_server_command)
         case "admin_generate_invite_code":
-            bot.send_message(chat_id, "请输入要生成的邀请码数量：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入要生成的邀请码数量：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, generate_invite_code_command)
         case "admin_generate_renew_code":
-            bot.send_message(chat_id, "请输入续期天数和生成数量（格式：天数 数量）：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入续期天数和生成数量（格式：天数 数量）：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, generate_renew_codes_command)
         case "admin_get_all_invite_codes":
             get_all_invite_codes_command(call.message)
@@ -146,28 +146,28 @@ def admin_panel_callback(call):
         case "admin_get_unused_renew_codes":
             get_unused_renew_codes_command(call.message)
         case "admin_set_invite_price":
-            bot.send_message(chat_id, "请输入邀请码价格：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入邀请码价格：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, set_price_command)
         case "admin_set_score":
-            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, set_score_command)
         case "admin_add_score":
-            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, add_score_command)
         case "admin_reduce_score":
-            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, reduce_score_command)
         case "admin_get_score":
-            bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, get_score_command)
         case "admin_get_score_chart":
-            bot.send_message(chat_id, "请输入要显示的排行榜用户数量（默认10）：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入要显示的排行榜用户数量（默认10）：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, get_score_chart_command)
         case "admin_random_give_score_by_checkin_time":
-            bot.send_message(chat_id, "请输入签到时间范围和最大积分数（格式：范围 最大积分）：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入签到时间范围和最大积分数（格式：范围 最大积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, random_give_score_by_checkin_time_command)
         case "admin_add_random_score":
-            bot.send_message(chat_id, "请输入注册时间范围和最大积分数（格式：开始时间 结束时间 最大积分）：<30S未输入自动退出>", reply_markup=markup, delay=-30)
+            bot.send_message(chat_id, "请输入注册时间范围和最大积分数（格式：开始时间 结束时间 最大积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, add_random_score_command)
         case "admin_get_stats":
             get_stats_command(call.message)
