@@ -1,6 +1,6 @@
 import telebot
 from app.utils.logger import logger
-from app.bot.handlers import user_handlers, admin_handlers, admin_board
+from app.bot.handlers import user_handlers, admin_handlers, admin_board, user_pannel
 from app.bot.core.bot_instance import bot
 # 需要安装的模块：无
 
@@ -10,22 +10,24 @@ class BotManager:
         
         # 定义命令列表
         commands = [
-            telebot.types.BotCommand("start", "简介"),
-            telebot.types.BotCommand("help", "可用命令"),
-            telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
-            telebot.types.BotCommand("reg_score_user", "注册积分用户 (可签到、送分、购买邀请码)"),
-            telebot.types.BotCommand("use_renew_code", "使用续期码"),
-            telebot.types.BotCommand("info", "查看个人信息"),
-            telebot.types.BotCommand("deleteuser", "删除用户"),
-            telebot.types.BotCommand("score", "查看我的积分"),
-            telebot.types.BotCommand("checkin", "签到"),
-            telebot.types.BotCommand("buyinvite", "购买邀请码"),
-            telebot.types.BotCommand("reset_password", "重置密码"),
-            telebot.types.BotCommand("reset_username", "重置用户名"),
-            telebot.types.BotCommand("give", "赠送积分"),
-            telebot.types.BotCommand("random_score", "发送积分红包"),
-            telebot.types.BotCommand("bind", "绑定账号"),
-            telebot.types.BotCommand("unbind", "解绑账号"),
+            telebot.types.BotCommand("start", "开始"),
+            telebot.types.BotCommand("admin", "管理"),
+            # telebot.types.BotCommand("start", "简介"),
+            # telebot.types.BotCommand("help", "可用命令"),
+            # telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
+            # telebot.types.BotCommand("reg_score_user", "注册积分用户 (可签到、送分、购买邀请码)"),
+            # telebot.types.BotCommand("use_renew_code", "使用续期码"),
+            # telebot.types.BotCommand("info", "查看个人信息"),
+            # telebot.types.BotCommand("deleteuser", "删除用户"),
+            # telebot.types.BotCommand("score", "查看我的积分"),
+            # telebot.types.BotCommand("checkin", "签到"),
+            # telebot.types.BotCommand("buyinvite", "购买邀请码"),
+            # telebot.types.BotCommand("reset_password", "重置密码"),
+            # telebot.types.BotCommand("reset_username", "重置用户名"),
+            # telebot.types.BotCommand("give", "赠送积分"),
+            # telebot.types.BotCommand("random_score", "发送积分红包"),
+            # telebot.types.BotCommand("bind", "绑定账号"),
+            # telebot.types.BotCommand("unbind", "解绑账号"),
             # telebot.types.BotCommand("generate_code", "生成邀请码码 (管理员)"),
             # telebot.types.BotCommand("generate_renew_code", "生成续期码 (管理员)"),
             # telebot.types.BotCommand("renew_code", "生成邀请码 (管理员)"),
@@ -56,24 +58,25 @@ class BotManager:
         self.bot.set_my_commands(commands)
 
         # 注册路由
-        bot.register_message_handler(user_handlers.start_command, commands=['start'])
-        bot.register_message_handler(user_handlers.start_command, commands=['start'])
-        bot.register_message_handler(user_handlers.help_command, commands=['help'])
-        bot.register_message_handler(user_handlers.register_command, commands=['register'])
-        bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
-        # bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
-        bot.register_message_handler(user_handlers.info_command, commands=['info'])
-        bot.register_message_handler(user_handlers.delete_user_command, commands=['deleteuser'])
-        bot.register_message_handler(user_handlers.score_command, commands=['score'])
-        bot.register_message_handler(user_handlers.checkin_command, commands=['checkin'])
-        bot.register_message_handler(user_handlers.buy_invite_code_command, commands=['buyinvite'])
-        bot.register_message_handler(user_handlers.use_renew_code_command, commands=['use_renew_code'])
-        bot.register_message_handler(user_handlers.reset_password_command, commands=['reset_password'])
-        bot.register_message_handler(user_handlers.reset_username_command, commands=['reset_username'])
-        bot.register_message_handler(user_handlers.give_score_command, commands=['give'])
-        bot.register_message_handler(user_handlers.bind_command, commands=['bind'])
-        bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])
-        bot.register_message_handler(user_handlers.random_score_command, commands=['random_score']) # 注册随机增加积分命令
+        bot.register_message_handler(user_pannel.start_panel_command, commands=['start'])
+        # bot.register_message_handler(user_handlers.start_command, commands=['start'])
+        # bot.register_message_handler(user_handlers.start_command, commands=['start'])
+        # bot.register_message_handler(user_handlers.help_command, commands=['help'])
+        # bot.register_message_handler(user_handlers.register_command, commands=['register'])
+        # bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
+        # # bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
+        # bot.register_message_handler(user_handlers.info_command, commands=['info'])
+        # bot.register_message_handler(user_handlers.delete_user_command, commands=['deleteuser'])
+        # bot.register_message_handler(user_handlers.score_command, commands=['score'])
+        # bot.register_message_handler(user_handlers.checkin_command, commands=['checkin'])
+        # bot.register_message_handler(user_handlers.buy_invite_code_command, commands=['buyinvite'])
+        # bot.register_message_handler(user_handlers.use_renew_code_command, commands=['use_renew_code'])
+        # bot.register_message_handler(user_handlers.reset_password_command, commands=['reset_password'])
+        # bot.register_message_handler(user_handlers.reset_username_command, commands=['reset_username'])
+        # bot.register_message_handler(user_handlers.give_score_command, commands=['give'])
+        # bot.register_message_handler(user_handlers.bind_command, commands=['bind'])
+        # bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])
+        # bot.register_message_handler(user_handlers.random_score_command, commands=['random_score']) # 注册随机增加积分命令
 
         bot.register_message_handler(admin_board.admin_panel_command, commands=['admin'])
          # 注册管理员命令处理函数

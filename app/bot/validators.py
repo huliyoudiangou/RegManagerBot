@@ -1,17 +1,14 @@
 # 校验器
-import json
 from functools import wraps
-
-import telebot
 from app.services.user_service import UserService
 from app.services.invite_code_service import InviteCodeService
 from app.utils.logger import logger
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.bot.core.bot_instance import bot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from app.utils.utils import delete_message_after
 from app.utils.message_queue import get_message_queue
 from config import settings
+
 
 message_queue = get_message_queue()
 
@@ -32,11 +29,16 @@ def user_exists(service_type, negate=False):
 
             user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
             
-            if user and user.service_user_id == None:
-                logger.debug(f"已有积分用户，验证通过")
-                # bot.reply_to(message, f"已有积分账户，请使用/use_code <邀请码>注册服务器即可")
-                return func(message, *args, **kwargs)
-                
+            # if user and user.service_user_id == None and user.invite_code == None:
+            #     logger.debug(f"已有积分用户")
+            #     # bot.reply_to(message, f"已有积分账户，请使用 更新用户 即可！")
+            #     return func(message, *args, **kwargs)
+            
+            # if user and user.invite_code != None:
+            #     logger.debug(f"已使用过邀请码注册")
+            #     # bot.reply_to(message, f"已使用过邀请码注册，请使用 更新用户 即可！")
+            #     return func(message, *args, **kwargs)
+            
             if (user and not negate) or (not user and negate):
                 logger.debug(f"用户校验通过: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
                 return func(message, *args, **kwargs)
@@ -47,6 +49,28 @@ def user_exists(service_type, negate=False):
 
         return wrapper
     return decorator
+
+def user_exist_local(func):
+    @wraps(func)
+    def wrapper(message, *args, **kwargs):
+        telegram_id = message.from_user.id
+        logger.debug(f"校验用户是否是积分用户或者使用过邀请码用户: telegram_id={telegram_id}")
+
+        user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
+        
+        if user:
+            if user.service_user_id == None and user.invite_code == None:
+                logger.debug(f"已有积分用户")
+                bot.reply_to(message, f"已有积分账户，请使用 更新用户 即可！")
+                return func(message, *args, **kwargs)
+            elif user.service_user_id == None and user.invite_code != None:
+                logger.debug(f"已有邀请码用户")
+                bot.reply_to(message, f"已有邀请码账户，请使用 更新用户 即可！")
+                return 
+            else:
+                logger.warning(f"用户校验通过: telegram_id={telegram_id}")
+                return func(message, *args, **kwargs)                           
+    return wrapper
 
 def admin_required(func):
     """
@@ -65,24 +89,43 @@ def admin_required(func):
             return
     return wrapper
 
+def invite_system_enabled(func):
+    """
+    邀请系统是否开启的校验装饰器
+    """
+    @wraps(func)
+    def wrapper(message, *args, **kwargs):
+        # 检查邀请系统是否开启
+        if not settings.INVITE_CODE_SYSTEM_ENABLED:
+            logger.debug("邀请系统未开启，跳过邀请码验证")
+            return func(message, *args, **kwargs)
+        
+        # 如果邀请系统开启，继续执行原逻辑
+        logger.debug("邀请系统已开启，继续执行邀请码验证")
+        bot.reply_to(message, "邀请系统已开启，请使用邀请码注册")
+        return
+    return wrapper
+
 def invite_code_valid(func):
     """
     验证邀请码是否有效的装饰器
     """
     @wraps(func)
     def wrapper(message, *args, **kwargs):
-        # 通过消息的文本内容获取邀请码
-        code = message.text.split(" ")[1] if len(message.text.split(" ")) > 1 else None
-
+        
+        code = message.text.strip()
         logger.debug(f"校验邀请码是否有效: code={code}")
         if not code:
             logger.warning("未提供邀请码")
             bot.reply_to(message, "请提供邀请码!")
             return
 
+        # 验证邀请码
         invite_code = InviteCodeService.get_invite_code(code)
-        if invite_code and not invite_code.is_used and invite_code.expire_time > datetime.now():
+        expire_time = invite_code.create_time + timedelta(days=invite_code.expire_days)
+        if invite_code and not invite_code.is_used and expire_time > datetime.now():
             logger.debug(f"邀请码有效: code={code}")
+            # 邀请码有效，继续执行原函数
             return func(message, *args, **kwargs)
         else:
             logger.warning(f"邀请码无效: code={code}")

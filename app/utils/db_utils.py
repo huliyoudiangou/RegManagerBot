@@ -36,7 +36,7 @@ def create_tables():
             expiration_date DATETIME, 
             last_sign_in_date DATETIME,
             create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(telegram_id, service_name) 
+            UNIQUE(telegram_id, service_type) 
         )
     """)
 
@@ -52,7 +52,7 @@ def create_tables():
             expire_days INTEGER NOT NULL,
             expire_time DATETIME,
             create_user_id INTEGER NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES Users(id)
+            FOREIGN KEY (user_id) REFERENCES Users(telegram_id)
         )
     """)
     

@@ -8,112 +8,11 @@ from app.utils.logger import logger
 from config import settings
 from datetime import datetime, timedelta
 from app.bot.core.bot_instance import bot
-from app.bot.validators import user_exists, confirmation_required, score_enough, chat_type_required
+from app.bot.validators import user_exists, confirmation_required, score_enough, chat_type_required, invite_system_enabled, user_exist_local
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from app.utils.message_queue import get_message_queue
 
 message_queue = get_message_queue()
-
-@bot.message_handler(commands=['start'])
-def start_command(message):
-    """
-    处理 /start 命令
-    """
-    telegram_id = message.from_user.id
-    chat_id = message.chat.id
-    user_name = message.from_user.username
-    logger.info(f"用户 {telegram_id} 执行了 /start 命令")
-    keyboard = InlineKeyboardMarkup(
-    [
-       [
-          InlineKeyboardButton("注册", callback_data="register"),
-          InlineKeyboardButton("个人信息", callback_data="info"),
-          InlineKeyboardButton("购买邀请码", callback_data="buyinvite"),
-          
-       ],
-       [
-         InlineKeyboardButton("签到", callback_data="checkin"),
-         InlineKeyboardButton("积分", callback_data="score"),
-         InlineKeyboardButton("Bot帮助", callback_data="help"),
-       ],
-       [
-          InlineKeyboardButton("进群链接", url="https://t.me/navidrom_talk"),
-          InlineKeyboardButton("频道链接", url="https://t.me/navidrom_notify"),
-          InlineKeyboardButton("使用教程", url="https://makifx.com/1278.html")
-       ],
-       [
-         InlineKeyboardButton("没有想听的歌？投稿/求歌", url="https://t.me/MaycyBot")
-       ]
-    ]
-)
-    img_url = "https://i.imgur.com/jci9UJm.jpeg"
-    resp = f"*倾听音乐，享受生活！欢迎 {user_name} 来到音海拾贝！*\n"
-    bot.send_photo(chat_id, img_url, resp, reply_markup=keyboard, parse_mode="Markdown")
-
-@bot.callback_query_handler(func=lambda call: call.data in ["info", "checkin", "register", "help", "intro", "score", "buyinvite"])
-def callback_handler(call):
-    # 获取正确的用户 ID
-    user_id = call.from_user.id
-    chat_id = call.message.chat.id
-    
-    # 创建一个模拟的 Message 对象，包含正确的用户信息
-    mock_message = Message(
-        message_id=call.message.message_id,
-        from_user=call.from_user,
-        date=call.message.date,
-        chat=call.message.chat,
-        content_type='text',
-        options={},
-        json_string=''
-    )
-    mock_message.text = f"/{call.data}"  # 设置模拟的命令文本
-
-    if call.data == "register":
-        message = "嗨！欢迎使用Bot注册账号！\n\n"
-        message += f"请使用格式如下注册账号：\n"
-        message += f"<code>/register</code> 用户名 密码 邀请码\n"
-        message += "--------------------------------\n"
-        message += "如还没有邀请码，可以注册积分账号，用于购买邀请码！\n"
-        message += "<code>/reg_score_user</code>(点击复制命令)\n"
-        bot.send_message(chat_id, message, parse_mode="HTML")
-    else:
-        # 根据回调的数据调用相应的命令处理函数
-        command_handlers = {
-            "info": info_command,
-            "help": help_command,
-            "checkin": checkin_command,
-            "score": score_command,
-            "buyinvite": buy_invite_code_command
-        }
-
-        # 根据映射查找并调用适当的处理函数
-        handler = command_handlers.get(call.data)
-        if handler:
-            handler(mock_message)
-              
-# @bot.message_handler(commands=['start'])
-# def start_command(message):
-#     """
-#     处理 /start 命令
-#     """
-#     telegram_id = message.from_user.id
-#     logger.info(f"用户 {telegram_id} 执行了 /start 命令")
-#     response = "欢迎使用注册机器人！祝您每天开心！\n\n" \
-#                "本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。\n" \
-#                "您可以通过以下命令进行注册和管理：\n" \
-#                "- `/register <用户名> <密码>`: 注册用户 (邀请码系统关闭时)\n" \
-#                "- `/register <用户名> <密码> <邀请码>`: 使用邀请码注册用户 (邀请码系统开启时)\n" \
-#                "- `/info`: 查看您的个人信息\n" \
-#                "- `/score`: 查看您的积分\n" \
-#                "- `/checkin`: 每日签到获得积分\n" \
-#                "- `/buyinvite`: 购买邀请码\n" \
-#                "- `/reset_password`: 重置密码\n" \
-#                "- `/reset_username`: 重置登录用户名\n" \
-#                "- `/deleteuser`: 删除您的账户!!!\n" \
-#                "- `/bind`: 绑定您的账户\n" \
-#                "- `/unbind`: 解绑您的账户\n" \
-#                "\n您可以使用 `/help` 命令获取更详细的帮助信息。"
-#     bot.reply_to(message, response)
 
 @bot.message_handler(commands=['help'])
 @chat_type_required(["group", "supergroup"])
@@ -191,9 +90,52 @@ def help_command(message):
         💡 _如需更多帮助，请联系管理员。_
     '''
   bot.reply_to(message, response, parse_mode="Markdown")
-  
-      
 
+@invite_system_enabled
+@user_exists(service_type=settings.SERVICE_TYPE, negate=True)
+def register_user_command(message):
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
+    if len(args) != 2:
+        logger.info(f"参数错误: args={args}")
+        bot.reply_to(message, "参数错误，请提供用户名和密码，格式为：用户名 密码")
+        return
+    
+    username, password = args
+    telegram_id = message.from_user.id
+    logger.info(f"开始注册用户: telegram_id={telegram_id}, service_type={settings.SERVICE_TYPE}")
+    
+    user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
+    if user:
+        logger.info(f"用户注册成功: telegram_id={telegram_id}, user_id={user.id}")
+        bot.send_message(message.chat.id, f"注册成功！欢迎 {message.from_user.username} ")
+    else:
+        logger.error(f"用户注册失败: telegram_id={telegram_id}")
+        bot.send_message(message.chat.id, "注册失败，请重试!")
+
+@user_exist_local
+def update_user_command(message):
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
+    if len(args) != 2:
+        logger.info(f"参数错误: args={args}")
+        bot.reply_to(message, "参数错误，请提供用户名和密码，格式为：用户名 密码")
+        return
+    
+    username, password = args
+    telegram_id = message.from_user.id
+    logger.info(f"开始更新用户: telegram_id={telegram_id}, service_type={settings.SERVICE_TYPE}")
+    
+    user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
+    if user:
+        logger.info(f"用户更新成功: telegram_id={telegram_id}, user_id={user.id}")
+        bot.send_message(message.chat.id, f"更新成功！欢迎 {message.from_user.username} ")
+    else:
+        logger.error(f"用户更新失败: telegram_id={telegram_id}")
+        bot.send_message(message.chat.id, "更新失败，请重试!")
+        
 @bot.message_handler(commands=['register'])
 @chat_type_required(["group", "supergroup"])
 @user_exists("emby", negate=True)
@@ -214,7 +156,9 @@ def register_command(message):
     #     bot.reply_to(message, "您已经注册过了, 如想重新注册，请先执行/deleteuser删除本地用户再注册!")
     #     return
 
-    args = message.text.split()[1:]
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
     # 管理员注册
     if UserService.is_admin(telegram_id):
         if len(args) != 2:
@@ -304,8 +248,7 @@ def reg_score_user_command(message):
     user.save()
     logger.info(f"本地用户创建成功: user_id={user.id}")
     bot.reply_to(message, f"本地积分账号注册成功，欢迎您: {username}！")
-    
-    
+
 @bot.message_handler(commands=['deleteuser'])
 @user_exists(service_type=settings.SERVICE_TYPE)
 @confirmation_required(message_text="你确定要删除该用户吗？")
@@ -333,21 +276,18 @@ def delete_user_command(message):
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot.reply_to(message, "未找到您的账户信息，如已在服务器注册，请使用/bind命令绑定!")
     
-      
+
 @bot.message_handler(commands=['use_code'])
-@user_exists(service_type=settings.SERVICE_TYPE)
+@user_exist_local
 def use_invite_code_command(message):
     """
     处理 /use_code 命令，用户使用邀请码注册
     """
     telegram_id = message.from_user.id
-    user = UserService.get_user_by_telegram_id(telegram_id)
-    if user and user.service_user_id:
-        bot.reply_to(message, "您已经注册过了!")
-        return
-
     # 从消息中提取参数
-    args = message.text.split()[1:]
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
     
     if len(args) < 1:
         bot.reply_to(message, "请提供邀请码，格式为：/use_code <[用户名] 邀请码>")
@@ -364,48 +304,27 @@ def use_invite_code_command(message):
     if invite_code.is_used:
       bot.reply_to(message, "邀请码已被使用")
       return
-    
-    if invite_code.expire_time < datetime.now():
+    expire_time = invite_code.create_time + timedelta(days=invite_code.expire_days)
+    if expire_time < datetime.now():
        bot.reply_to(message, "邀请码已过期")
        return
-   
-    username = None
-    if len(args) == 2:
-        username = args[0]
     
-    if user.username and user:
-        username = user.username
-    elif not username:
-        bot.reply_to(message, "请提供用户名，格式为：/use_code <用户名> <邀请码>")
-        return
-    
-    password = username # 密码和用户名相同
-    # 注册用户
-    user = UserService.register_user(telegram_id, settings.SERVICE_TYPE, username, password)
+    logger.info(f"注册本地用户")
+    user = UserService.register_local_user(telegram_id=telegram_id, invite_code=code)
     if user:
-        logger.info(f"用户使用邀请码注册成功: telegram_id={telegram_id}, user_name={user.username}, code={code}")
-        bot.reply_to(message, "注册成功!")
-        # 使用邀请码
         success = InviteCodeService.use_invite_code(code, telegram_id)
         if not success:
             logger.warning(f"邀请码使用失败：{code}")
         else:
             logger.info(f"邀请码成功使用！")
+            bot.reply_to(message, f"邀请码验证通过，请输入用户名和密码(格式：用户名 密码)：<30s后自动退出>", delay=30)
+            bot.register_next_step_handler(message, update_user_command)
     else:
-        logger.error(f"用户使用邀请码注册失败: telegram_id={telegram_id}, code={code}")
-        if len(args) == 2:
-           new_username = args[0]
-           user = UserService.get_user_by_telegram_id(telegram_id)
-           if user:
-                user.username = new_username
-                user.save()
-                logger.info(f"用户名更新成功, new_username={new_username}")
-           bot.reply_to(message, f"服务器重名，注册失败，请使用新的用户名，格式为：/use_code <用户名> {code}")
-        else:
-           bot.reply_to(message, "注册失败，请重试！")
-
+        logger.warning(f"本地用户注册失败！")
+        bot.reply_to(message, "本地用户注册失败！")
+    
 @bot.message_handler(commands=['use_renew_code'])
-@user_exists(service_type=settings.SERVICE_TYPE)
+@user_exist_local
 def use_renew_code_command(message):
     """使用续期码 (用户命令)
     格式: /use_renew_code <code>
@@ -413,7 +332,9 @@ def use_renew_code_command(message):
     """
     try:
         # 解析参数
-        args = message.text.split()[1:]
+        if message.text.startswith('/'):
+            args = message.text.split()[1:]
+        args = message.text.split()
         if len(args) < 1:
             bot.reply_to(message, "请提供续期码！")
             return
@@ -569,7 +490,9 @@ def give_score_command(message):
 
     logger.info(f"用户请求赠送积分: telegram_id={telegram_id}, service_type={service_type}")
 
-    args = message.text.split()[1:]
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
     if len(args) != 2:
         bot.reply_to(message, "参数错误，请提供接收者 Telegram ID 和积分数，格式为：/give <telegram_id> <score>")
         return
@@ -627,8 +550,10 @@ def bind_command(message):
     service_type = settings.SERVICE_TYPE
 
     logger.info(f"用户请求绑定账户: telegram_id={telegram_id}, service_type={service_type}")
-
-    args = message.text.split()[1:]
+    
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
     if len(args) != 2:
         bot.reply_to(message, "参数错误，请提供用户名和用户 ID，格式为：/bind <username> <user_id>")
         return
@@ -681,7 +606,9 @@ def reset_password_command(message):
 
     logger.info(f"用户请求重置密码: telegram_id={telegram_id}, service_type={service_type}")
 
-    args = message.text.split()[1:]
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
     if len(args) != 1:
         bot.reply_to(message, "参数错误，请提供新密码，格式为：/reset_password <new_password>")
         return
@@ -715,7 +642,9 @@ def reset_username_command(message):
 
     logger.info(f"用户请求重置用户名: telegram_id={telegram_id}, service_type={service_type}")
 
-    args = message.text.split()[1:]
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
     if len(args) != 1:
         bot.reply_to(message, "参数错误，请提供新用户名，格式为：/reset_username <new_username>")
         return
@@ -750,7 +679,9 @@ def reset_username_command(message):
 def random_score_command(message):
     """发送带有按钮的菜单"""
     username = message.from_user.username
-    args = message.text.split()[1:]
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    args = message.text.split()
     if len(args) != 2:
         bot.reply_to(message, "参数错误，请提供参数，格式为：/random_score <participants_count> <total_score>")
         

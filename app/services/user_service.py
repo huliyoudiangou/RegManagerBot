@@ -13,16 +13,16 @@ class UserService:
     用户服务
     """
     @staticmethod
-    def register_local_user(telegram_id, service_user_id=None, service_type=settings.SERVICE_TYPE, username=None):
+    def register_local_user(telegram_id, service_user_id=None, service_type=settings.SERVICE_TYPE, username=None, invite_code=None):
         # 在本地数据库中创建用户
         user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id=telegram_id)
         if not user:
-            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username)
+            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=invite_code)
             user.save()
             logger.debug(f"本地用户创建成功: username={username}")
             return user
         else:
-            user = ServiceUser(id=user.id, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username)
+            user = ServiceUser(id=user.id, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=invite_code)
             user.save()
             logger.debug(f"本地用户更新成功: username={username}")
             return user
