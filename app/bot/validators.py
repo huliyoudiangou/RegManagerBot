@@ -14,67 +14,87 @@ message_queue = get_message_queue()
 
 # 需要安装的模块：无
 
-def user_exists(service_type, negate=False):
+# def user_exists(service_type, negate=False):
+#     """
+#     验证用户是否存在于本地数据库的装饰器
+#      Args:
+#         service_type: 服务名称，例如 "navidrome"
+#         negate: 是否取反，默认为 False
+#     """
+#     def decorator(func):
+#         @wraps(func)
+#         def wrapper(message, *args, **kwargs):
+#             logger.info(f"message: {message}")
+#             telegram_id = message.from_user.id
+#             logger.debug(f"校验用户是否存在于本地数据库: telegram_id={telegram_id}, service_type={service_type}, negate={negate}")
+
+#             user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
+            
+#             # if user and user.service_user_id == None and user.invite_code == None:
+#             #     logger.debug(f"已有积分用户")
+#             #     # bot.reply_to(message, f"已有积分账户，请使用 更新用户 即可！")
+#             #     return func(message, *args, **kwargs)
+            
+#             # if user and user.invite_code != None:
+#             #     logger.debug(f"已使用过邀请码注册")
+#             #     # bot.reply_to(message, f"已使用过邀请码注册，请使用 更新用户 即可！")
+#             #     return func(message, *args, **kwargs)
+            
+#             if (user and not negate) or (not user and negate):
+#                 logger.debug(f"用户校验通过: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
+#                 return func(message, *args, **kwargs)
+#             else:
+#                 logger.warning(f"用户校验失败: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
+#                 bot.reply_to(message, "未找到您的账户信息!" if not negate else "您已注册，请勿重复注册！如想重新注册，请先执行/deleteuser删除本地用户再注册!")
+#                 return
+
+#         return wrapper
+#     return decorator
+
+def user_exists(negate=True):
     """
-    验证用户是否存在于本地数据库的装饰器
-     Args:
-        service_type: 服务名称，例如 "navidrome"
-        negate: 是否取反，默认为 False
+    一个装饰器，用于检查用户是否存在，并可以配置是否取反。
+    如果 check_exist 为 True (默认)，则当用户存在时，允许执行被装饰的函数；不存在时，拒绝执行。
+    如果 check_exist 为 False，则当用户不存在时，允许执行被装饰的函数；存在时，拒绝执行。
     """
     def decorator(func):
         @wraps(func)
         def wrapper(message, *args, **kwargs):
-            logger.info(f"message: {message}")
             telegram_id = message.from_user.id
-            logger.debug(f"校验用户是否存在于本地数据库: telegram_id={telegram_id}, service_type={service_type}, negate={negate}")
+            logger.debug(f"校验用户是否存在: telegram_id={telegram_id}")
 
             user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
-            
-            # if user and user.service_user_id == None and user.invite_code == None:
-            #     logger.debug(f"已有积分用户")
-            #     # bot.reply_to(message, f"已有积分账户，请使用 更新用户 即可！")
-            #     return func(message, *args, **kwargs)
-            
-            # if user and user.invite_code != None:
-            #     logger.debug(f"已使用过邀请码注册")
-            #     # bot.reply_to(message, f"已使用过邀请码注册，请使用 更新用户 即可！")
-            #     return func(message, *args, **kwargs)
-            
-            if (user and not negate) or (not user and negate):
-                logger.debug(f"用户校验通过: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
-                return func(message, *args, **kwargs)
-            else:
-                logger.warning(f"用户校验失败: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
-                bot.reply_to(message, "未找到您的账户信息!" if not negate else "您已注册，请勿重复注册！如想重新注册，请先执行/deleteuser删除本地用户再注册!")
-                return
 
+            if user:
+                if negate:
+                    # 用户存在且 check_exist=True，允许执行
+                    logger.warning(f"用户存在且允许执行: telegram_id={telegram_id}")
+                    return func(message, *args, **kwargs)
+                else:
+                    # 已经注册过本地用户
+                    if user.invite_code:
+                        logger.info(f"用户使用过邀请码: telegram_id={telegram_id}")
+                        return func(message, *args, **kwargs)
+                    
+                    if not user.username:
+                        logger.info(f"积分用户: telegram_id={telegram_id}")
+                        return func(message, *args, **kwargs)
+                   # 用户存在但 check_exist=False，拒绝执行
+                    logger.info(f"用户存在但不允许执行: telegram_id={telegram_id}")
+                    bot.reply_to(message, "用户已存在，操作不允许！")
+                    return
+            else:
+                if negate:
+                   # 用户不存在但 check_exist=True，拒绝执行
+                    logger.info(f"用户不存在且不允许执行: telegram_id={telegram_id}")
+                    bot.reply_to(message, "用户不存在，操作不允许！")
+                    return
+                else:
+                   # 用户不存在且 check_exist=False，允许执行
+                    logger.info(f"用户不存在且允许执行: telegram_id={telegram_id}")
+                    return func(message, *args, **kwargs)
         return wrapper
     return decorator
-
-def user_exist_local(func):
-    @wraps(func)
-    def wrapper(message, *args, **kwargs):
-        telegram_id = message.from_user.id
-        logger.debug(f"校验用户是否是积分用户或者使用过邀请码用户: telegram_id={telegram_id}")
-
-        user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
-        
-        if user:
-            if user.service_user_id == None and user.invite_code == None:
-                logger.debug(f"已有积分用户")
-                bot.reply_to(message, f"已有积分账户，请使用 更新用户 即可！")
-                return
-            elif user.service_user_id == None and user.invite_code != None:
-                logger.debug(f"已有邀请码用户")
-                bot.reply_to(message, f"已有邀请码账户，请使用 更新用户 即可！")
-                return 
-            else:
-                logger.warning(f"用户校验通过: telegram_id={telegram_id}")
-                return func(message, *args, **kwargs)
-        else:
-            logger.info(f"用户校验通过")
-            return func(message, *args, **kwargs)
-    return wrapper
 
 def admin_required(func):
     """
@@ -127,6 +147,7 @@ def invite_code_valid(func):
         # 验证邀请码
         invite_code = InviteCodeService.get_invite_code(code)
         expire_time = invite_code.create_time + timedelta(days=invite_code.expire_days)
+        
         if invite_code and not invite_code.is_used and expire_time > datetime.now():
             logger.debug(f"邀请码有效: code={code}")
             # 邀请码有效，继续执行原函数
