@@ -15,6 +15,7 @@ from app.utils.message_queue import get_message_queue
 
 message_queue = get_message_queue()
 
+
 def generate_invite_code_command(message):
     """生成邀请码 (管理员命令)"""
     telegram_id = message.from_user.id
@@ -106,7 +107,7 @@ def get_all_invite_codes_command(message):
     except ValueError:
         bot.reply_to(message, "获取邀请码列表失败，请重试！")
         logger.error(f"获取邀请码列表失败: telegram_id={message.from_user.id}")
-        
+       
 @confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
 def get_unused_invite_codes_command(message):
     """获取未使用的邀请码列表 (管理员命令)"""
@@ -136,7 +137,7 @@ def get_unused_invite_codes_command(message):
     except ValueError:
         bot.reply_to(message, "获取未使用的邀请码列表失败，请重试！")
         logger.error(f"获取未使用的邀请码列表失败: telegram_id={telegram_id}")
-        
+            
 @confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
 def get_unused_renew_codes_command(message):
     """获取未使用的续期码列表 (管理员命令)"""
@@ -166,7 +167,7 @@ def get_unused_renew_codes_command(message):
     except ValueError:
         bot.reply_to(message, "获取未使用的续期码列表失败，请重试！")
         logger.error(f"获取未使用的续期码列表失败: telegram_id={telegram_id}")
-                   
+                        
 def toggle_invite_code_system_command(message):
     """开启/关闭邀请码系统 (管理员命令)"""
     try:
@@ -218,7 +219,7 @@ def set_score_command(message):
             bot.reply_to(message, f"未找到用户: {target_telegram_id}")
     except ValueError:
         bot.reply_to(message, "设置积分失败，请重试！")
-        logger.error(f"设置积分失败: telegram_id={telegram_id}")
+        logger.error(f"设置积分失败: telegram_id={telegram_id}")   
     
 def get_score_command(message):
     """
@@ -370,7 +371,6 @@ def set_price_command(message):
         logger.error(f"配置项 {config_name} 更新失败: {e}")
         bot.reply_to(message, "设置邀请码价格失败，请重试！")
     
-
 def get_user_info_by_telegram_id_command(message):
     """
     根据 Telegram ID 查询用户信息 (管理员命令)
@@ -491,9 +491,7 @@ def get_stats_command(message):
     except Exception as e:
       logger.error(f"获取注册状态失败: telegram_id={telegram_id}, error={e}")
       bot.reply_to(message, "获取注册状态失败，请重试！")
-    
-    
-
+      
 @confirmation_required("你确定要更改清理用户系统状态嘛？")
 def toggle_expired_user_clean_command(message):
     """开启/关闭过期用户清理定时任务 (管理员命令)"""
@@ -504,10 +502,7 @@ def toggle_expired_user_clean_command(message):
 
     logger.info(f"过期用户清理定时任务已更改: {settings.ENABLE_EXPIRED_USER_CLEAN}")
     bot.reply_to(message, f"过期用户清理定时任务已{'开启' if settings.ENABLE_EXPIRED_USER_CLEAN else '关闭'}")
-    
-    
-    
-
+        
 def get_expired_users_command(message):
     """获取已过期的用户 (管理员命令)"""
     telegram_id = message.from_user.id
@@ -671,9 +666,7 @@ def random_give_score_by_checkin_time_command(message):
         bot.reply_to(message, f"已为{len(users)}个用户随机增加积分，范围: {user_range}，最大积分: {max_score}!")
     else:
         bot.reply_to(message, "没有用户符合条件，无法增加积分")
-        logger.info(f"没有用户符合条件，无法增加积分, range={user_range}")
-    
-    
+        logger.info(f"没有用户符合条件，无法增加积分, range={user_range}")   
 
 @confirmation_required(message_text="你确定要普天同庆吗？该过程较慢，Bot响应会比较慢。")
 def add_random_score_command(message):
@@ -752,9 +745,7 @@ def get_user_info_in_server_command(message):
     else:
         logger.warning(f"获取服务器上用户信息失败: username={username}")
         bot.reply_to(message, f"未找到用户: {username}")
-      
-    
-
+         
 def get_score_chart_command(message):
     """
     获取积分排行榜 (管理员命令)

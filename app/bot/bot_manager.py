@@ -1,7 +1,8 @@
 import telebot
 from app.utils.logger import logger
-from app.bot.handlers import user_handlers, admin_handlers, admin_board, user_pannel
+from app.bot.handlers import admin_pannel, user_handlers, user_pannel
 from app.bot.core.bot_instance import bot
+from config import settings
 # 需要安装的模块：无
 
 class BotManager:
@@ -12,8 +13,7 @@ class BotManager:
         commands = [
             telebot.types.BotCommand("start", "开始"),
             telebot.types.BotCommand("admin", "管理"),
-            # telebot.types.BotCommand("start", "简介"),
-            # telebot.types.BotCommand("help", "可用命令"),
+            telebot.types.BotCommand("help", "可用命令"),
             # telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
             # telebot.types.BotCommand("reg_score_user", "注册积分用户 (可签到、送分、购买邀请码)"),
             # telebot.types.BotCommand("use_renew_code", "使用续期码"),
@@ -58,10 +58,12 @@ class BotManager:
         self.bot.set_my_commands(commands)
 
         # 注册路由
+        bot.register_message_handler(user_handlers.help_command, commands=['help'])
         bot.register_message_handler(user_pannel.start_panel_command, commands=['start'])
+        
+        bot.register_message_handler(admin_pannel.admin_panel_command, commands=['admin'])
         # bot.register_message_handler(user_handlers.start_command, commands=['start'])
         # bot.register_message_handler(user_handlers.start_command, commands=['start'])
-        # bot.register_message_handler(user_handlers.help_command, commands=['help'])
         # bot.register_message_handler(user_handlers.register_command, commands=['register'])
         # bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
         # # bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
@@ -78,7 +80,7 @@ class BotManager:
         # bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])
         # bot.register_message_handler(user_handlers.random_score_command, commands=['random_score']) # 注册随机增加积分命令
 
-        bot.register_message_handler(admin_board.admin_panel_command, commands=['admin'])
+        
          # 注册管理员命令处理函数
         # bot.register_message_handler(admin_handlers.generate_invite_code_command, commands=['generate_code'])
         # bot.register_message_handler(admin_handlers.generate_renew_codes_command, commands=['generate_renew_code'])
@@ -109,10 +111,15 @@ class BotManager:
 
 def run_bot():
     """运行 Bot"""
-    logger.info("Bot 启动")
     bot_manager = BotManager()
     bot = bot_manager.get_bot()
-    bot.infinity_polling()
+    if settings.WEBHOOK_URL:
+        logger.info(f"Bot 以 Webhook 模式启动")
+        bot.remove_webhook()
+        bot.set_webhook(settings.WEBHOOK_URL)
+    else:
+        logger.info(f"Bot 以 Polling 模式启动")
+        bot.infinity_polling()
 
 if __name__ == "__main__":
     run_bot()

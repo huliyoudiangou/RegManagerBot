@@ -1,10 +1,11 @@
-from venv import logger
+from app.utils.logger import logger
+from config import settings
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from app.bot.core.bot_instance import bot
 from app.bot.handlers.user_handlers import (
     register_user_command,
     reg_score_user_command,
-    update_user_command,
+    delete_user_command,
     use_invite_code_command,
     use_renew_code_command,
     buy_invite_code_command,
@@ -14,8 +15,7 @@ from app.bot.handlers.user_handlers import (
     bind_command,
     unbind_command
 )
-from app.services.user_service import UserService
-from config import settings
+
 
 def create_user_panel():
     """创建用户面板"""
@@ -30,7 +30,7 @@ def create_user_panel():
         InlineKeyboardButton("签到", callback_data="user_checkin"),
         InlineKeyboardButton("积分", callback_data="user_score"),
         InlineKeyboardButton("个人信息", callback_data="user_info"),
-        InlineKeyboardButton("更新用户", callback_data="user_update"),
+        InlineKeyboardButton("删除用户", callback_data="user_delete"),
         InlineKeyboardButton("绑定", callback_data="user_bind"),
         InlineKeyboardButton("解绑", callback_data="user_unbind")
     )
@@ -44,7 +44,7 @@ def start_panel_command(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('user_'))
 def user_panel_callback(call):
     """处理用户面板回调"""
-    # bot.answer_callback_query(call.id)
+    bot.answer_callback_query(call.id)
     chat_id = call.message.chat.id
     markup = InlineKeyboardMarkup()
     markup.row_width = 1
@@ -80,14 +80,8 @@ def user_panel_callback(call):
         case "user_use_renew_code":
             msg = bot.send_message(chat_id, "请输入续期码：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(msg, use_renew_code_command)
-        case "user_update":
-            user = UserService.get_user_by_telegram_id(telegram_id=call.message.chat.id)
-            if user:
-                msg = bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>", reply_markup=markup, delay=30)
-                bot.register_next_step_handler(msg, update_user_command)
-            else:
-                bot.answer_callback_query(call.id, "未找到用户信息，请先注册！", show_alert=True)
-                # msg = bot.send_message(chat_id, "未找到用户信息，请先注册！")
+        case "user_delete":
+            delete_user_command(mock_message)
         case "user_buyinvite":
             buy_invite_code_command(mock_message)
         case "user_info":

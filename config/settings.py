@@ -13,7 +13,7 @@ SERVICE_TYPE = os.getenv("SERVICE_TYPE")  # 支持的服务类型列表
 # --- Telegram Bot 配置 ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # Telegram Bot Token
 ADMIN_TELEGRAM_IDS = [int(id) for id in os.getenv("ADMIN_TELEGRAM_IDS", "").split(",") if id]  # 管理员 Telegram ID 列表，用逗号分隔
-
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", None)
 # --- Navidrome 配置 ---
 NAVIDROME_API_URL = os.getenv("NAVIDROME_API_URL")  # Navidrome API 地址
 NAVIDROME_API_USERNAME = os.getenv("NAVIDROME_API_USERNAME")  # Navidrome API 用户名
