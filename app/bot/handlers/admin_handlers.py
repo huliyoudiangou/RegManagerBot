@@ -1,15 +1,15 @@
 # 管理员命令处理器
-from datetime import datetime
-from app.bot.validators import admin_required, confirmation_required, chat_type_required
+from datetime import datetime, timedelta
+from app.bot.validators import confirmation_required
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService
 from app.utils.logger import logger
 from config import settings
 from app.bot.core.bot_instance import bot
+from telebot import types
 from app.utils.api_clients import service_api_client
 from app.utils.utils import paginate_list, paginate_list_text
-from app.utils.utils import delete_message_after
 from app.utils.message_cleaner import get_message_cleaner
 from app.utils.message_queue import get_message_queue
 
@@ -96,7 +96,7 @@ def get_all_invite_codes_command(message):
             for invite_codes in invite_codes_list:
                 response = f"邀请码列表：当前第{page_count+1}页\n"
                 for invite_code in invite_codes:
-                    expire_time = invite_code.crate_time + datetime.timedelta(days=invite_code.expire_days)
+                    expire_time = invite_code.create_time + timedelta(days=invite_code.expire_days)
                     response += f"ID: {invite_code.id}, 邀请码: {invite_code.code}, 是否已使用: {'是' if invite_code.is_used else '否'}, 创建时间: {str(invite_code.create_time)[:-7]}, 过期时间: {str(expire_time)[:-7]}, 创建者ID: {invite_code.create_user_id}\n"
                     response += f"--------\n"
                     response += f"生成总数为：{len(invite_all_codes)},当前页有{len(invite_codes)}个未使用!"
@@ -124,7 +124,7 @@ def get_unused_invite_codes_command(message):
                 response += f"邀请码：过期时间\n"
                 response += f"--------\n"
                 for invite_code in invite_codes:
-                    expire_time = invite_code.crate_time + datetime.timedelta(days=invite_code.expire_days)
+                    expire_time = invite_code.crate_time + timedelta(days=invite_code.expire_days)
                     response += f"<code>{invite_code.code}</code>: {str(expire_time)[:-7]}\n"
                 response += f"--------\n"
                 response += f"未使用总数为：{len(invite_unused_codes)}, 当前页有{len(invite_codes)}个未使用!"
@@ -154,7 +154,7 @@ def get_unused_renew_codes_command(message):
                 response += f"续期码：过期时间\n"
                 response += f"--------\n"
                 for invite_code in invite_codes:
-                    expire_time = invite_code.crate_time + datetime.timedelta(days=invite_code.expire_days)
+                    expire_time = invite_code.crate_time + timedelta(days=invite_code.expire_days)
                     response += f"<code>{invite_code.code}</code>: {str(expire_time)[:-7]}\n"
                 response += f"--------\n"
                 response += f"未使用总数为：{len(invite_unused_codes)}, 当前页有{len(invite_codes)}个未使用!"
@@ -788,4 +788,150 @@ def toggle_clean_msg_system_command(message):
         message_cleaner.stop()
         logger.info(f"消息管理器已关闭！")
     bot.reply_to(message, f"消息清理系统已{'开启' if settings.ENABLE_MESSAGE_CLEANER else '关闭'}")
+
+def block_user_command(message):
+    """封禁用户 (管理员命令)"""
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求封禁用户: telegram_id={telegram_id}")
     
+    args = message.text.split()
+    if len(args) != 1:
+        bot.reply_to(message, "参数错误，请提供用户 Telegram ID，格式为：/block_user <telegram_id>/username")
+        return
+    
+    target_input = args[0]
+    
+    try:
+        # 尝试将输入转换为整数（Telegram ID）
+        target_telegram_id = int(target_input)
+        user = UserService.get_user_by_telegram_id(target_telegram_id)
+    except ValueError:
+        # 如果输入不是整数，则尝试按用户名查找
+        user = UserService.get_user_by_username(target_input)
+    
+    try:
+        # 查找本地数据库中的用户
+        if user:
+            # 调用服务层的封禁用户方法
+            user = UserService.block_user(user.id)
+            if user:
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton(text="封禁", callback_data=f"block_server_user_{user.id}"))
+                logger.info(f"用户封禁成功: user_id={user.id}")
+                bot.reply_to(message, f"用户 {target_telegram_id} 已封禁, 同时封禁使用服务器账号？", reply_markup=markup)
+            else:
+                logger.error(f"用户封禁失败: telegram_id={target_telegram_id}")
+                bot.reply_to(message, "封禁用户失败，请重试！")
+        else:
+            logger.warning(f"用户不存在: telegram_id={target_telegram_id}")
+            bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+    except ValueError:
+        bot.reply_to(message, "封禁用户失败，请重试！")
+        logger.error(f"封禁用户失败: telegram_id={telegram_id}")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('block_server_user_'))    
+def block_server_user_callback(call):
+    """封禁服务器用户"""
+    telegram_id = call.from_user.id
+    logger.info(f"管理员请求封禁服务器用户: telegram_id={telegram_id}")
+    
+    user_id = call.data.split('_')[-1]
+    user = UserService.get_user_by_id(user_id)
+    if user:
+        # 调用服务层的封禁服务器用户方法
+        user = UserService.block_server_user(user.id)
+        if user:
+            logger.info(f"服务器用户封禁成功: user_id={user.id}")
+            bot.reply_to(call.message, f"服务器用户 {user.username} 已封禁")
+        else:
+            logger.error(f"服务器用户封禁失败: user_id={user.id}")
+            bot.reply_to(call.message, "封禁服务器用户失败，请重试！")
+    else:
+        logger.warning(f"用户不存在: user_id={user_id}")
+        bot.reply_to(call.message, f"未找到用户: {user_id}")
+    
+
+def unblock_user_command(message):
+    """解封用户 (管理员命令)"""
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求解封用户: telegram_id={telegram_id}")
+    
+    args = message.text.split()
+    if len(args) != 1:
+        bot.reply_to(message, "参数错误，请提供用户 Telegram ID，格式为：/unblock_user <telegram_id>/username")
+        return
+    
+    target_input = args[0]
+    
+    try:
+        # 尝试将输入转换为整数（Telegram ID）
+        target_telegram_id = int(target_input)
+        user = UserService.get_user_by_telegram_id(target_telegram_id)
+    except ValueError:
+        # 如果输入不是整数，则尝试按用户名查找
+        user = UserService.get_user_by_username(target_input)
+    
+    try:
+        # 查找本地数据库中的用户
+        if user:
+            # 调用服务层的解封用户方法
+            user = UserService.unblock_user(user.id)
+            if user:
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton(text="解封", callback_data=f"unblock_server_user_{user.id}"))
+                logger.info(f"用户解封成功: user_id={user.id}")
+                bot.reply_to(message, f"用户 {target_telegram_id} 已解封, 同时解封使用服务器账号？", reply_markup=markup)
+            else:
+                logger.error(f"用户解封失败: telegram_id={target_telegram_id}")
+                bot.reply_to(message, "解封用户失败，请重试！")
+        else:
+            logger.warning(f"用户不存在: telegram_id={target_telegram_id}")
+            bot.reply_to(message, f"未找到用户: {target_telegram_id}")
+    except ValueError:
+        bot.reply_to(message, "解封用户失败，请重试！")
+        logger.error(f"解封用户失败: telegram_id={telegram_id}")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('unblock_server_user_'))
+def unblock_server_user_callback(call):
+    """解封服务器用户"""
+    telegram_id = call.from_user.id
+    logger.info(f"管理员请求解封服务器用户: telegram_id={telegram_id}")
+    
+    user_id = call.data.split('_')[-1]
+    user = UserService.get_user_by_id(user_id)
+    if user:
+        # 调用服务层的解封服务器用户方法
+        user = UserService.unblock_server_user(user.id)
+        if user:
+            logger.info(f"服务器用户解封成功: user_id={user.id}")
+            bot.reply_to(call.message, f"服务器用户 {user.username} 已解封")
+        else:
+            logger.error(f"服务器用户解封失败: user_id={user.id}")
+            bot.reply_to(call.message, "解封服务器用户失败，请重试！")
+    else:
+        logger.warning(f"用户不存在: user_id={user_id}")
+        bot.reply_to(call.message, f"未找到用户: {user_id}")
+
+def get_block_users(message):
+    """获取被封禁的用户 (管理员命令)"""
+    telegram_id = message.from_user.id
+    logger.info(f"管理员请求获取被封禁的用户: telegram_id={telegram_id}")
+    
+    try:
+        # 调用服务层的获取被封禁用户方法
+        block_users = UserService.get_block_users()
+        if block_users:
+            response = "被封禁的用户列表：\n"
+            response += f"-----------\n"
+            for block_user in block_users:
+                response += f"{block_user['username']} - {block_user['telegram_id']}\n"
+            response += f"-----------\n"
+            response += f"被封禁的用户一共有：{len(block_users)}位！\n"
+            bot.reply_to(message, response)     
+            logger.warning(f"管理员获取被封禁的用户列表成功: 共有{len(block_users)}位！")
+        else:
+            bot.reply_to(message, "没有被封禁的用户!")
+            logger.info(f"没有被封禁的用户: telegram_id={telegram_id}")
+    except ValueError:
+        bot.reply_to(message, "获取被封禁用户失败，请重试！")
+        logger.error(f"获取被封禁用户失败: telegram_id={telegram_id}")

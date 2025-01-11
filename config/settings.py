@@ -38,7 +38,7 @@ INVITE_CODE_LENGTH = int(os.getenv("INVITE_CODE_LENGTH", 8))  # 邀请码长度�
 INVITE_CODE_EXPIRATION_DAYS = int(os.getenv("INVITE_CODE_EXPIRATION_DAYS", 7))  # 邀请码过期时间（天），默认为 7
 INVITE_CODE_SYSTEM_ENABLED=bool(os.getenv("INVITE_CODE_SYSTEM_ENABLED", False) == 'True')
 INVITE_CODE_PRICE=int(os.getenv("INVITE_CODE_PRICE", 100))
-
+CREATE_USER_EXPIRED_DAYS = int(os.getenv("CREATE_USER_EXPIRED_DAYS", 30))  # 用户过期时间（天），默认为 30
 # --- 清理不活跃用户 ---
 EXPIRED_DAYS = int(os.getenv("EXPIRED_DAYS", 30))  # 用户过期时间（天），默认为 30
 WARNING_DAYS = int(os.getenv("WARNING_DAYS", 27)) #  提前警告天数，默认为3

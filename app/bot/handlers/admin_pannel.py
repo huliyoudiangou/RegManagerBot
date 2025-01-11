@@ -24,7 +24,10 @@ from app.bot.handlers.admin_handlers import (
     clean_expired_users_command,
     random_give_score_by_checkin_time_command,
     add_random_score_command,
-    toggle_clean_msg_system_command
+    toggle_clean_msg_system_command,
+    get_block_users,
+    block_user_command,
+    unblock_user_command
 )
 
 def create_admin_panel():
@@ -47,6 +50,9 @@ def create_user_management_panel():
         InlineKeyboardButton("获取用户信息 (Telegram ID)", callback_data="admin_get_user_info_by_id"),
         InlineKeyboardButton("获取用户信息 (用户名)", callback_data="admin_get_user_info_by_username"),
         InlineKeyboardButton("获取服务器用户信息", callback_data="admin_get_user_info_in_server"),
+        InlineKeyboardButton("禁止用户", callback_data="admin_blcok_user"),
+        InlineKeyboardButton("解禁用户", callback_data="admin_unblock_user"),
+        InlineKeyboardButton("获取禁止用户列表", callback_data="admin_get_block_users"),
         InlineKeyboardButton("返回主菜单", callback_data="admin_main_menu")
     )
     return markup
@@ -133,6 +139,14 @@ def admin_panel_callback(call):
         case "admin_get_user_info_in_server":
             bot.send_message(chat_id, "请输入用户名：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, get_user_info_in_server_command)
+        case "admin_blcok_user":
+            bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.register_next_step_handler(call.message, block_user_command)
+        case "admin_unblock_user":
+            bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.register_next_step_handler(call.message, unblock_user_command)
+        case "admin_get_block_users":
+            get_block_users(call.message)
         case "admin_generate_invite_code":
             bot.send_message(chat_id, "请输入要生成的邀请码数量：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, generate_invite_code_command)
@@ -191,4 +205,5 @@ def user_cancel_callback(call):
     """处理用户取消回调"""
     chat_id = call.message.chat.id
     bot.clear_step_handler(call.message)
-    bot.send_message(chat_id, "已取消操作！")
+    bot.answer_callback_query(call.id, "已取消输入")
+    bot.delete_message(chat_id, call.message.message_id)

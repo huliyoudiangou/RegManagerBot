@@ -12,44 +12,6 @@ from config import settings
 
 message_queue = get_message_queue()
 
-# 需要安装的模块：无
-
-# def user_exists(service_type, negate=False):
-#     """
-#     验证用户是否存在于本地数据库的装饰器
-#      Args:
-#         service_type: 服务名称，例如 "navidrome"
-#         negate: 是否取反，默认为 False
-#     """
-#     def decorator(func):
-#         @wraps(func)
-#         def wrapper(message, *args, **kwargs):
-#             logger.info(f"message: {message}")
-#             telegram_id = message.from_user.id
-#             logger.debug(f"校验用户是否存在于本地数据库: telegram_id={telegram_id}, service_type={service_type}, negate={negate}")
-
-#             user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
-            
-#             # if user and user.service_user_id == None and user.invite_code == None:
-#             #     logger.debug(f"已有积分用户")
-#             #     # bot.reply_to(message, f"已有积分账户，请使用 更新用户 即可！")
-#             #     return func(message, *args, **kwargs)
-            
-#             # if user and user.invite_code != None:
-#             #     logger.debug(f"已使用过邀请码注册")
-#             #     # bot.reply_to(message, f"已使用过邀请码注册，请使用 更新用户 即可！")
-#             #     return func(message, *args, **kwargs)
-            
-#             if (user and not negate) or (not user and negate):
-#                 logger.debug(f"用户校验通过: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
-#                 return func(message, *args, **kwargs)
-#             else:
-#                 logger.warning(f"用户校验失败: telegram_id={telegram_id}, service_type={service_type}, negate={negate}, user_exists={bool(user)}")
-#                 bot.reply_to(message, "未找到您的账户信息!" if not negate else "您已注册，请勿重复注册！如想重新注册，请先执行/deleteuser删除本地用户再注册!")
-#                 return
-
-#         return wrapper
-#     return decorator
 
 def user_exists(negate=True):
     """
@@ -159,7 +121,7 @@ def invite_code_valid(func):
 
     return wrapper
 
-def score_enough(service_type):
+def score_enough():
     """
     验证用户积分是否足够的装饰器
 
@@ -232,8 +194,9 @@ def callback_query(call):
             # 用户选择“否”，取消操作
             logger.debug("已取消，命令已取消")
         # 清除会话信息
-        if settings.ENABLE_MESSAGE_CLEANER:
-            message_queue.add_message(user_sessions[chat_id]['message'])
+        bot.delete_message(chat_id, call.message.message_id)
+        # if settings.ENABLE_MESSAGE_CLEANER:
+        #     message_queue.add_message(user_sessions[chat_id]['message'])
         del user_sessions[chat_id]
 
     bot.answer_callback_query(call.id)
@@ -277,5 +240,29 @@ def chat_type_required(not_chat_type=None):
             
             logger.debug(f"在{message.chat.type}中收到命令，正常响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
             return func(message, *args, **kwargs)
+        return wrapper
+    return decorator
+
+def user_status_required(status=["active"]):
+    """
+    限制命令只能在指定用户状态下使用的装饰器
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(message, *args, **kwargs):
+            telegram_id = message.from_user.id
+            user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
+            if user and user.status in status:
+                logger.debug(f"用户状态为{status}，允许执行: telegram_id={telegram_id}")
+                return func(message, *args, **kwargs)
+            elif user and user.status == "blocked":
+                logger.warning(f"用户状态为{status}，不允许执行: telegram_id={telegram_id}")
+                bot.answer_callback_query(message.id, "你没有权限执行此操作!")
+                return
+            else:
+                logger.info(f"用户不存在: telegram_id={telegram_id}")
+                # bot.answer_callback_query(message.id, "你没有权限执行此操作!")
+                # bot.reply_to(message, "你没有权限执行此操作!")
+                return func(message, *args, **kwargs)
         return wrapper
     return decorator

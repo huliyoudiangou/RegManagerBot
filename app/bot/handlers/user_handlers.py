@@ -574,7 +574,7 @@ def reset_username_command(message):
 @bot.message_handler(commands=['random_score'])
 @chat_type_required(["private"])
 @user_exists(negate=True)
-@score_enough(service_type=settings.SERVICE_TYPE)
+@score_enough()
 @confirmation_required(f"你确定要发随机红包嘛？")
 def random_score_command(message):
     """发送带有按钮的菜单"""

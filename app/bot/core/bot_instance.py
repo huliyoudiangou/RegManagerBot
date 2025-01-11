@@ -36,7 +36,7 @@ def register_next_step_handler_with_delete(message, callback, delay=30, **kwargs
 
 def clear_step_handler(message):
     bot.clear_step_handler(message)
-    
+        
 bot.send_message = send_message_with_delete
 bot.reply_to = reply_to_with_delete
 bot.register_next_step_handler = register_next_step_handler_with_delete

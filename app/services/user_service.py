@@ -2,7 +2,7 @@ from app.models import User, ServiceUser
 from app.utils.api_clients import service_api_client
 from app.utils.logger import logger
 from config import settings
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import operator
 
@@ -13,22 +13,23 @@ class UserService:
     用户服务
     """
     @staticmethod
-    def register_local_user(telegram_id, service_user_id=None, service_type=settings.SERVICE_TYPE, username=None, invite_code=None):
+    def register_local_user(telegram_id, service_user_id=None, service_type=settings.SERVICE_TYPE, username=None, invite_code=None, expired_days=settings.CREATE_USER_EXPIRED_DAYS):
         # 在本地数据库中创建用户
         user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id=telegram_id)
+        expiration_date = datetime.now() + timedelta(days=expired_days)
         if not user:
-            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=invite_code)
+            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=invite_code, expiration_date=expiration_date)
             user.save()
             logger.debug(f"本地用户创建成功: username={username}")
             return user
         else:
-            user = ServiceUser(id=user.id, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=invite_code)
+            user = ServiceUser(id=user.id, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=invite_code, expiration_date=expiration_date)
             user.save()
             logger.debug(f"本地用户更新成功: username={username}")
             return user
             
     @staticmethod
-    def register_user(telegram_id, service_type, username, password, email=None, code=None):
+    def register_user(telegram_id, service_type, username, password, email=None, code=None, expired_days=settings.CREATE_USER_EXPIRED_DAYS):
         """
         注册用户
 
@@ -61,14 +62,15 @@ class UserService:
             return None
         
         user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id, service_type)
+        expiration_date = datetime.now() + timedelta(days=expired_days)
         if not user:
             # 在本地数据库中创建用户
-            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code)
+            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code, expiration_date=expiration_date)
             user.save()
             logger.debug(f"本地用户创建成功: user_id={user.id}")
             return user
         else:
-            user = ServiceUser(id=user.id, score=user.score, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code)
+            user = ServiceUser(id=user.id, score=user.score, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code, expiration_date=expiration_date)
             user.save()
             logger.debug(f"本地用户更新成功: user_id={user.id}")
             return user
@@ -378,7 +380,7 @@ class UserService:
         if time_range == "today":
           user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == now_shanghai.date() ]
         elif time_range == "yesterday":
-          yesterday_shanghai = now_shanghai - datetime.timedelta(days=1)
+          yesterday_shanghai = now_shanghai - timedelta(days=1)
           user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == yesterday_shanghai.date() ]
         elif isinstance(time_range, str) and len(time_range) == 10 and time_range[4] == "-" and time_range[7] == "-":
             try:
@@ -432,3 +434,118 @@ class UserService:
         rank += 1
       logger.debug(f"获取积分排行榜成功, limit={limit}")
       return chart
+  
+    @staticmethod
+    def get_user_status(user_id):
+        """获取用户状态"""
+        logger.debug(f"获取用户状态: user_id={user_id}")
+        user = UserService.get_user_by_id(user_id)
+        if user:
+            logger.debug(f"获取用户状态成功: user={user.username}")
+            return user.status
+        else:
+            logger.warning(f"获取用户状态失败: user_id={user_id}")
+            return None
+    
+    @staticmethod
+    def set_user_status(user_id, new_status):
+        """设置用户状态"""
+        logger.debug(f"设置用户状态: user_id={user_id}, new_status={new_status}")
+        user = UserService.get_user_by_id(user_id)
+        if user:
+            user.status = new_status
+            user.save()
+            logger.debug(f"设置用户状态成功: user={user.username}")
+            return user
+        else:
+            logger.warning(f"设置用户状态失败: user_id={user_id}")
+            return None
+        
+    @staticmethod
+    def clear_user_by_expired(user_id, del_server_user=False):
+        """清理过期用户"""
+        logger.debug(f"清理过期用户: user_id={user_id}")
+        user = UserService.get_user_by_id(user_id)
+        if user:
+            user.delete()
+            logger.debug(f"清理本地过期用户成功: user={user}")
+        else:
+            logger.warning(f"清理本地过期用户失败: user_id={user_id}")
+            return False
+        
+        if del_server_user:
+            service_api_client.delete_user(user.service_user_id)
+            logger.debug(f"清理服务器过期用户成功: user={user.username}")
+        else:
+            logger.warning(f"清理服务器过期用户失败: user_id={user_id}")
+            return False
+    
+    @staticmethod
+    def block_user(user_id):
+        """封禁用户"""
+        logger.debug(f"封禁用户: user_id={user_id}")
+        user = UserService.get_user_by_id(user_id)
+        if user:
+            user.status = "blocked"
+            user.save()
+            logger.debug(f"封禁用户成功: user={user.username}")
+            return user
+        else:
+            logger.warning(f"封禁用户失败: user_id={user_id}")
+            return None
+    
+    @staticmethod
+    def unblock_user(user_id):
+        """解封用户"""
+        logger.debug(f"解封用户: user_id={user_id}")
+        user = UserService.get_user_by_id(user_id)
+        if user:
+            user.status = "active"
+            user.save()
+            logger.debug(f"解封用户成功: user={user.username}")
+            return user
+        else:
+            logger.warning(f"解封用户失败: user_id={user_id}")
+            return None
+    
+    @staticmethod
+    def block_server_user(user_id):
+        """封禁服务器用户"""
+        logger.debug(f"封禁服务器用户: user_id={user_id}")
+        user = UserService.get_user_by_id(user_id)
+        if user:
+            service_api_client.block_user(user.service_user_id)
+            logger.debug(f"封禁服务器用户成功: user={user.username}")
+            return user
+        else:
+            logger.warning(f"封禁服务器用户失败: user_id={user_id}")
+            return None
+    
+    @staticmethod
+    def unblock_server_user(user_id):
+        """解封服务器用户"""
+        logger.debug(f"解封服务器用户: user_id={user_id}")
+        user = UserService.get_user_by_id(user_id)
+        if user:
+            service_api_client.unblock_user(user.service_user_id)
+            logger.debug(f"解封服务器用户成功: user={user.username}")
+            return user
+        else:
+            logger.warning(f"解封服务器用户失败: user_id={user_id}")
+            return None
+    
+    @staticmethod
+    def get_block_users():
+        """获取封禁用户"""
+        logger.debug("获取封禁用户")
+        users = UserService.get_all_users()
+        block_users = {}
+        if users:
+            for user in users:
+                if user.status == "blocked":
+                    logger.debug(f"获取封禁用户成功: user={user.username}")
+                    block_users.update({"username": user.username, "telegram_id": user.telegram_id})
+            return block_users
+        else:
+            logger.debug("获取封禁用户失败")
+            return

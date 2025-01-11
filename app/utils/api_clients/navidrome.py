@@ -1,5 +1,7 @@
 # Navidrome API 客户端
 import threading
+import random
+import string
 import requests
 from datetime import datetime, timedelta
 
@@ -77,7 +79,6 @@ class NavidromeAPIClient(BaseAPIClient):
           else:
             logger.error(f"无法获取token, 无法执行清理过期用户")
 
-    
     def _get_expired_users(self):
         """获取过期用户和即将过期的用户(不包括管理员)"""
         expired_users = []
@@ -225,10 +226,11 @@ class NavidromeAPIClient(BaseAPIClient):
         }
         return self._make_request("POST", endpoint, data=data)
 
-    def update_user(self, user_id, username, password=None):
+    def update_user(self, user_id, username=None, password=None):
         """更新 Navidrome 用户信息"""
         endpoint = f"/api/user/{user_id}"
         # 更新时需要把用户的id也传进去
+        username = username if username else self.get_user(user_id)['userName']
         data = {
                 "id": user_id,
                 "userName": username,
@@ -359,3 +361,17 @@ class NavidromeAPIClient(BaseAPIClient):
             }
         else:
            return None
+    
+    def block_user(self, user_id):
+        """封禁 Navidrome 用户"""
+        # 生成3个随机字母或数字
+        random_suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=3))
+        # 更新用户的密码，在原密码后添加随机后缀
+        username = self.get_user(user_id)['userName']
+        self.update_user(user_id, username=f"{username}{random_suffix}")
+    
+    def unblock_user(self, user_id):
+        """解封 Navidrome 用户"""
+        # 更新用户的密码，去掉随机后缀
+        username = self.get_user(user_id)['userName']
+        self.update_user(user_id, username=username[:-3])

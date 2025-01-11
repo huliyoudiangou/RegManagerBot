@@ -2,6 +2,7 @@ from app.utils.logger import logger
 from config import settings
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from app.bot.core.bot_instance import bot
+from app.bot.validators import user_status_required
 from app.bot.handlers.user_handlers import (
     register_user_command,
     reg_score_user_command,
@@ -42,9 +43,10 @@ def start_panel_command(message):
     bot.send_message(message.chat.id, "请选择操作：", reply_markup=create_user_panel(), delay=None)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('user_'))
+# @user_status_required(status=["blcoked"])
 def user_panel_callback(call):
     """处理用户面板回调"""
-    bot.answer_callback_query(call.id)
+    # bot.answer_callback_query(call.id)
     chat_id = call.message.chat.id
     markup = InlineKeyboardMarkup()
     markup.row_width = 1
@@ -66,8 +68,8 @@ def user_panel_callback(call):
     match call.data:
         case "user_register":
             if not settings.INVITE_CODE_SYSTEM_ENABLED:
-                msg = bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>", reply_markup=markup, delay=30)
-                bot.register_next_step_handler(msg, register_user_command)
+                bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+                bot.register_next_step_handler(call.message, register_user_command)
             else:
                 bot.answer_callback_query(call.id, "注册已关闭，请用邀请码注册！", show_alert=True)
                 # bot.send_message(chat_id, "注册已关闭，请用邀请码注册！")

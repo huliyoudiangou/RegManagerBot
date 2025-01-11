@@ -283,5 +283,48 @@ class ServiceUser(User):
           logger.error(f"修改 {service_type} 用户名失败: new_username={new_username}, telegram_id={telegram_id}, service_type={service_type}")
           return None
     
+    @staticmethod
+    def get_status(telegram_id, service_type=None):
+        """获取用户状态"""
+        service_type = service_type if service_type is not None else settings.SERVICE_TYPE
+        logger.debug(f"获取 {service_type} 用户状态: telegram_id={telegram_id}")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT status FROM Users WHERE telegram_id = ? AND service_type = ?", (telegram_id, service_type))
+        row = cursor.fetchone()
+        close_db_connection(conn)
+
+        if row:
+            logger.debug(f"获取 {service_type} 用户状态成功: telegram_id={telegram_id}, status={row['status']}")
+            return row['status']
+        else:
+            logger.warning(f"{service_type} 用户不存在: telegram_id={telegram_id}")
+            return None
+    
+    @staticmethod
+    def update_status(telegram_id, new_status, service_type=None):
+        """修改用户状态"""
+        service_type = service_type if service_type is not None else settings.SERVICE_TYPE
+        logger.debug(f"修改 {service_type} 用户状态: telegram_id={telegram_id}, new_status={new_status}")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("UPDATE Users SET status = ? WHERE telegram_id = ? AND service_type = ?", (new_status, telegram_id, service_type))
+        conn.commit()
+        # 获取更新后的数据
+        cursor.execute(
+            "SELECT * FROM Users WHERE telegram_id = ? AND service_type = ?",
+            (telegram_id, service_type)
+        )
+        row = cursor.fetchone()
+        close_db_connection(conn)
+        if row:
+          logger.debug(f"修改 {service_type} 用户状态成功, 返回新的ServiceUser对象: new_status={new_status}, telegram_id={telegram_id}, service_type={service_type}, id={row['id']}")
+          return ServiceUser(row['telegram_id'], row['score'], row['invite_code'], row['id'], row['service_user_id'], service_type = row['service_type'], status={new_status})
+        else:
+          logger.error(f"修改 {service_type} 用户状态失败: new_status={new_status}, telegram_id={telegram_id}, service_type={service_type}")
+          return None
+    
     def __str__(self):
         return f"<ServiceUser id={self.id}, telegram_id={self.telegram_id}, service_user_id={self.service_user_id}, score={self.score}, invite_code={self.invite_code}, last_sign_in_date={self.last_sign_in_date}, username={self.username}, status={self.status}, expiration_date={self.expiration_date}>"
