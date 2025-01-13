@@ -1,5 +1,5 @@
 # 管理员命令处理器
-from datetime import datetime, timedelta
+from datetime import timedelta
 from app.bot.validators import confirmation_required
 from app.services.user_service import UserService
 from app.services.score_service import ScoreService
@@ -46,6 +46,7 @@ def generate_invite_code_command(message):
         if invite_codes:
             response = f"成功生成{count}个邀请码(单击可复制):\n" + "\n".join(invite_codes)
         bot.reply_to(message, response, parse_mode='HTML')
+        # bot.send_message(message.chat.id, response, parse_mode='HTML')
     except ValueError:
         bot.reply_to(message, "邀请码生成失败，请重试！")
 
@@ -453,26 +454,26 @@ def get_stats_command(message):
     
     try:
       # 获取本地数据库用户数量
-      users = UserService.get_all_users(service_type)
+      users = UserService.get_all_users()
       local_user_count = len(users) if users else 0
       
       # 获取 Navidrome 用户数量
-      navidrome_users = service_api_client.get_users(service_type)
+      navidrome_users = service_api_client.get_users()
       web_user_count = navidrome_users['headers']['x-total-count']
       # 获取 Navidrome 歌曲总数
-      songs = service_api_client.get_songs(service_type)
+      songs = service_api_client.get_songs()
       song_count = int(songs['x-total-count']) if songs and 'x-total-count' in songs else 0
 
       # 获取 Navidrome 专辑总数
-      albums = service_api_client.get_albums(service_type)
+      albums = service_api_client.get_albums()
       album_count = int(albums['x-total-count']) if albums and 'x-total-count' in albums else 0
       
       # 获取 Navidrome 艺术家总数
-      artists = service_api_client.get_artists(service_type)
+      artists = service_api_client.get_artists()
       artist_count = int(artists['x-total-count']) if artists and 'x-total-count' in artists else 0
 
       # 获取 Navidrome 电台总数
-      radios = service_api_client.get_radios(service_type)
+      radios = service_api_client.get_radios()
       radio_count = int(radios['x-total-count']) if radios and 'x-total-count' in radios else 0
 
       response = f"统计信息:\n" \

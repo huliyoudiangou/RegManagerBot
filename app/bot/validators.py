@@ -237,7 +237,6 @@ def chat_type_required(not_chat_type=None):
               if message.chat.type in not_chat_type_list:  # 群组或超级群组
                   logger.debug(f"在{not_chat_type}中收到命令，不响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
                   return
-            
             logger.debug(f"在{message.chat.type}中收到命令，正常响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
             return func(message, *args, **kwargs)
         return wrapper
@@ -245,7 +244,7 @@ def chat_type_required(not_chat_type=None):
 
 def user_status_required(status=["active"]):
     """
-    限制命令只能在指定用户状态下使用的装饰器
+    限制命令不能在指定用户状态下使用的装饰器
     """
     def decorator(func):
         @wraps(func)
@@ -257,7 +256,7 @@ def user_status_required(status=["active"]):
                 return func(message, *args, **kwargs)
             elif user and user.status == "blocked":
                 logger.warning(f"用户状态为{status}，不允许执行: telegram_id={telegram_id}")
-                bot.answer_callback_query(message.id, "你没有权限执行此操作!")
+                bot.send_message(message.chat.id, "你已被封禁，请联系管理员!")
                 return
             else:
                 logger.info(f"用户不存在: telegram_id={telegram_id}")

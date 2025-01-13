@@ -25,7 +25,7 @@ class BotManager:
             # telebot.types.BotCommand("reset_password", "重置密码"),
             # telebot.types.BotCommand("reset_username", "重置用户名"),
             # telebot.types.BotCommand("give", "赠送积分"),
-            # telebot.types.BotCommand("random_score", "发送积分红包"),
+            telebot.types.BotCommand("random_score", "发送积分红包"),
             # telebot.types.BotCommand("bind", "绑定账号"),
             # telebot.types.BotCommand("unbind", "解绑账号"),
             # telebot.types.BotCommand("generate_code", "生成邀请码码 (管理员)"),
@@ -67,7 +67,7 @@ class BotManager:
         # bot.register_message_handler(user_handlers.register_command, commands=['register'])
         # bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
         # # bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
-        # bot.register_message_handler(user_handlers.info_command, commands=['info'])
+        bot.register_message_handler(user_handlers.info_command, commands=['info'])
         # bot.register_message_handler(user_handlers.delete_user_command, commands=['deleteuser'])
         # bot.register_message_handler(user_handlers.score_command, commands=['score'])
         # bot.register_message_handler(user_handlers.checkin_command, commands=['checkin'])
@@ -78,7 +78,7 @@ class BotManager:
         # bot.register_message_handler(user_handlers.give_score_command, commands=['give'])
         # bot.register_message_handler(user_handlers.bind_command, commands=['bind'])
         # bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])
-        # bot.register_message_handler(user_handlers.random_score_command, commands=['random_score']) # 注册随机增加积分命令
+        bot.register_message_handler(user_handlers.random_score_command, commands=['random_score']) # 注册随机增加积分命令
 
         
          # 注册管理员命令处理函数

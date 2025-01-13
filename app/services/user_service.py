@@ -190,10 +190,10 @@ class UserService:
             return None
     
     @staticmethod
-    def get_all_users():
+    def get_all_users(service_type=None):
       """获取所有用户"""
       logger.debug("获取所有用户")
-      users = ServiceUser.get_all()
+      users = ServiceUser.get_all(service_type)
       if users:
         logger.debug(f"获取所有用户成功: users={users}")
         return users
@@ -263,7 +263,7 @@ class UserService:
     @staticmethod
     def reset_password(user, new_password):
         """重置密码"""
-        result = service_api_client.update_user(user.service_user_id, username=user.username, password=new_password)
+        result = service_api_client.update_username_or_password(user.service_user_id, username=user.username, password=new_password)
             
         if result and result['status'] == 'success':
             logger.debug("密码重置成功")
@@ -281,7 +281,7 @@ class UserService:
     @staticmethod
     def reset_username(user, new_username):
         """重置用户名"""
-        result = service_api_client.update_user(user.service_user_id, username=new_username)
+        result = service_api_client.update_username_or_password(user.service_user_id, username=new_username)
             
         if result and result['status'] == 'success':
             logger.debug(f"用户重置为：{new_username}")

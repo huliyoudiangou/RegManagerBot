@@ -141,8 +141,15 @@ class AudiobookshelfAPIClient(BaseAPIClient):
         data = {k: v for k, v in user_data.items() if v is not None}
         logger.debug(f"Audiobookshelf 创建用户: {data}")
         return self._make_request("POST", endpoint, data=data)
-
-    def update_user(self, user_id, username=None, password=None):
+    
+    def update_user(self, user_id, user_data):
+        """更新 Audiobookshelf 用户信息"""
+        endpoint = f"/api/users/{user_id}"
+        data = {k: v for k, v in user_data.items() if v is not None}
+        logger.debug(f"Audiobookshelf 更新用户: {data}")
+        return self._make_request("PATCH", endpoint, data=data)
+        
+    def update_username_or_password(self, user_id, username=None, password=None):
         """更新 Audiobookshelf 用户信息"""
         endpoint = f"/api/users/{user_id}"
         user_data = {
@@ -154,6 +161,20 @@ class AudiobookshelfAPIClient(BaseAPIClient):
         logger.debug(f"Audiobookshelf 更新用户: {data}")
         return self._make_request("PATCH", endpoint, data=data)
 
+    def block_user(self, user_id):
+        """禁用 Audiobookshelf 用户"""
+        data = {
+            "isActive": False
+        }
+        return self.update_user(user_id, data)
+    
+    def unblock_user(self, user_id):
+        """启用 Audiobookshelf 用户"""
+        data = {
+            "isActive": True
+        }
+        return self.update_user(user_id, data)
+    
     def delete_user(self, user_id):
         """删除 Audiobookshelf 用户"""
         endpoint = f"/api/users/{user_id}"

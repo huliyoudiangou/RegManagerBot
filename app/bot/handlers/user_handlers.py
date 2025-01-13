@@ -91,11 +91,13 @@ def help_command(message):
   bot.reply_to(message, response, parse_mode="Markdown")
 
 
+@chat_type_required(["group", "supergroup"])
 @user_exists(negate=False)
 def register_user_command(message):
     if message.text.startswith('/'):
         args = message.text.split()[1:]
-    args = message.text.split()
+    else:
+        args = message.text.split()
     if len(args) != 2:
         logger.info(f"参数错误: args={args}")
         bot.reply_to(message, "参数错误，请提供用户名和密码，格式为：用户名 密码")
@@ -114,7 +116,7 @@ def register_user_command(message):
         bot.send_message(message.chat.id, "注册失败，请重试!")
 
 
-@bot.message_handler(commands=['reg_score_user'])
+@chat_type_required(["group", "supergroup"])
 @user_exists(negate=False)
 def reg_score_user_command(message):
     """
@@ -124,13 +126,6 @@ def reg_score_user_command(message):
     username = message.from_user.username
     logger.info(f"开始注册用户积分账号: telegram_id={telegram_id}, service_type={settings.SERVICE_TYPE}")
 
-    # # 检查用户是否已存在
-    # user = UserService.get_user_by_telegram_id(telegram_id)
-    # if user:
-    #     bot.reply_to(message, "您已经注册过了，请使用 /info 命令查看您的信息。")
-    #     logger.warning(f"用户已存在: telegram_id={telegram_id}, service_type={user.service_type}")
-    #     return
-
     # 在本地数据库中创建用户
     user = UserService.registers_user(telegram_id=telegram_id, username=username)
     user.save()
@@ -138,7 +133,7 @@ def reg_score_user_command(message):
     bot.reply_to(message, f"本地积分账号注册成功，欢迎您: {username}！")
 
 
-@bot.message_handler(commands=['deleteuser'])
+@chat_type_required(["group", "supergroup"])
 @user_exists(negate=True)
 @confirmation_required(message_text="你确定要删除该用户吗？")
 def delete_user_command(message):
@@ -166,7 +161,7 @@ def delete_user_command(message):
         bot.reply_to(message, "未找到您的账户信息，如已在服务器注册，请使用/bind命令绑定!")
     
     
-@bot.message_handler(commands=['use_code'])
+@chat_type_required(["group", "supergroup"])    
 @user_exists(negate=False)
 def use_invite_code_command(message):
     """
@@ -176,7 +171,8 @@ def use_invite_code_command(message):
     # 从消息中提取参数
     if message.text.startswith('/'):
         args = message.text.split()[1:]
-    args = message.text.split()
+    else:
+        args = message.text.split()
     
     if len(args) < 1:
         bot.reply_to(message, "请提供邀请码，格式为：/use_code <[用户名] 邀请码>")
@@ -219,9 +215,9 @@ def use_invite_code_command(message):
     else:
         logger.warning(f"本地用户注册失败！")
         bot.reply_to(message, "本地用户注册失败！")
-   
-    
-@bot.message_handler(commands=['use_renew_code'])
+
+
+@chat_type_required(["group", "supergroup"])    
 @user_exists(negate=True)
 def use_renew_code_command(message):
     """使用续期码 (用户命令)
@@ -232,7 +228,8 @@ def use_renew_code_command(message):
         # 解析参数
         if message.text.startswith('/'):
             args = message.text.split()[1:]
-        args = message.text.split()
+        else:
+            args = message.text.split()
         if len(args) < 1:
             bot.reply_to(message, "请提供续期码！")
             return
@@ -252,7 +249,6 @@ def use_renew_code_command(message):
         bot.reply_to(message, "使用续期码失败，请稍后重试！")
 
 
-@bot.message_handler(commands=['score'])
 @user_exists(negate=True)
 def score_command(message):
     """
@@ -279,8 +275,7 @@ def score_command(message):
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot.reply_to(message, "未找到您的账户信息!")
     
-    
-@bot.message_handler(commands=['checkin'])
+
 @user_exists(negate=True)
 def checkin_command(message):
     """
@@ -305,13 +300,8 @@ def checkin_command(message):
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot.reply_to(message, "未找到您的账户信息!")
-    
-    if not settings.ENABLE_MESSAGE_CLEANER:
-          logger.debug("消息清理系统未启动")
-          return
 
-         
-@bot.message_handler(commands=['buyinvite'])
+
 @user_exists(negate=True)
 @chat_type_required(["group", "supergroup"])
 @confirmation_required(f"你确定要购买邀请码嘛？")
@@ -337,7 +327,7 @@ def buy_invite_code_command(message):
                 invite_code = InviteCodeService.generate_invite_code(telegram_id)
                 if invite_code:
                     logger.info(f"用户购买邀请码成功: telegram_id={telegram_id}, service_type={service_type}, code={invite_code.code}, username={user.username}")
-                    bot.reply_to(message, f"购买邀请码成功，您的邀请码是：<code>{invite_code.code}</code>，请妥善保管！", parse_mode='HTML')
+                    bot.reply_to(message, f"购买邀请码成功，您的邀请码是：<code>{invite_code.code}</code>，请妥善保管！", parse_mode='HTML', delay=None)
                 else:
                     logger.error(f"用户购买邀请码失败，生成邀请码失败: telegram_id={telegram_id}, service_type={service_type}, username={user.username}")
                     bot.reply_to(message, "购买邀请码失败，生成邀请码失败，请重试！")
@@ -350,10 +340,8 @@ def buy_invite_code_command(message):
     else:
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot.reply_to(message, "未找到您的账户信息!")
-    message_queue.add_message(message)
-    
-    
-@bot.message_handler(commands=['info'])
+
+
 @chat_type_required(["group", "supergroup"])
 @user_exists(negate=True)
 def info_command(message):
@@ -369,15 +357,16 @@ def info_command(message):
                    f"Telegram ID: {user.telegram_id}\n" \
                    f"用户名: {user.username}\n" \
                    f"积分: {user.score}\n" \
+                   f"过期时间: {user.expiration_date}\n" \
                    f"本地数据库ID: {user.id}\n" \
-                   f"Navidrome用户ID: {user.service_user_id}"
+                   f"服务器用户ID: {user.service_user_id}"
         bot.reply_to(message, response)
     else:
         logger.error(f"用户信息查询失败: telegram_id={telegram_id}")
         bot.reply_to(message, "未注册用户，请先注册！")
    
 
-@bot.message_handler(commands=['give'])
+@chat_type_required(["group", "supergroup"])
 @user_exists(negate=True)
 @confirmation_required(f"你确定要赠送积分嘛？")
 def give_score_command(message):
@@ -392,7 +381,8 @@ def give_score_command(message):
 
     if message.text.startswith('/'):
         args = message.text.split()[1:]
-    args = message.text.split()
+    else:
+        args = message.text.split()
     if len(args) != 2:
         bot.reply_to(message, "参数错误，请提供接收者 Telegram ID 和积分数，格式为：/give <telegram_id> <score>")
         return
@@ -438,7 +428,7 @@ def give_score_command(message):
        bot.reply_to(message, f"积分赠送失败，请重试!")
     
 
-@bot.message_handler(commands=['bind'])
+@chat_type_required(["group", "supergroup"])
 @chat_type_required(["group", "supergroup"])
 def bind_command(message):
     """
@@ -452,7 +442,8 @@ def bind_command(message):
     
     if message.text.startswith('/'):
         args = message.text.split()[1:]
-    args = message.text.split()
+    else:
+        args = message.text.split()
     if len(args) != 2:
         bot.reply_to(message, "参数错误，请提供用户名和用户 ID，格式为：/bind <username> <user_id>")
         return
@@ -464,12 +455,13 @@ def bind_command(message):
     if result:
         logger.info(f"用户绑定账户成功: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
         bot.reply_to(message, "账户绑定成功!")
-        user = UserService.registers_user(telegram_id=telegram_id, service_type=service_type, service_user_id=user_id, username=username)
+        user = UserService.register_local_user(telegram_id=telegram_id, service_type=service_type, service_user_id=user_id, username=username)
     else:
         logger.error(f"用户绑定账户失败: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
         bot.reply_to(message, "账户绑定失败，请重试!")
 
-@bot.message_handler(commands=['unbind'])
+
+@chat_type_required(["group", "supergroup"])
 @user_exists(negate=True)
 def unbind_command(message):
     """
@@ -491,9 +483,7 @@ def unbind_command(message):
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot.reply_to(message, "未找到您的账户信息！")
     
-    
-    
-@bot.message_handler(commands=['reset_password'])
+
 @chat_type_required(["group", "supergroup"])
 @user_exists(negate=True)
 @confirmation_required(f"你确定要重置密码嘛？")
@@ -508,7 +498,8 @@ def reset_password_command(message):
 
     if message.text.startswith('/'):
         args = message.text.split()[1:]
-    args = message.text.split()
+    else:
+        args = message.text.split()
     if len(args) != 1:
         bot.reply_to(message, "参数错误，请提供新密码，格式为：/reset_password <new_password>")
         return
@@ -529,9 +520,8 @@ def reset_password_command(message):
         logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
         bot.reply_to(message, "该用户未注册！")
     
-        
-
-@bot.message_handler(commands=['reset_username'])
+    
+@chat_type_required(["group", "supergroup"])
 @user_exists(negate=True)
 def reset_username_command(message):
     """
@@ -544,7 +534,8 @@ def reset_username_command(message):
 
     if message.text.startswith('/'):
         args = message.text.split()[1:]
-    args = message.text.split()
+    else:
+        args = message.text.split()
     if len(args) != 1:
         bot.reply_to(message, "参数错误，请提供新用户名，格式为：/reset_username <new_username>")
         return
@@ -570,21 +561,20 @@ def reset_username_command(message):
         bot.reply_to(message, "用户重名，请重新选择用户名！")
     
     
-             
-@bot.message_handler(commands=['random_score'])
 @chat_type_required(["private"])
 @user_exists(negate=True)
 @score_enough()
 @confirmation_required(f"你确定要发随机红包嘛？")
 def random_score_command(message):
     """发送带有按钮的菜单"""
+    bot.delete_message(message.chat.id, message.message_id)
     username = message.from_user.username
     if message.text.startswith('/'):
         args = message.text.split()[1:]
-    args = message.text.split()
+    else:
+        args = message.text.split()
     if len(args) != 2:
         bot.reply_to(message, "参数错误，请提供参数，格式为：/random_score <participants_count> <total_score>")
-        
         return
     try:
         participants_count = int(args[0])
@@ -613,8 +603,8 @@ def random_score_command(message):
             🧧 *随机积分红包来了~*
             _感谢 {username} 发的随机积分红包！_
           '''
-    bot.send_message(message.chat.id, msg, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True)
-    message_queue.add_message(message, delay=1)
+    bot.send_message(message.chat.id, msg, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True, delay=None)
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("random_score_"))
 def handle_random_score_callback(call):
@@ -633,21 +623,19 @@ def handle_random_score_callback(call):
     score = ScoreService.use_random_score(event_id=event_id, user_id=user_id, user_name = user_name)
     if score:
         bot.send_message(call.message.chat.id, f"恭喜您：[{user_name}](https://t.me/{user_name})，获得{score}积分！", parse_mode="Markdown", disable_web_page_preview=True)
-        
         event_data = ScoreService.get_random_score_event(event_id)
         if event_data and event_data['is_finished']:
            score_result = json.loads(event_data['score_result'])
-           response = f"积分分发完毕, 中奖信息如下：\n"
+           response = f"*积分分发完毕, 中奖信息如下*\n"
            response += f"-----------------------\n"
            for item in score_result:
              response += f"用户: [{item['user_name']}](https://t.me/{item['user_name']})，获取积分： {item['score']}分\n"
-           bot.send_message(call.message.chat.id, response, parse_mode="Markdown", disable_web_page_preview=True)
-           
+        #    bot.send_message(call.message.chat.id, response, parse_mode="Markdown", disable_web_page_preview=True, delay=30)
+           logger.info(f"chat: {call.message.chat.id}, message_id: {call.message.message_id}")
+           bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f"{response}", parse_mode="Markdown", disable_web_page_preview=True, delay=30)
            
     elif score == 0:
        bot.send_message(call.message.chat.id, f"积分已经分发完毕")
-       
-
     else:
        bot.send_message(call.message.chat.id, f"[{user_name}](https://t.me/{user_name})您已经获取过奖励, 请勿重复点击！", parse_mode="Markdown", disable_web_page_preview=True)
        

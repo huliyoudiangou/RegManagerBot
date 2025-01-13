@@ -126,7 +126,12 @@ class EmbyAPIClient(BaseAPIClient):
             return {"status": "error", "message": str(e)}
         return resp
 
-    def update_user(self, user_id, username=None, password=None):
+    def update_user(self, action, user_id, user_data):
+        """更新 Emby 用户信息"""
+        endpoint = f"/Users/{user_id}/{action}"
+        return self._make_request("POST", endpoint, data=user_data)
+    
+    def update_username_or_password(self, user_id, username=None, password=None):
         """更新 Emby 用户信息(目前只更新用户名和密码)"""
         endpoint = f"/Users/{user_id}"
         # 更新时需要把用户的id也传进去
@@ -156,6 +161,20 @@ class EmbyAPIClient(BaseAPIClient):
             }
         logger.debug(f"Emby 更新用户密码: {data}")
         return self._make_request("POST", endpoint, data=data)
+    
+    def block_user(self, user_id):
+        """禁用 Emby 用户"""
+        data = {
+            "IsDisabled": True
+            }
+        return self.update_user("Policy", user_id, data)
+    
+    def unblock_user(self, user_id):
+        """启用 Emby 用户"""
+        data = {
+            "IsDisabled": False
+            }
+        return self.update_user("Policy", user_id, data)
 
 
 if __name__ == "__main__":

@@ -237,7 +237,7 @@ class ScoreService:
 
            update_data("RandomScoreEvents", data, f"id = {event_id}")
            
-           user = UserService.get_user_by_telegram_id(user_id, 'navidrome')
+           user = UserService.get_user_by_telegram_id(user_id)
            if user:
                # 扣除赠送者积分，增加接收者积分
             ScoreService.add_score(user.id, user_score)

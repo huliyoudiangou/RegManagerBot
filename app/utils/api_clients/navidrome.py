@@ -226,7 +226,12 @@ class NavidromeAPIClient(BaseAPIClient):
         }
         return self._make_request("POST", endpoint, data=data)
 
-    def update_user(self, user_id, username=None, password=None):
+    def update_user(self, user_id, user_data):
+        """更新 Navidrome 用户信息"""
+        endpoint = f"/api/user/{user_id}"
+        return self._make_request("PUT", endpoint, data=user_data)
+    
+    def update_username_or_password(self, user_id, username=None, password=None):
         """更新 Navidrome 用户信息"""
         endpoint = f"/api/user/{user_id}"
         # 更新时需要把用户的id也传进去
@@ -367,11 +372,20 @@ class NavidromeAPIClient(BaseAPIClient):
         # 生成3个随机字母或数字
         random_suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=3))
         # 更新用户的密码，在原密码后添加随机后缀
-        username = self.get_user(user_id)['userName']
-        self.update_user(user_id, username=f"{username}{random_suffix}")
+        user = self.get_user(user_id)
+        if user:
+            username = user['data']['userName']
+            return self.update_username_or_password(user_id, username=f"{username}{random_suffix}")
+        else:
+            return None
     
     def unblock_user(self, user_id):
         """解封 Navidrome 用户"""
         # 更新用户的密码，去掉随机后缀
-        username = self.get_user(user_id)['userName']
-        self.update_user(user_id, username=username[:-3])
+        user = self.get_user(user_id)
+        if user:
+            username = user['data']['userName']
+            return self.update_username_or_password(user_id, username=username[:-3])
+        else:
+            return None
+        
