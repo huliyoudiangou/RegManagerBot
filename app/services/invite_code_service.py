@@ -32,10 +32,10 @@ class InviteCodeService:
         if code_type not in ['invite', 'renew']:
             logger.error(f"无效的邀请码类型: {code_type}")
             return None
-
-        # 生成邀请码
-        invite_code = InviteCode.generate_code(length=length, user_id=create_user_id, code_type=code_type, expire_days=expire_days)
-
+        if code_type == 'invite':
+            # 生成邀请码
+            invite_code = InviteCode.generate_code(length=length, user_id=create_user_id, code_type=code_type, expire_days=expire_days)
+        
         if invite_code:
             logger.debug(f"邀请码生成成功: invite_code={invite_code.code}")
             return invite_code
