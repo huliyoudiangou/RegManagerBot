@@ -259,7 +259,7 @@ def user_status_required(status=["active"]):
                 bot.send_message(message.chat.id, "你已被封禁，请联系管理员!")
                 return
             else:
-                logger.info(f"用户不存在: telegram_id={telegram_id}")
+                logger.info(f"用户不在黑名单，正常响应: telegram_id={telegram_id}")
                 # bot.answer_callback_query(message.id, "你没有权限执行此操作!")
                 # bot.reply_to(message, "你没有权限执行此操作!")
                 return func(message, *args, **kwargs)

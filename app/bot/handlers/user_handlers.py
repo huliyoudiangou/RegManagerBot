@@ -127,7 +127,7 @@ def reg_score_user_command(message):
     logger.info(f"开始注册用户积分账号: telegram_id={telegram_id}, service_type={settings.SERVICE_TYPE}")
 
     # 在本地数据库中创建用户
-    user = UserService.registers_user(telegram_id=telegram_id, username=username)
+    user = UserService.register_local_user(telegram_id=telegram_id, username=username)
     user.save()
     logger.info(f"本地用户创建成功: user_id={user.id}")
     bot.reply_to(message, f"本地积分账号注册成功，欢迎您: {username}！")

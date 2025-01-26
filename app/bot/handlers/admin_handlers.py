@@ -125,7 +125,7 @@ def get_unused_invite_codes_command(message):
                 response += f"邀请码：过期时间\n"
                 response += f"--------\n"
                 for invite_code in invite_codes:
-                    expire_time = invite_code.crate_time + timedelta(days=invite_code.expire_days)
+                    expire_time = invite_code.create_time + timedelta(days=invite_code.expire_days)
                     response += f"<code>{invite_code.code}</code>: {str(expire_time)[:-7]}\n"
                 response += f"--------\n"
                 response += f"未使用总数为：{len(invite_unused_codes)}, 当前页有{len(invite_codes)}个未使用!"

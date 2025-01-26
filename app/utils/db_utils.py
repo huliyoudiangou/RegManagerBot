@@ -75,11 +75,6 @@ def create_tables():
     conn.commit()
     close_db_connection(conn)
 
-import sqlite3
-from config import settings
-
-# ... (之前的 get_db_connection, close_db_connection, create_tables 函数) ...
-
 def insert_data(table_name, data):
     """插入数据"""
     with db_lock:

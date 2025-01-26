@@ -67,8 +67,14 @@ def user_pannel(call):
 @user_status_required(status=["blcoked"])
 def start_panel_command(message):
     """显示用户面板"""
+    telegram_id = message.from_user.id
+    chat_id = message.chat.id
+    user_name = message.from_user.username
     bot.delete_message(message.chat.id, message.message_id)
-    bot.send_message(message.chat.id, "请选择操作：", reply_markup=create_user_panel(), delay=None)
+    # bot.send_message(message.chat.id, "请选择操作：", reply_markup=create_user_panel(), delay=None)
+    img_url = "https://i.imgur.com/jci9UJm.jpeg"
+    resp = f"*倾听音乐，享受生活！欢迎 {user_name} 来到音海拾贝！*\n"
+    bot.send_photo(chat_id, img_url, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('user_'))
 def user_panel_callback(call):
