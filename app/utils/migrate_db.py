@@ -1,5 +1,6 @@
 import sqlite3
-from config import settings
+import os
+
 
 def migrate_database(db_path):
     # 连接到现有数据库
@@ -84,8 +85,15 @@ def migrate_database(db_path):
     connection.commit()
     connection.close()
 
+
 # 调用迁移函数
-migrate_database("./data.db")
+current_dir = os.path.dirname(__file__)
+db_path = os.path.join(current_dir, '../../data/data.db')
+db_path = os.path.abspath(db_path)
+migrate_database(db_path)
 
 if __name__ == 'main':
-    migrate_database('../data/db.sqlite')
+    current_dir = os.path.dirname(__file__)
+    db_path = os.path.join(current_dir, '../../data/data.db')
+    db_path = os.path.abspath(db_path)
+    migrate_database(db_path)

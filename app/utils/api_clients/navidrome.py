@@ -14,19 +14,22 @@ from app.utils.logger import logger
 # pip install requests
 
 scheduler = get_scheduler()
+
+
 class NavidromeAPIClient(BaseAPIClient):
     """
     Navidrome API 客户端
     """
 
     def __init__(self):
-        super().__init__(settings.NAVIDROME_API_URL, username=settings.NAVIDROME_API_USERNAME, password=settings.NAVIDROME_API_PASSWORD, auth_type='token')
+        super().__init__(settings.NAVIDROME_API_URL, username=settings.NAVIDROME_API_USERNAME,
+                         password=settings.NAVIDROME_API_PASSWORD, auth_type='token')
         self._token_lock = threading.Lock()
         self.session = requests.Session()
         self.token = self._login()  # 初始化时登录并获取 token
         # self._start_keep_alive()
         scheduler.add_job(job_name="navidrome_keep_live", interval=3600, job_func=self._keep_alive)
-        logger.info("NavidromeAPIClient 初始化完成") # 初始化时登录并获取 token
+        logger.info("NavidromeAPIClient 初始化完成")  # 初始化时登录并获取 token
 
     def _login(self):
         """登录 Navidrome 并获取 token"""
@@ -44,40 +47,42 @@ class NavidromeAPIClient(BaseAPIClient):
         except requests.exceptions.RequestException as e:
             print(f"Navidrome 登录失败: {e}")
             return None
-    
+
     def start_clean_expired_users(self):
-         if settings.ENABLE_EXPIRED_USER_CLEAN:
-           self._setup_clean_expired_users_job() # 启动清理过期用户的定时任务
-         else:
-             self._remove_clean_expired_users_job()
-    
+        if settings.ENABLE_EXPIRED_USER_CLEAN:
+            self._setup_clean_expired_users_job()  # 启动清理过期用户的定时任务
+        else:
+            self._remove_clean_expired_users_job()
+
     def _setup_clean_expired_users_job(self):
         """启动清理过期用户的定时器"""
         if settings.ENABLE_EXPIRED_USER_CLEAN:
-            scheduler.add_job(job_name = "clean_expired_users", interval=settings.DELAY_INTERVAL, job_func = self._clean_expired_users)
+            scheduler.add_job(job_name="clean_expired_users", interval=settings.DELAY_INTERVAL,
+                              job_func=self._clean_expired_users)
             logger.info(f"Navidrome 过期用户清理定时任务启动，时间间隔：{settings.DELAY_INTERVAL} 秒")
         else:
             logger.info("Navidrome 过期用户清理定时任务未启动")
-    
+
     def _remove_clean_expired_users_job(self):
-       """移除清理过期用户的定时器"""
-       scheduler.remove_job("clean_expired_users")
+        """移除清理过期用户的定时器"""
+        scheduler.remove_job("clean_expired_users")
 
     def _clean_expired_users(self):
-      """删除过期用户"""
-      with self._token_lock:
-          if self.token:
-            logger.info("开始清理过期用户")
-            expired_users = self._get_expired_users()
-            if 'warning' in expired_users and expired_users['warning']:
-                for user in expired_users['warning']:
-                    logger.warning(f"用户名：{user['username']}将在3天后过期，请注意！")
-            if 'expired' in expired_users and expired_users['expired']:
-              for user in expired_users['expired']:
-                logger.info(f"删除过期用户: username={user['username']}, service_user_id: {user['service_user_id']}")
-                self.delete_user(user['service_user_id'])
-          else:
-            logger.error(f"无法获取token, 无法执行清理过期用户")
+        """删除过期用户"""
+        with self._token_lock:
+            if self.token:
+                logger.info("开始清理过期用户")
+                expired_users = self._get_expired_users()
+                if 'warning' in expired_users and expired_users['warning']:
+                    for user in expired_users['warning']:
+                        logger.warning(f"用户名：{user['username']}将在3天后过期，请注意！")
+                if 'expired' in expired_users and expired_users['expired']:
+                    for user in expired_users['expired']:
+                        logger.info(
+                            f"删除过期用户: username={user['username']}, service_user_id: {user['service_user_id']}")
+                        self.delete_user(user['service_user_id'])
+            else:
+                logger.error(f"无法获取token, 无法执行清理过期用户")
 
     def _get_expired_users(self):
         """获取过期用户和即将过期的用户(不包括管理员)"""
@@ -87,13 +92,13 @@ class NavidromeAPIClient(BaseAPIClient):
         logger.debug(f"day: {settings.EXPIRED_DAYS}, warning: {settings.WARNING_DAYS}")
         if users and users['status'] == 'success':
             now = datetime.now().astimezone()
-            local_tz = now.tzinfo # 获取本地时区
+            local_tz = now.tzinfo  # 获取本地时区
             for user_data in users['data']:
                 if not user_data['isAdmin']:
                     logger.debug(f"正在检查用户: {user_data['userName']}")
                     last_login_at = user_data.get('lastLoginAt')
                     last_access_at = user_data.get('lastAccessAt')
-                    
+
                     def parse_datetime_str(time_str):
                         if not time_str:
                             return None
@@ -111,17 +116,20 @@ class NavidromeAPIClient(BaseAPIClient):
 
                     last_login_time = parse_datetime_str(last_login_at)
                     last_access_time = parse_datetime_str(last_access_at)
-                    
+
                     # 获取最后登录或访问时间
-                    last_time = max(last_login_time, last_access_time) if last_login_time and last_access_time else last_login_time if last_login_time else last_access_time if last_access_time else None
+                    last_time = max(last_login_time,
+                                    last_access_time) if last_login_time and last_access_time else last_login_time if last_login_time else last_access_time if last_access_time else None
 
                     if last_time:
                         if (now - last_time) > timedelta(days=settings.EXPIRED_DAYS):
                             logger.debug(f"发现过期用户: {user_data['userName']}")
-                            expired_users.append({'service_user_id': user_data['id'], 'username': user_data['userName']})
+                            expired_users.append(
+                                {'service_user_id': user_data['id'], 'username': user_data['userName']})
                         elif (now - last_time) < timedelta(days=settings.WARNING_DAYS):
                             logger.debug(f"发现即将过期用户: {user_data['userName']}")
-                            warning_users.append({'service_user_id': user_data['id'], 'username': user_data['userName']})
+                            warning_users.append(
+                                {'service_user_id': user_data['id'], 'username': user_data['userName']})
                         else:
                             logger.debug(f"该用户正常: {user_data['userName']}")
                     else:
@@ -130,23 +138,23 @@ class NavidromeAPIClient(BaseAPIClient):
                         expired_users.append({'service_user_id': user_data['id'], 'username': user_data['userName']})
                 else:
                     logger.debug(f"发现管理员账号：{user_data['userName']}")
-        return {'expired':expired_users, 'warning':warning_users}
-    
+        return {'expired': expired_users, 'warning': warning_users}
+
     def _keep_alive(self):
         """发送 Navidrome 保活请求"""
         with self._token_lock:
             if self.token:
-              endpoint = "/api/keepalive/keepalive" # 使用用户列表接口来保活
-              result = self._make_request("GET", endpoint)
-              if result and result['status'] == 'success':
-                logger.info("Navidrome 保活请求成功")
-              else:
-                  logger.warning(f"Navidrome 保活请求失败, result: {result} , 重新获取token")
-                  self.token = self._login()
-                  if self.token:
-                    logger.info("Navidrome 重新登录成功")
-                  else:
-                      logger.error("Navidrome 重新登录失败")
+                endpoint = "/api/keepalive/keepalive"  # 使用用户列表接口来保活
+                result = self._make_request("GET", endpoint)
+                if result and result['status'] == 'success':
+                    logger.info("Navidrome 保活请求成功")
+                else:
+                    logger.warning(f"Navidrome 保活请求失败, result: {result} , 重新获取token")
+                    self.token = self._login()
+                    if self.token:
+                        logger.info("Navidrome 重新登录成功")
+                    else:
+                        logger.error("Navidrome 重新登录失败")
         # self._start_keep_alive()
 
     def _start_keep_alive(self):
@@ -157,7 +165,7 @@ class NavidromeAPIClient(BaseAPIClient):
         self._keep_alive_timer.daemon = True  # 设置为守护线程，防止主线程退出时阻塞
         self._keep_alive_timer.start()
         logger.info(f"Navidrome 保活定时器启动，时间间隔：{interval} 秒")
-        
+
     def _make_request(self, method, endpoint, params=None, data=None, headers=None):
         """发送 API 请求"""
         url = f"{self.api_url}{endpoint}"
@@ -165,8 +173,8 @@ class NavidromeAPIClient(BaseAPIClient):
         # 如果 token 存在，则添加到请求头
         _headers = {"x-nd-authorization": f"Bearer {self.token}"} if self.token else {}
         if headers:
-          _headers.update(headers) # 如果传入了 headers，则合并
-        
+            _headers.update(headers)  # 如果传入了 headers，则合并
+
         response = None
         try:
             response = self.session.request(method, url, params=params, json=data, headers=_headers)
@@ -212,7 +220,7 @@ class NavidromeAPIClient(BaseAPIClient):
                 if user['userName'] == username:
                     return users['data'][index]
         return None
-    
+
     def create_user(self, username, password):
         """创建 Navidrome 用户"""
         endpoint = "/api/user"
@@ -230,18 +238,34 @@ class NavidromeAPIClient(BaseAPIClient):
         """更新 Navidrome 用户信息"""
         endpoint = f"/api/user/{user_id}"
         return self._make_request("PUT", endpoint, data=user_data)
-    
+
+    def auth_user(self, username, password):
+        """认证用户是否在服务器中注册"""
+        endpoint = "/auth/login"
+        url = f"{self.api_url}{endpoint}"
+        data = {"username": username, "password": password}
+
+        try:
+            response = requests.post(url, json=data)
+            response.raise_for_status()
+            user_id = response.json().get('id')
+            logger.info(f"Navidrome 用户认证成功")
+            return {"id": user_id}
+        except requests.exceptions.RequestException as e:
+            print(f"Navidrome 用户认证失败: {e}")
+            return None
+
     def update_username_or_password(self, user_id, username=None, password=None):
         """更新 Navidrome 用户信息"""
         endpoint = f"/api/user/{user_id}"
         # 更新时需要把用户的id也传进去
         username = username if username else self.get_user(user_id)['userName']
         data = {
-                "id": user_id,
-                "userName": username,
-                "name": username,
-                "email": ""
-                }
+            "id": user_id,
+            "userName": username,
+            "name": username,
+            "email": ""
+        }
         if password:
             data['changePassword'] = True
             data['password'] = password
@@ -252,7 +276,7 @@ class NavidromeAPIClient(BaseAPIClient):
         """删除 Navidrome 用户"""
         endpoint = f"/api/user/{user_id}"
         return self._make_request("DELETE", endpoint)
-    
+
     def get_albums(self, _end=1, _order="", _sort="", _start=0):
         """
         获取 Navidrome 专辑列表
@@ -272,16 +296,16 @@ class NavidromeAPIClient(BaseAPIClient):
             "_start": _start
         }
         endpoint = "/api/album"
-        
+
         response = self._make_request("GET", endpoint, params=params)
         if response and response['status'] == 'success':
-           return {
+            return {
                 "data": response['data'],
-                 "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
+                "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
             }
         else:
-           return None   
-    
+            return None
+
     def get_songs(self, _end=1, _order="", _sort="", _start=0):
         """
         获取 Navidrome 歌曲列表
@@ -304,12 +328,12 @@ class NavidromeAPIClient(BaseAPIClient):
 
         response = self._make_request("GET", endpoint, params=params)
         if response and response['status'] == 'success':
-           return {
+            return {
                 "data": response['data'],
-                 "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
+                "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
             }
         else:
-           return None
+            return None
 
     def get_artists(self, _end=1, _order="", _sort="", _start=0):
         """
@@ -332,12 +356,12 @@ class NavidromeAPIClient(BaseAPIClient):
         endpoint = "/api/artist"
         response = self._make_request("GET", endpoint, params=params)
         if response and response['status'] == 'success':
-           return {
+            return {
                 "data": response['data'],
-                 "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
+                "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
             }
         else:
-           return None
+            return None
 
     def get_radios(self, _end=1, _order="", _sort="", _start=0):
         """
@@ -360,13 +384,13 @@ class NavidromeAPIClient(BaseAPIClient):
         endpoint = "/api/radio"
         response = self._make_request("GET", endpoint, params=params)
         if response and response['status'] == 'success':
-           return {
+            return {
                 "data": response['data'],
-                 "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
+                "x-total-count": response['headers']['x-total-count'] if 'x-total-count' in response['headers'] else 0
             }
         else:
-           return None
-    
+            return None
+
     def block_user(self, user_id):
         """封禁 Navidrome 用户"""
         # 生成3个随机字母或数字
@@ -378,7 +402,7 @@ class NavidromeAPIClient(BaseAPIClient):
             return self.update_username_or_password(user_id, username=f"{username}{random_suffix}")
         else:
             return None
-    
+
     def unblock_user(self, user_id):
         """解封 Navidrome 用户"""
         # 更新用户的密码，去掉随机后缀
@@ -388,4 +412,3 @@ class NavidromeAPIClient(BaseAPIClient):
             return self.update_username_or_password(user_id, username=username[:-3])
         else:
             return None
-        

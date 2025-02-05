@@ -6,30 +6,37 @@ from datetime import datetime, timedelta
 import pytz
 import operator
 
+
 # 需要安装的模块：无
 
 class UserService:
     """
     用户服务
     """
+
     @staticmethod
-    def register_local_user(telegram_id, service_user_id=None, service_type=settings.SERVICE_TYPE, username=None, invite_code=None, expired_days=settings.CREATE_USER_EXPIRED_DAYS):
+    def register_local_user(telegram_id, service_user_id=None, service_type=settings.SERVICE_TYPE, username=None,
+                            invite_code=None, expired_days=settings.CREATE_USER_EXPIRED_DAYS):
         # 在本地数据库中创建用户
         user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id=telegram_id)
         expiration_date = datetime.now() + timedelta(days=expired_days)
         if not user:
-            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=invite_code, expiration_date=expiration_date)
+            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id,
+                               username=username, invite_code=invite_code, expiration_date=expiration_date)
             user.save()
             logger.debug(f"本地用户创建成功: username={username}")
             return user
         else:
-            user = ServiceUser(id=user.id, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=invite_code, expiration_date=expiration_date)
+            user = ServiceUser(id=user.id, telegram_id=telegram_id, score=user.score, service_type=service_type,
+                               service_user_id=service_user_id, username=username, invite_code=invite_code,
+                               expiration_date=expiration_date)
             user.save()
             logger.debug(f"本地用户更新成功: username={username}")
             return user
-            
+
     @staticmethod
-    def register_user(telegram_id, service_type, username, password, email=None, code=None, expired_days=settings.CREATE_USER_EXPIRED_DAYS):
+    def register_user(telegram_id, service_type, username, password, email=None, code=None,
+                      expired_days=settings.CREATE_USER_EXPIRED_DAYS):
         """
         注册用户
 
@@ -43,8 +50,9 @@ class UserService:
             注册成功的用户对象，如果注册失败则返回 None
         """
         # service_type = settings.SERVICE_TYPE
-        logger.debug(f"开始注册用户: telegram_id={telegram_id}, service_type={service_type}， username={username}, password={password}")
-        
+        logger.debug(
+            f"开始注册用户: telegram_id={telegram_id}, service_type={service_type}， username={username}, password={password}")
+
         result = service_api_client.create_user(username, password)
         if result and result['status'] == 'success':
             match settings.SERVICE_TYPE:
@@ -55,26 +63,30 @@ class UserService:
                 case "audiobookshelf":
                     service_user_id = result['data']['user']['id']
                 case _:
+                    service_user_id = None
                     logger.warning(f"不支持的服务类型：{service_type}")
             logger.debug(f"{service_type} 用户创建成功: service_user_id={service_user_id}")
         else:
             logger.error(f"{service_type} 用户创建失败: {result}")
             return None
-        
+
         user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id, service_type)
         expiration_date = datetime.now() + timedelta(days=expired_days)
         if not user:
             # 在本地数据库中创建用户
-            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code, expiration_date=expiration_date)
+            user = ServiceUser(telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id,
+                               username=username, invite_code=code, expiration_date=expiration_date)
             user.save()
             logger.debug(f"本地用户创建成功: user_id={user.id}")
             return user
         else:
-            user = ServiceUser(id=user.id, score=user.score, telegram_id=telegram_id, service_type=service_type, service_user_id=service_user_id, username=username, invite_code=code, expiration_date=expiration_date)
+            user = ServiceUser(id=user.id, score=user.score, telegram_id=user.telegram_id, service_type=user.service_type,
+                               service_user_id=service_user_id, username=username, invite_code=user.invite_code,
+                               expiration_date=expiration_date)
             user.save()
             logger.debug(f"本地用户更新成功: user_id={user.id}")
             return user
-    
+
     @staticmethod
     def delete_local_user(user):
         """删除用户"""
@@ -118,13 +130,13 @@ class UserService:
         user = ServiceUser.get_by_telegram_id_and_service_type(telegram_id, service_type)
         logger.debug(f"{user}")
         if user and user.service_type:
-          if user.service_type:
-              logger.debug(f"获取用户信息成功: {user.username}, 服务：{user.service_type}")
-              return user
+            if user.service_type:
+                logger.debug(f"获取用户信息成功: {user.username}, 服务：{user.service_type}")
+                return user
 
-          else:
-            logger.error(f"不支持的服务名称: {user.service_type}")
-            return None
+            else:
+                logger.error(f"不支持的服务名称: {user.service_type}")
+                return None
         else:
             logger.warning(f"用户不存在: telegram_id={telegram_id}")
             return None
@@ -148,7 +160,7 @@ class UserService:
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
             return None
-    
+
     @staticmethod
     def get_user_by_service_user_id(user_id):
         """
@@ -161,14 +173,14 @@ class UserService:
             ServiceUser 对象，如果用户不存在则返回 None
         """
         logger.debug(f"查询用户: user_id={user_id}")
-        user = ServiceUser.get_by_service_user_id(user_id)
+        user = ServiceUser.get_by_service_id(user_id)
         if user:
             logger.debug(f"用户查询成功: user={user}")
             return user
         else:
             logger.warning(f"用户不存在: user_id={user_id}")
             return None
-        
+
     @staticmethod
     def get_user_by_username(username):
         """
@@ -188,19 +200,19 @@ class UserService:
         else:
             logger.warning(f"用户不存在: username={username}")
             return None
-    
+
     @staticmethod
     def get_all_users(service_type=None):
-      """获取所有用户"""
-      logger.debug("获取所有用户")
-      users = ServiceUser.get_all(service_type)
-      if users:
-        logger.debug(f"获取所有用户成功: users={users}")
-        return users
-      else:
-        logger.warning("获取所有用户失败")
-        return None
-    
+        """获取所有用户"""
+        logger.debug("获取所有用户")
+        users = ServiceUser.get_all(service_type)
+        if users:
+            logger.debug(f"获取所有用户成功: users={users}")
+            return users
+        else:
+            logger.warning("获取所有用户失败")
+            return None
+
     @staticmethod
     def is_admin(telegram_id):
         """
@@ -219,77 +231,54 @@ class UserService:
 
     @staticmethod
     def update_user_score(user, score):
-      """更新用户积分"""
-      user.score = score
-      user.save()
-      logger.debug(f"用户积分更新成功: user_id={user.id}, score={user.score}")
-      return user
-  
+        """更新用户积分"""
+        user.score = score
+        user.save()
+        logger.debug(f"用户积分更新成功: user_id={user.id}, score={user.score}")
+        return user
+
     @staticmethod
-    def auth_user_by_id(user_id, username):
+    def auth_user_by_username_and_password(username, password):
         """认证用户绑定"""
-        user = service_api_client.get_user(user_id)
-        if user and user['status'] == 'success':
-            match settings.SERVICE_TYPE:
-                case "navidrome":
-                    if user['data']['userName'] == username:
-                        logger.debug(f"用户认证成功: user_id={user_id}, name={username}")
-                        return user
-                    else:
-                        logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
-                        return False
-                case "emby":
-                    if user['data']['Name'] == username:
-                        logger.debug(f"用户认证成功: user_id={user_id}, name={username}")
-                        return user
-                    else:
-                        logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
-                        return False
-                case "audiobookshelf":
-                    if user['data']['username'] == username:
-                        logger.debug(f"用户认证成功: user_id={user_id}, name={username}")
-                        return user
-                    else:
-                        logger.warning(f"用户认证失败: user_id={user_id}, name={username}")
-                        return False
-                case _:
-                    logger.warning("不支持的服务认证")
-                    return False
+        user_id = service_api_client.auth_user(username, password)
+        if user_id:
+            logger.info(f"用户认证成功: service_user_id={user_id['id']}")
+            return user_id['id']
         else:
             logger.error(f"服务器未找到该用户！: {username}")
             return False
-            
 
     @staticmethod
     def reset_password(user, new_password):
         """重置密码"""
-        result = service_api_client.update_username_or_password(user.service_user_id, username=user.username, password=new_password)
-            
+        result = service_api_client.update_username_or_password(user.service_user_id, username=user.username,
+                                                                password=new_password)
+
         if result and result['status'] == 'success':
             logger.debug("密码重置成功")
             return True
         else:
             logger.error(f"密码重置失败: {result}")
             return False
-    
+
     @staticmethod
     def update_user_name(user, username):
         """更新本地数据库中的用户名"""
         logger.debug(f"用户重置为：{username}")
         return ServiceUser.update_username(user.telegram_id, username)
-  
+
     @staticmethod
     def reset_username(user, new_username):
         """重置用户名"""
         result = service_api_client.update_username_or_password(user.service_user_id, username=new_username)
-            
+
         if result and result['status'] == 'success':
             logger.debug(f"用户重置为：{new_username}")
             return True
         else:
             logger.error(f"用户重置用户名失败: {result}")
             return False
-    
+
     @staticmethod
     def clean_expired_users():
         """清理过期用户"""
@@ -301,35 +290,39 @@ class UserService:
         if 'expired' in expired_users and expired_users['expired']:
             user_list = []
             for user in expired_users['expired']:
-                logger.warning(f"删除过期用户: service_user_id={user['service_user_id']}")
-                service_api_client.delete_user(user['service_user_id'])
-                user_list.append(user['username'])
-                navi = ServiceUser.get_by_service_user_id(user['service_user_id'])
-                if navi:
-                    logger.warning(f"删除本地过期用户: telegram_id={navi.telegram_id}")
-                    navi.delete()
-                else:
-                    logger.warning("本地无用户信息，无需删除！")
+                u = ServiceUser.get_by_service_id(user['service_user_id'])
+                if u.status == 'whitelist':
+                    logger.info(f"发现白名单用户{user['username']}, 不处理！")
                     pass
+                else:
+                    logger.warning(f"删除过期用户: service_user_id={user['service_user_id']}")
+                    service_api_client.delete_user(user['service_user_id'])
+                    user_list.append(user['username'])
+                    navi = ServiceUser.get_by_service_id(user['service_user_id'])
+                    if navi:
+                        logger.warning(f"删除本地过期用户: telegram_id={navi.telegram_id}")
+                        navi.delete()
+                    else:
+                        logger.warning("本地无用户信息，无需删除！")
+                        pass
             return user_list
-                
 
     @staticmethod
     def get_expired_users():
-          """获取过期用户和即将过期的用户"""
-          logger.debug("获取过期用户和即将过期的用户")
-          expired_users = service_api_client._get_expired_users()
-          return expired_users
-    
+        """获取过期用户和即将过期的用户"""
+        logger.debug("获取过期用户和即将过期的用户")
+        expired_users = service_api_client._get_expired_users()
+        return expired_users
+
     @staticmethod
     def start_clean_expired_users():
-          """启动和关闭清理系统"""
-          logger.debug("准备关闭/开启清理系统")
-          service_api_client.start_clean_expired_users()
-    
+        """启动和关闭清理系统"""
+        logger.debug("准备关闭/开启清理系统")
+        service_api_client.start_clean_expired_users()
+
     @staticmethod
     def get_users_by_register_time(start_time=None, end_time=None):
-      """
+        """
       获取指定注册时间范围内注册的用户
       Args:
         start_time:  开始时间，日期字符串，例如 '2024-12-25'
@@ -337,26 +330,28 @@ class UserService:
       Returns:
         符合条件的用户列表
       """
-      logger.debug(f"获取指定注册时间范围内注册的用户, start_time={start_time}, end_time={end_time}")
-      if start_time is None and end_time is None:
-          logger.debug(f"未指定时间区间，获取所有用户的列表")
-          return UserService.get_all_users()
-          
-      try:
-        start_date = datetime.strptime(start_time, "%Y-%m-%d").date()
-        end_date = datetime.strptime(end_time, "%Y-%m-%d").date()
-      except ValueError:
-        logger.warning(f"时间格式错误, 请使用 'YYYY-MM-DD'格式, start_time={start_time}, end_time={end_time}")
-        return []
-      users = UserService.get_all_users()
-      if not users:
-        logger.warning("没有用户，无法获取签到用户列表！")
-        return []
+        logger.debug(f"获取指定注册时间范围内注册的用户, start_time={start_time}, end_time={end_time}")
+        if start_time is None and end_time is None:
+            logger.debug(f"未指定时间区间，获取所有用户的列表")
+            return UserService.get_all_users()
 
-      user_list = [user for user in users if hasattr(user, 'id') and user.id and User.get_by_id(user.id).create_time and start_date <= User.get_by_id(user.id).create_time.date() <= end_date]
-      logger.debug(f"获取指定注册时间范围内注册的用户成功, start_time={start_time}, end_time={end_time}, count={len(user_list)}")
-      return user_list
-  
+        try:
+            start_date = datetime.strptime(start_time, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_time, "%Y-%m-%d").date()
+        except ValueError:
+            logger.warning(f"时间格式错误, 请使用 'YYYY-MM-DD'格式, start_time={start_time}, end_time={end_time}")
+            return []
+        users = UserService.get_all_users()
+        if not users:
+            logger.warning("没有用户，无法获取签到用户列表！")
+            return []
+
+        user_list = [user for user in users if hasattr(user, 'id') and user.id and User.get_by_id(
+            user.id).create_time and start_date <= User.get_by_id(user.id).create_time.date() <= end_date]
+        logger.debug(
+            f"获取指定注册时间范围内注册的用户成功, start_time={start_time}, end_time={end_time}, count={len(user_list)}")
+        return user_list
+
     @staticmethod
     def get_sign_in_users(time_range="today"):
         """
@@ -375,26 +370,51 @@ class UserService:
         if not users:
             logger.warning("没有用户，无法获取签到用户列表！")
             return []
-        
+
         user_list = []
         if time_range == "today":
-          user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == now_shanghai.date() ]
+            user_list = [user for user in users if hasattr(user,
+                                                           'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(
+                shanghai_tz).date() == now_shanghai.date()]
         elif time_range == "yesterday":
-          yesterday_shanghai = now_shanghai - timedelta(days=1)
-          user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == yesterday_shanghai.date() ]
+            yesterday_shanghai = now_shanghai - timedelta(days=1)
+            user_list = [user for user in users if hasattr(user,
+                                                           'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(
+                shanghai_tz).date() == yesterday_shanghai.date()]
         elif isinstance(time_range, str) and len(time_range) == 10 and time_range[4] == "-" and time_range[7] == "-":
             try:
                 target_date = datetime.strptime(time_range, "%Y-%m-%d").date()
-                user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == target_date]
+                user_list = [user for user in users if hasattr(user,
+                                                               'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(
+                    shanghai_tz).date() == target_date]
             except ValueError:
-               logger.warning(f"时间格式错误，请使用YYYY-MM-DD格式，使用today查询，time_range={time_range}")
-               user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == now_shanghai.date() ]
+                logger.warning(f"时间格式错误，请使用YYYY-MM-DD格式，使用today查询，time_range={time_range}")
+                user_list = [user for user in users if hasattr(user,
+                                                               'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(
+                    shanghai_tz).date() == now_shanghai.date()]
         else:
-          logger.warning(f"不支持的时间范围: {time_range}, 使用today查询")
-          user_list = [user for user in users if hasattr(user, 'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(shanghai_tz).date() == now_shanghai.date()]
+            logger.warning(f"不支持的时间范围: {time_range}, 使用today查询")
+            user_list = [user for user in users if hasattr(user,
+                                                           'last_sign_in_date') and user.last_sign_in_date and user.last_sign_in_date.astimezone(
+                shanghai_tz).date() == now_shanghai.date()]
 
         logger.debug(f"成功获取签到用户列表: {time_range}, count={len(user_list)}")
         return user_list
+
+    @staticmethod
+    def get_info_in_service_by_user_id(user_id):
+        """通id获取服务器中注册信息
+
+        Args:
+            user_id (str): 服务器中的用户名id
+        """
+        user = service_api_client.get_user(user_id)
+        if user:
+            logger.debug(f"获取用户信息成功: {user}")
+            return user
+        else:
+            logger.error(f"获取用户信息失败: {user}")
+            return None
 
     @staticmethod
     def get_info_in_server(user_name):
@@ -413,28 +433,29 @@ class UserService:
 
     @staticmethod
     def get_score_chart(limit=10):
-      """获取积分排行榜"""
-      logger.debug(f"获取积分排行榜，limit={limit}")
-      users = UserService.get_all_users()
-      if not users:
-        logger.warning("没有用户，无法获取排行榜")
-        return []
-      
-      # 按积分降序排序
-      sorted_users = sorted(users, key=operator.attrgetter('score'), reverse=True)
-      
-      # 获取指定数量的用户
-      top_users = sorted_users[:limit]
+        """获取积分排行榜"""
+        logger.debug(f"获取积分排行榜，limit={limit}")
+        users = UserService.get_all_users()
+        if not users:
+            logger.warning("没有用户，无法获取排行榜")
+            return []
 
-      # 创建排行榜数据列表
-      rank = 1
-      chart = []
-      for user in top_users:
-        chart.append({"rank": rank, "telegram_id": user.telegram_id, "username": user.username, "score": user.score})
-        rank += 1
-      logger.debug(f"获取积分排行榜成功, limit={limit}")
-      return chart
-  
+        # 按积分降序排序
+        sorted_users = sorted(users, key=operator.attrgetter('score'), reverse=True)
+
+        # 获取指定数量的用户
+        top_users = sorted_users[:limit]
+
+        # 创建排行榜数据列表
+        rank = 1
+        chart = []
+        for user in top_users:
+            chart.append(
+                {"rank": rank, "telegram_id": user.telegram_id, "username": user.username, "score": user.score})
+            rank += 1
+        logger.debug(f"获取积分排行榜成功, limit={limit}")
+        return chart
+
     @staticmethod
     def get_user_status(user_id):
         """获取用户状态"""
@@ -446,7 +467,7 @@ class UserService:
         else:
             logger.warning(f"获取用户状态失败: user_id={user_id}")
             return None
-    
+
     @staticmethod
     def set_user_status(user_id, new_status):
         """设置用户状态"""
@@ -460,7 +481,7 @@ class UserService:
         else:
             logger.warning(f"设置用户状态失败: user_id={user_id}")
             return None
-        
+
     @staticmethod
     def clear_user_by_expired(user_id, del_server_user=False):
         """清理过期用户"""
@@ -472,14 +493,14 @@ class UserService:
         else:
             logger.warning(f"清理本地过期用户失败: user_id={user_id}")
             return False
-        
+
         if del_server_user:
             service_api_client.delete_user(user.service_user_id)
             logger.debug(f"清理服务器过期用户成功: user={user.username}")
         else:
             logger.warning(f"清理服务器过期用户失败: user_id={user_id}")
             return False
-    
+
     @staticmethod
     def block_user(user_id):
         """封禁用户"""
@@ -493,7 +514,7 @@ class UserService:
         else:
             logger.warning(f"封禁用户失败: user_id={user_id}")
             return None
-    
+
     @staticmethod
     def unblock_user(user_id):
         """解封用户"""
@@ -507,7 +528,7 @@ class UserService:
         else:
             logger.warning(f"解封用户失败: user_id={user_id}")
             return None
-    
+
     @staticmethod
     def block_server_user(user_id):
         """封禁服务器用户"""
@@ -520,7 +541,7 @@ class UserService:
         else:
             logger.warning(f"封禁服务器用户失败: user_id={user_id}")
             return None
-    
+
     @staticmethod
     def unblock_server_user(user_id):
         """解封服务器用户"""
@@ -533,7 +554,7 @@ class UserService:
         else:
             logger.warning(f"解封服务器用户失败: user_id={user_id}")
             return None
-    
+
     @staticmethod
     def get_block_users():
         """获取封禁用户"""
@@ -549,3 +570,4 @@ class UserService:
         else:
             logger.debug("获取封禁用户失败")
             return
+

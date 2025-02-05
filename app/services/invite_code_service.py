@@ -5,6 +5,8 @@ from config import settings
 from datetime import datetime, timedelta
 from typing import Optional
 from app.models import User, ServiceUser
+
+
 # 需要安装的模块：无
 
 class InviteCodeService:
@@ -13,7 +15,9 @@ class InviteCodeService:
     """
 
     @staticmethod
-    def generate_invite_code(create_user_id: int, length: int = settings.INVITE_CODE_LENGTH, expire_days: int = settings.INVITE_CODE_EXPIRATION_DAYS, code_type: str = 'invite') -> Optional[InviteCode]:
+    def generate_invite_code(create_user_id: int, length: int = settings.INVITE_CODE_LENGTH,
+                             expire_days: int = settings.INVITE_CODE_EXPIRATION_DAYS, code_type: str = 'invite') -> \
+    Optional[InviteCode]:
         """
         生成邀请码或续期码
 
@@ -26,16 +30,18 @@ class InviteCodeService:
         Returns:
             生成的邀请码对象，如果生成失败则返回 None
         """
-        logger.debug(f"开始生成邀请码: create_user_id={create_user_id}, length={length}, expire_days={expire_days}, code_type={code_type}")
-        
+        logger.debug(
+            f"开始生成邀请码: create_user_id={create_user_id}, length={length}, expire_days={expire_days}, code_type={code_type}")
+
         # 检查 code_type 是否合法
         if code_type not in ['invite', 'renew']:
             logger.error(f"无效的邀请码类型: {code_type}")
             return None
         if code_type == 'invite':
             # 生成邀请码
-            invite_code = InviteCode.generate_code(length=length, user_id=create_user_id, code_type=code_type, expire_days=expire_days)
-        
+            invite_code = InviteCode.generate_code(length=length, user_id=create_user_id, code_type=code_type,
+                                                   expire_days=expire_days)
+
         if invite_code:
             logger.debug(f"邀请码生成成功: invite_code={invite_code.code}")
             return invite_code
@@ -147,11 +153,11 @@ class InviteCodeService:
         else:
             logger.warning("获取所有邀请码失败")
             return None
-      
+
     @staticmethod
     def delete_invite_code(invite_code):
-      """删除邀请码"""
-      logger.debug(f"删除邀请码: invite_code={invite_code}")
-      invite_code.delete()
-      logger.debug(f"邀请码删除成功: invite_code={invite_code}")
-      return True
+        """删除邀请码"""
+        logger.debug(f"删除邀请码: invite_code={invite_code}")
+        invite_code.delete()
+        logger.debug(f"邀请码删除成功: invite_code={invite_code}")
+        return True

@@ -27,8 +27,10 @@ from app.bot.handlers.admin_handlers import (
     toggle_clean_msg_system_command,
     get_block_users,
     block_user_command,
-    unblock_user_command
+    unblock_user_command,
+    set_whitelist_user
 )
+
 
 def create_admin_panel():
     """创建管理面板"""
@@ -42,6 +44,7 @@ def create_admin_panel():
     )
     return markup
 
+
 def create_user_management_panel():
     """创建用户管理面板"""
     markup = InlineKeyboardMarkup()
@@ -50,12 +53,14 @@ def create_user_management_panel():
         InlineKeyboardButton("获取用户信息 (Telegram ID)", callback_data="admin_get_user_info_by_id"),
         InlineKeyboardButton("获取用户信息 (用户名)", callback_data="admin_get_user_info_by_username"),
         InlineKeyboardButton("获取服务器用户信息", callback_data="admin_get_user_info_in_server"),
-        InlineKeyboardButton("禁止用户", callback_data="admin_blcok_user"),
+        InlineKeyboardButton("设置白名单", callback_data="admin_whitelist_user"),
+        InlineKeyboardButton("禁止用户", callback_data="admin_block_user"),
         InlineKeyboardButton("解禁用户", callback_data="admin_unblock_user"),
         InlineKeyboardButton("获取禁止用户列表", callback_data="admin_get_block_users"),
         InlineKeyboardButton("返回主菜单", callback_data="admin_main_menu")
     )
     return markup
+
 
 def create_invite_management_panel():
     """创建邀请码管理面板"""
@@ -71,6 +76,7 @@ def create_invite_management_panel():
         InlineKeyboardButton("返回主菜单", callback_data="admin_main_menu")
     )
     return markup
+
 
 def create_score_management_panel():
     """创建积分管理面板"""
@@ -88,6 +94,7 @@ def create_score_management_panel():
     )
     return markup
 
+
 def create_status_management_panel():
     """创建状态管理面板"""
     markup = InlineKeyboardMarkup()
@@ -104,15 +111,17 @@ def create_status_management_panel():
     )
     return markup
 
+
 def create_input_markup():
     """创建输入键盘，包含取消和回到主菜单的按钮"""
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
     markup.add(
         InlineKeyboardButton("取消输入", callback_data="user_cancel"),
-        InlineKeyboardButton("回到主菜单", callback_data="pannel_admin")
+        InlineKeyboardButton("回到主菜单", callback_data="panel_admin")
     )
     return markup
+
 
 @bot.callback_query_handler(func=lambda call: call.data == "user_cancel")
 def user_cancel_callback(call):
@@ -122,13 +131,16 @@ def user_cancel_callback(call):
     bot.answer_callback_query(call.id, "已取消输入")
     bot.delete_message(chat_id, call.message.message_id)
 
-@bot.callback_query_handler(func=lambda call: call.data == "pannel_admin")
-def admin_pannel(call):
+
+@bot.callback_query_handler(func=lambda call: call.data == "panel_admin")
+def admin_panel(call):
     """处理用户回到主菜单"""
     chat_id = call.message.chat.id
-    bot.edit_message_text("请选择管理模块：", chat_id, call.message.message_id, reply_markup=create_admin_panel(), delay=None)
+    bot.edit_message_text("请选择管理模块：", chat_id, call.message.message_id, reply_markup=create_admin_panel(),
+                          delay=None)
     bot.answer_callback_query(call.id, "显示主菜单")
     # bot.delete_message(chat_id, call.message.message_id)
+
 
 @bot.message_handler(commands=['admin'])
 @admin_required
@@ -137,23 +149,29 @@ def admin_panel_command(message):
     bot.delete_message(message_id=message.message_id, chat_id=message.chat.id)
     bot.send_message(message.chat.id, "请选择管理模块：", reply_markup=create_admin_panel(), delay=None)
 
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith('admin_'))
 def admin_panel_callback(call):
     """处理管理面板回调"""
     chat_id = call.message.chat.id
     markup = create_input_markup()
-    
+
     match call.data:
         case "admin_main_menu":
-            bot.edit_message_text("请选择管理模块：", chat_id, call.message.message_id, reply_markup=create_admin_panel(), delay=None)
+            bot.edit_message_text("请选择管理模块：", chat_id, call.message.message_id,
+                                  reply_markup=create_admin_panel(), delay=None)
         case "admin_user_management":
-            bot.edit_message_text("用户管理：", chat_id, call.message.message_id, reply_markup=create_user_management_panel(), delay=None)
+            bot.edit_message_text("用户管理：", chat_id, call.message.message_id,
+                                  reply_markup=create_user_management_panel(), delay=None)
         case "admin_invite_management":
-            bot.edit_message_text("邀请码管理：", chat_id, call.message.message_id, reply_markup=create_invite_management_panel(), delay=None)
+            bot.edit_message_text("邀请码管理：", chat_id, call.message.message_id,
+                                  reply_markup=create_invite_management_panel(), delay=None)
         case "admin_score_management":
-            bot.edit_message_text("积分管理：", chat_id, call.message.message_id, reply_markup=create_score_management_panel(), delay=None)
+            bot.edit_message_text("积分管理：", chat_id, call.message.message_id,
+                                  reply_markup=create_score_management_panel(), delay=None)
         case "admin_status_management":
-            bot.edit_message_text("状态管理：", chat_id, call.message.message_id, reply_markup=create_status_management_panel(), delay=None)
+            bot.edit_message_text("状态管理：", chat_id, call.message.message_id,
+                                  reply_markup=create_status_management_panel(), delay=None)
         case "admin_get_user_info_by_id":
             bot.delete_message(chat_id, call.message.message_id)
             bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=30)
@@ -166,7 +184,11 @@ def admin_panel_callback(call):
             bot.delete_message(chat_id, call.message.message_id)
             bot.send_message(chat_id, "请输入用户名：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, get_user_info_in_server_command)
-        case "admin_blcok_user":
+        case "admin_whitelist_user":
+            bot.delete_message(chat_id, call.message.message_id)
+            bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.register_next_step_handler(call.message, set_whitelist_user)
+        case "admin_block_user":
             bot.delete_message(chat_id, call.message.message_id)
             bot.send_message(chat_id, "请输入用户 Telegram ID：<30S未输入自动退出>", reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, block_user_command)
@@ -182,7 +204,8 @@ def admin_panel_callback(call):
             bot.register_next_step_handler(call.message, generate_invite_code_command)
         case "admin_generate_renew_code":
             bot.delete_message(chat_id, call.message.message_id)
-            bot.send_message(chat_id, "请输入续期天数和生成数量（格式：天数 数量）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.send_message(chat_id, "请输入续期天数和生成数量（格式：天数 数量）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, generate_renew_codes_command)
         case "admin_get_all_invite_codes":
             get_all_invite_codes_command(call.message)
@@ -196,15 +219,18 @@ def admin_panel_callback(call):
             bot.register_next_step_handler(call.message, set_price_command)
         case "admin_set_score":
             bot.delete_message(chat_id, call.message.message_id)
-            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, set_score_command)
         case "admin_add_score":
             bot.delete_message(chat_id, call.message.message_id)
-            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, add_score_command)
         case "admin_reduce_score":
             bot.delete_message(chat_id, call.message.message_id)
-            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.send_message(chat_id, "请输入用户 Telegram ID 和积分数（格式：ID 积分）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, reduce_score_command)
         case "admin_get_score":
             bot.delete_message(chat_id, call.message.message_id)
@@ -212,15 +238,19 @@ def admin_panel_callback(call):
             bot.register_next_step_handler(call.message, get_score_command)
         case "admin_get_score_chart":
             bot.delete_message(chat_id, call.message.message_id)
-            bot.send_message(chat_id, "请输入要显示的排行榜用户数量（默认10）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.send_message(chat_id, "请输入要显示的排行榜用户数量（默认10）：<30S未输入自动退出>", reply_markup=markup,
+                             delay=30)
             bot.register_next_step_handler(call.message, get_score_chart_command)
         case "admin_random_give_score_by_checkin_time":
             bot.delete_message(chat_id, call.message.message_id)
-            bot.send_message(chat_id, "请输入签到时间范围和最大积分数（格式：范围 最大积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.send_message(chat_id, "请输入签到时间范围和最大积分数（格式：范围 最大积分）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, random_give_score_by_checkin_time_command)
         case "admin_add_random_score":
             bot.delete_message(chat_id, call.message.message_id)
-            bot.send_message(chat_id, "请输入注册时间范围和最大积分数（格式：开始时间 结束时间 最大积分）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.send_message(chat_id,
+                             "请输入注册时间范围和最大积分数（格式：开始时间 结束时间 最大积分）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, add_random_score_command)
         case "admin_get_stats":
             get_stats_command(call.message)

@@ -24,7 +24,7 @@ def create_user_panel():
     markup.row_width = 3
     markup.add(
         InlineKeyboardButton("注册", callback_data="user_register"),
-        InlineKeyboardButton("邀请码注册", callback_data="user_use_code"),
+        InlineKeyboardButton("使用邀请码", callback_data="user_use_code"),
         InlineKeyboardButton("积分用户注册", callback_data="user_reg_score"),
         InlineKeyboardButton("购买邀请码", callback_data="user_buyinvite"),
         InlineKeyboardButton("使用续期码", callback_data="user_use_renew_code"),
@@ -37,15 +37,17 @@ def create_user_panel():
     )
     return markup
 
+
 def create_input_markup():
     """创建输入键盘，包含取消和回到主菜单的按钮"""
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
     markup.add(
         InlineKeyboardButton("取消输入", callback_data="user_cancel"),
-        InlineKeyboardButton("回到主菜单", callback_data="pannel_user")
+        InlineKeyboardButton("回到主菜单", callback_data="panel_user")
     )
     return markup
+
 
 @bot.callback_query_handler(func=lambda call: call.data == "user_cancel")
 def user_cancel_callback(call):
@@ -55,16 +57,19 @@ def user_cancel_callback(call):
     bot.answer_callback_query(call.id, "已取消输入")
     bot.delete_message(chat_id, call.message.message_id)
 
-@bot.callback_query_handler(func=lambda call: call.data == "pannel_user")
-def user_pannel(call):
+
+@bot.callback_query_handler(func=lambda call: call.data == "panel_user")
+def user_panel(call):
     """处理用户回到主菜单"""
     chat_id = call.message.chat.id
-    bot.edit_message_text("请选择管理模块：", chat_id, call.message.message_id, reply_markup=create_user_panel(), delay=None)
+    bot.edit_message_text("请选择管理模块：", chat_id, call.message.message_id, reply_markup=create_user_panel(),
+                          delay=None)
     bot.answer_callback_query(call.id, "显示主菜单")
+
 
 @bot.message_handler(commands=['start'])
 @chat_type_required(not_chat_type=["group", "supergroup"])
-@user_status_required(status=["blcoked"])
+@user_status_required()
 def start_panel_command(message):
     """显示用户面板"""
     telegram_id = message.from_user.id
@@ -76,7 +81,9 @@ def start_panel_command(message):
     resp = f"*倾听音乐，享受生活！欢迎 {user_name} 来到音海拾贝！*\n"
     bot.send_photo(chat_id, img_url, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
 
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith('user_'))
+@user_status_required()
 def user_panel_callback(call):
     """处理用户面板回调"""
     chat_id = call.message.chat.id
@@ -91,12 +98,13 @@ def user_panel_callback(call):
         json_string=''
     )
     mock_message.text = f"/{call.data}"  # 设置模拟的命令文本
-    
+
     match call.data:
         case "user_register":
             if not settings.INVITE_CODE_SYSTEM_ENABLED:
                 bot.delete_message(chat_id, call.message.message_id)
-                bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+                bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>",
+                                 reply_markup=markup, delay=30)
                 bot.register_next_step_handler(call.message, register_user_command)
             else:
                 bot.answer_callback_query(call.id, "注册已关闭，请用邀请码注册！", show_alert=True)
@@ -133,13 +141,15 @@ def user_panel_callback(call):
         case "user_bind":
             bot.answer_callback_query(call.id)
             bot.delete_message(chat_id, call.message.message_id)
-            bot.send_message(chat_id, "请输入用户名和用户 ID（格式：用户名 用户ID）：<30S未输入自动退出>", reply_markup=markup, delay=30)
+            bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, bind_command)
         case "user_unbind":
             bot.answer_callback_query(call.id)
             unbind_command(mock_message)
         case _:
             bot.answer_callback_query(call.id, "未知操作，请重试！", show_alert=True)
+
 
 @bot.callback_query_handler(func=lambda call: call.data == "user_cancel")
 def user_cancel_callback(call):

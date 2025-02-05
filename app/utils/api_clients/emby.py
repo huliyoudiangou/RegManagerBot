@@ -130,7 +130,24 @@ class EmbyAPIClient(BaseAPIClient):
         """更新 Emby 用户信息"""
         endpoint = f"/Users/{user_id}/{action}"
         return self._make_request("POST", endpoint, data=user_data)
-    
+
+
+    def auth_user(self, username, password):
+        """认证用户并获取id"""
+        endpoint = "/Users/AuthenticateByName"
+        url = f"{self.api_url}{endpoint}"
+        data = {"Username": username, "Pw": password}
+        params = {"X-Emby-Client": "Emby Web", "X-Emby-Device-Name": "Firefox Windows", "X-Emby-Device-Id": "1606ef80-1738-4279-b6c5-b4e920969dab", "X-Emby-Client-Version": "4.8.10.0"}
+        try:
+            response = requests.post(url, json=data, params=params)
+            response.raise_for_status()
+            user_id = response.json().get("Id")
+            logger.info(f"用户认证成功")
+            return {"id": user_id}
+        except requests.exceptions.RequestException as e:
+            print(f"用户认证失败: {e}")
+            return None
+
     def update_username_or_password(self, user_id, username=None, password=None):
         """更新 Emby 用户信息(目前只更新用户名和密码)"""
         endpoint = f"/Users/{user_id}"

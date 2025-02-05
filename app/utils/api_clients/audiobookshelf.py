@@ -148,7 +148,23 @@ class AudiobookshelfAPIClient(BaseAPIClient):
         data = {k: v for k, v in user_data.items() if v is not None}
         logger.debug(f"Audiobookshelf 更新用户: {data}")
         return self._make_request("PATCH", endpoint, data=data)
-        
+
+    def auth_user(self, username, password):
+        """认证Audiobookshelf 并获取 id"""
+        endpoint = "/login"
+        url = f"{self.api_url}{endpoint}"
+        data = {"username": username, "password": password}
+        try:
+            response = requests.post(url, json=data)
+            response.raise_for_status()
+            user_id = response.json().get("id")
+            logger.info(f"用户认证成功")
+            return {"id": user_id}
+        except requests.exceptions.RequestException as e:
+            logger.error(f"用户认证失败: {e}")
+            return None
+
+
     def update_username_or_password(self, user_id, username=None, password=None):
         """更新 Audiobookshelf 用户信息"""
         endpoint = f"/api/users/{user_id}"

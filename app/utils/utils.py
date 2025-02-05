@@ -1,10 +1,13 @@
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from app.utils.logger import logger
-from telebot.apihelper import ApiTelegramException
 from app.utils.scheduler import get_scheduler
+from app.bot.core.bot_instance import bot
+
 # 需要安装的模块：无
 
 scheduler = get_scheduler()
+
 
 def paginate_list(data_list, page_size):
     """
@@ -18,10 +21,10 @@ def paginate_list(data_list, page_size):
          一个列表的列表，其中每个内部列表代表一页数据
     """
     logger.debug(f"开始分页列表, pageSize={page_size}, listSize={len(data_list)}")
-    if not data_list or page_size <= 0 :
+    if not data_list or page_size <= 0:
         logger.warning("列表为空或者分页大小不合法")
         return []
-    
+
     paginated_list = []
     # if len(data_list) <= page_size:
     #     paginated_list.append(data_list)
@@ -31,6 +34,7 @@ def paginate_list(data_list, page_size):
         paginated_list.append(data_list[i:i + page_size])
     logger.debug(f"分页列表成功, 总页数={len(paginated_list)}, pageSize={page_size}, listSize={len(data_list)}")
     return paginated_list
+
 
 def paginate_list_text(data_list, page_size=None):
     if page_size is not None:
@@ -62,66 +66,54 @@ def paginate_list_text(data_list, page_size=None):
     logger.debug(f"分页列表成功, 总页数={len(result)}, pageSize={page_size}, listSize={len(data_list)}")
     return result
 
-def get_username_by_telegram_id(bot, chat_id, telegram_id):
-    """
-    根据 User ID 获取用户名
 
-    Args:
-        chat_id: 群组 ID
-        telegram_id: 用户 ID
-
-    Returns:
-        Telegram 用户名，如果找不到用户则返回 None
-    """
-    logger.info(f"根据 Telegram ID 获取用户名: chat_id={chat_id}, telegram_id={telegram_id}")
-    try:
-        chat_member = bot.get_chat_member(chat_id, telegram_id)
-        if chat_member and chat_member.user.username:
-            logger.debug(f"获取 Telegram 用户名成功: telegram_id={telegram_id}, username={chat_member.user.username}")
-            return chat_member.user.username
-        else:
-            logger.warning(f"未找到 Telegram 用户: telegram_id={telegram_id}")
-            return None
-    except ApiTelegramException as e:
-        logger.error(f"获取 Telegram 用户名失败: telegram_id={telegram_id}, error={e}")
-        return None
+# 用于存储每个用户的分页状态
+user_states = {}
 
 
-def delete_message_after(bot, chat_id, message_ids, delay=5):
-    """
-    在指定延迟后删除消息
-    Args:
-        bot: telebot 实例
-        chat_id: 聊天会话 ID
-        message_id: 消息 ID
-        delay: 延迟时间（秒）
-    """
-    def delete_messages():
-         try:
-           bot.delete_messages(chat_id=chat_id, message_ids=message_ids)
-           logger.debug(f"删除消息成功: chat_id={chat_id}, message_ids={message_ids}")
-         except telebot.apihelper.ApiTelegramException as e:
-            logger.warning(f"删除消息失败, chat_id={chat_id}, message_ids={message_ids}, error={e}")
-    
-    scheduler.add_delayed_job(delay=delay, job_func=delete_messages)
-    logger.debug(f"提交删除消息任务到调度器, message_id={chat_id}, delay={delay}")
-    
-def send_message_with_auto_delete(bot, chat_id, text, delay=5, message = None,  **kwargs):
-    """
-    发送自动删除的消息
-    Args:
-        bot: telebot 实例
-        chat_id: 聊天会话 ID
-        text: 消息文本
-        delay: 延迟删除的时间（秒），默认为 5 秒
-         message: 消息对象，用于获取 chat_id 和 message_id
-        **kwargs:  其他 send_message() 方法的参数
-    """
-    sent_message = bot.send_message(chat_id, text, **kwargs)
-    if sent_message:
-      if message:
-        delete_message_after(bot, message.chat.id, message.message_id, delay) # 删除请求消息
-      delete_message_after(bot, sent_message.chat.id, sent_message.message_id, delay)
-      logger.debug(f"发送自动删除消息成功, chat_id={chat_id}, message_id={sent_message.message_id}, delay={delay}")
-    else:
-      logger.warning(f"发送自动删除消息失败, chat_id={chat_id}")
+def create_pagination(chat_id, user_list, items_per_page):
+    if chat_id not in user_states:
+        user_states[chat_id] = {
+            'current_page': 1,
+            'items_per_page': items_per_page,
+            'user_list': user_list
+        }
+
+    state = user_states[chat_id]
+    total_pages = (len(state['user_list']) + state['items_per_page'] - 1) // state['items_per_page']
+    current_page = state['current_page']
+
+    start_index = (current_page - 1) * state['items_per_page']
+    end_index = min(start_index + state['items_per_page'], len(state['user_list']))
+    items = state['user_list'][start_index:end_index]
+
+    text = '\n'.join(map(str, items)) + f'\n\n当前页: {current_page}/{total_pages}页'
+
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 2
+    if current_page > 1:
+        markup.add(InlineKeyboardButton("⬅️ 上一页", callback_data='prev'))
+    if current_page < total_pages:
+        markup.add(InlineKeyboardButton("下一页 ➡️", callback_data='next'))
+
+    return text, markup
+
+
+@bot.callback_query_handler(func=lambda call: call.data in ['prev', 'next'])
+def callback_inline(call):
+    chat_id = call.message.chat.id
+    # 确保用户状态存在
+    if chat_id in user_states:
+        if call.data == 'next':
+            user_states[chat_id]['current_page'] += 1
+        elif call.data == 'prev':
+            user_states[chat_id]['current_page'] -= 1
+
+        text, markup = create_pagination(
+            chat_id,
+            user_states[chat_id]['user_list'],
+            user_states[chat_id]['items_per_page']
+        )
+        bot.edit_message_text(text, chat_id=chat_id, message_id=call.message.message_id, reply_markup=markup)
+
+

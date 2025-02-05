@@ -1,20 +1,22 @@
 import telebot
 from app.utils.logger import logger
-from app.bot.handlers import admin_pannel, user_handlers, user_pannel
+from app.bot.handlers import admin_panel, user_handlers, user_panel
 from app.bot.core.bot_instance import bot
 from config import settings
+
+
 # 需要安装的模块：无
 
 class BotManager:
     def __init__(self):
         self.bot = bot
-        
+
         # 定义命令列表
         commands = [
             telebot.types.BotCommand("start", "开始"),
             telebot.types.BotCommand("admin", "管理"),
             telebot.types.BotCommand("help", "可用命令"),
-            # telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
+            telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
             # telebot.types.BotCommand("reg_score_user", "注册积分用户 (可签到、送分、购买邀请码)"),
             # telebot.types.BotCommand("use_renew_code", "使用续期码"),
             # telebot.types.BotCommand("info", "查看个人信息"),
@@ -52,22 +54,22 @@ class BotManager:
             # telebot.types.BotCommand("get_expiring_users", "获取不活跃的用户 (管理员)"),
             # telebot.types.BotCommand("get_expired_users", "获取已过期的用户 (管理员)"),
             # telebot.types.BotCommand("clean_expired_users", "清理不活跃的用户 (管理员)")
-            
+
         ]
         # 设置Bot命令
         self.bot.set_my_commands(commands)
 
         # 注册路由
         bot.register_message_handler(user_handlers.help_command, commands=['help'])
-        bot.register_message_handler(user_pannel.start_panel_command, commands=['start'])
-        
-        bot.register_message_handler(admin_pannel.admin_panel_command, commands=['admin'])
+        bot.register_message_handler(user_panel.start_panel_command, commands=['start'])
+
+        bot.register_message_handler(admin_panel.admin_panel_command, commands=['admin'])
         # bot.register_message_handler(user_handlers.start_command, commands=['start'])
         # bot.register_message_handler(user_handlers.start_command, commands=['start'])
-        # bot.register_message_handler(user_handlers.register_command, commands=['register'])
+        bot.register_message_handler(user_handlers.register_user_command, commands=['register'])
         # bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
         # # bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
-        bot.register_message_handler(user_handlers.info_command, commands=['info'])
+        # bot.register_message_handler(user_handlers.info_command, commands=['info'])
         # bot.register_message_handler(user_handlers.delete_user_command, commands=['deleteuser'])
         # bot.register_message_handler(user_handlers.score_command, commands=['score'])
         # bot.register_message_handler(user_handlers.checkin_command, commands=['checkin'])
@@ -78,10 +80,9 @@ class BotManager:
         # bot.register_message_handler(user_handlers.give_score_command, commands=['give'])
         # bot.register_message_handler(user_handlers.bind_command, commands=['bind'])
         # bot.register_message_handler(user_handlers.unbind_command, commands=['unbind'])
-        bot.register_message_handler(user_handlers.random_score_command, commands=['random_score']) # 注册随机增加积分命令
+        bot.register_message_handler(user_handlers.random_score_command, commands=['random_score'])  # 注册随机增加积分命令
 
-        
-         # 注册管理员命令处理函数
+        # 注册管理员命令处理函数
         # bot.register_message_handler(admin_handlers.generate_invite_code_command, commands=['generate_code'])
         # bot.register_message_handler(admin_handlers.generate_renew_codes_command, commands=['generate_renew_code'])
         # bot.register_message_handler(admin_handlers.get_all_invite_codes_command, commands=['invite'])
@@ -105,9 +106,10 @@ class BotManager:
         # bot.register_message_handler(admin_handlers.get_user_info_in_server_command, commands=['userinfo_in_server']) # 注册获取服务器用户信息的命令
         # bot.register_message_handler(admin_handlers.get_score_chart_command, commands=['get_score_chart']) # 注册获取积分排行榜的命令
         # bot.register_message_handler(admin_handlers.toggle_clean_msg_system_command, commands=['toggle_clean_msg_system']) # 注册获取积分排行榜的命令
-    
+
     def get_bot(self):
-       return self.bot
+        return self.bot
+
 
 def run_bot():
     """运行 Bot"""
@@ -120,6 +122,7 @@ def run_bot():
     else:
         logger.info(f"Bot 以 Polling 模式启动")
         bot.infinity_polling()
+
 
 if __name__ == "__main__":
     run_bot()
