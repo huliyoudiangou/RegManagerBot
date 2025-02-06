@@ -88,7 +88,6 @@ def generate_renew_codes_command(message):
         logger.error(f"生成续期码失败: telegram_id={message.from_user.id}")
 
 
-@confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
 def get_all_invite_codes_command(message):
     """查看所有邀请码 (管理员命令)"""
     # try:
@@ -111,15 +110,15 @@ def get_all_invite_codes_command(message):
     #     bot.reply_to(message, "获取邀请码列表失败，请重试！")
     #     logger.error(f"获取邀请码列表失败: telegram_id={message.from_user.id}")
     chat_id = message.chat.id
+    message_id = message.id
     invite_all_codes = InviteCodeService.get_all_invite_codes()
     invite_code_list = []
     for invite_code in invite_all_codes:
         invite_code_list.append(invite_code.code)
-    text, markup = create_pagination(chat_id, invite_code_list, 50)
+    text, markup = create_pagination(chat_id, message_id, invite_code_list, items_per_page=50)
     bot.send_message(chat_id, text, reply_markup=markup)
 
 
-@confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
 def get_unused_invite_codes_command(message):
     """获取未使用的邀请码列表 (管理员命令)"""
     # telegram_id = message.from_user.id
@@ -149,15 +148,16 @@ def get_unused_invite_codes_command(message):
     #     bot.reply_to(message, "获取未使用的邀请码列表失败，请重试！")
     #     logger.error(f"获取未使用的邀请码列表失败: telegram_id={telegram_id}")
     chat_id = message.chat.id
+    message_id = message.id
+    logger.info(f"message_id: {message_id}")
     invite_all_codes = InviteCodeService.get_all_invite_codes(is_used=False)
     invite_code_list = []
     for invite_code in invite_all_codes:
         invite_code_list.append(invite_code.code)
-    text, markup = create_pagination(chat_id, invite_code_list, 50)
+    text, markup = create_pagination(chat_id, message_id, invite_code_list, items_per_page=50)
     bot.send_message(chat_id, text, reply_markup=markup)
 
 
-@confirmation_required("邀请码多的时候会刷屏，你确定要发送邀请码嘛？")
 def get_unused_renew_codes_command(message):
     """获取未使用的续期码列表 (管理员命令)"""
     # try:
@@ -188,11 +188,12 @@ def get_unused_renew_codes_command(message):
     #     logger.error(f"获取未使用的续期码列表失败: telegram_id={telegram_id}")
 
     chat_id = message.chat.id
+    message_id = message.id
     invite_all_codes = InviteCodeService.get_all_invite_codes(code_type="renew", is_used=False)
     invite_code_list = []
     for invite_code in invite_all_codes:
         invite_code_list.append(invite_code.code)
-    text, markup = create_pagination(chat_id, invite_code_list, 50)
+    text, markup = create_pagination(chat_id, message_id, invite_code_list, items_per_page=50)
     bot.send_message(chat_id, text, reply_markup=markup)
 
 
@@ -546,6 +547,7 @@ def get_expired_users_command(message):
     """获取已过期的用户 (管理员命令)"""
     telegram_id = message.from_user.id
     chat_id = message.chat.id
+    message_id = message.id
     logger.info(f"管理员请求获取已过期的用户列表: telegram_id={telegram_id}")
 
     settings.EXPIRED_DAYS = 30
@@ -583,7 +585,7 @@ def get_expired_users_command(message):
         for expired_user in expired_users['expired']:
             expired_username_list.append(expired_user['username'])
 
-        text, markup = create_pagination(chat_id, expired_username_list, 50)
+        text, markup = create_pagination(chat_id, message_id, expired_username_list, items_per_page=50)
         bot.send_message(chat_id, text, reply_markup=markup)
         logger.warning(f"管理员获取已经过期的用户列表成功: 共有{len(expired_users)}位！")
     else:
@@ -595,6 +597,7 @@ def get_expiring_users_command(message):
     """获取即将过期的用户 (管理员命令)"""
     telegram_id = message.from_user.id
     chat_id = message.chat.id
+    message_id = message.id
     logger.info(f"管理员请求获取即将过期的用户列表: telegram_id={telegram_id}")
 
     settings.EXPIRED_DAYS = 30
@@ -633,7 +636,7 @@ def get_expiring_users_command(message):
         for expired_user in expiring_users['warning']:
             expiring_username_list.append(expired_user['username'])
 
-        text, markup = create_pagination(chat_id, expiring_username_list, 50)
+        text, markup = create_pagination(chat_id, message_id, expiring_username_list, items_per_page=50)
         bot.send_message(chat_id, text, reply_markup=markup)
         logger.warning(f"管理员获取即将过期的用户列表成功: 共有{len(expiring_users)}位！")
     else:

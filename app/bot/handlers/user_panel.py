@@ -14,7 +14,8 @@ from app.bot.handlers.user_handlers import (
     score_command,
     checkin_command,
     bind_command,
-    unbind_command
+    unbind_command,
+    help_command
 )
 
 
@@ -23,17 +24,22 @@ def create_user_panel():
     markup = InlineKeyboardMarkup()
     markup.row_width = 3
     markup.add(
+        InlineKeyboardButton("地址", callback_data="user_help"),
         InlineKeyboardButton("注册", callback_data="user_register"),
-        InlineKeyboardButton("使用邀请码", callback_data="user_use_code"),
         InlineKeyboardButton("积分用户注册", callback_data="user_reg_score"),
+        InlineKeyboardButton("使用邀请码", callback_data="user_use_code"),
         InlineKeyboardButton("购买邀请码", callback_data="user_buyinvite"),
         InlineKeyboardButton("使用续期码", callback_data="user_use_renew_code"),
         InlineKeyboardButton("签到", callback_data="user_checkin"),
         InlineKeyboardButton("积分", callback_data="user_score"),
         InlineKeyboardButton("个人信息", callback_data="user_info"),
-        InlineKeyboardButton("删除用户", callback_data="user_delete"),
         InlineKeyboardButton("绑定", callback_data="user_bind"),
-        InlineKeyboardButton("解绑", callback_data="user_unbind")
+        InlineKeyboardButton("解绑", callback_data="user_unbind"),
+        InlineKeyboardButton("删除用户", callback_data="user_delete"),
+        InlineKeyboardButton("进群链接", url="https://t.me/navidrom_talk"),
+        InlineKeyboardButton("频道链接", url="https://t.me/navidrom_notify"),
+        InlineKeyboardButton("使用教程", url="https://makifx.com/1278.html"),
+        InlineKeyboardButton("没有想听的歌？投稿/求歌", url="https://t.me/MaycyBot")
     )
     return markup
 
@@ -147,6 +153,9 @@ def user_panel_callback(call):
         case "user_unbind":
             bot.answer_callback_query(call.id)
             unbind_command(mock_message)
+        case "user_help":
+            bot.answer_callback_query(call.id)
+            help_command(mock_message)
         case _:
             bot.answer_callback_query(call.id, "未知操作，请重试！", show_alert=True)
 

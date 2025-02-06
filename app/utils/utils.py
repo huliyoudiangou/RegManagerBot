@@ -71,9 +71,18 @@ def paginate_list_text(data_list, page_size=None):
 user_states = {}
 
 
-def create_pagination(chat_id, user_list, items_per_page):
+def create_pagination(chat_id, message_id, user_list, items_per_page):
     if chat_id not in user_states:
         user_states[chat_id] = {
+            'message_id': message_id + 1,
+            'current_page': 1,
+            'items_per_page': items_per_page,
+            'user_list': user_list
+        }
+    elif message_id != user_states[chat_id]['message_id']:
+        del user_states[chat_id]
+        user_states[chat_id] = {
+            'message_id': message_id + 1,
             'current_page': 1,
             'items_per_page': items_per_page,
             'user_list': user_list
@@ -86,8 +95,8 @@ def create_pagination(chat_id, user_list, items_per_page):
     start_index = (current_page - 1) * state['items_per_page']
     end_index = min(start_index + state['items_per_page'], len(state['user_list']))
     items = state['user_list'][start_index:end_index]
-
-    text = '\n'.join(map(str, items)) + f'\n\n当前页: {current_page}/{total_pages}页'
+    
+    text = '\n'.join(map(str, items)) + f'\n\n当前页: {current_page}/{total_pages}页，{len(items)}/{len(state['user_list'])}项'
 
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
@@ -101,9 +110,12 @@ def create_pagination(chat_id, user_list, items_per_page):
 
 @bot.callback_query_handler(func=lambda call: call.data in ['prev', 'next'])
 def callback_inline(call):
+    logger.info(f"call.message: {call.message}")
     chat_id = call.message.chat.id
+    message_id = call.message.id
+    logger.info(f"status: {user_states}")
     # 确保用户状态存在
-    if chat_id in user_states:
+    if chat_id in user_states and message_id == user_states[chat_id]['message_id']:
         if call.data == 'next':
             user_states[chat_id]['current_page'] += 1
         elif call.data == 'prev':
@@ -111,6 +123,7 @@ def callback_inline(call):
 
         text, markup = create_pagination(
             chat_id,
+            message_id,
             user_states[chat_id]['user_list'],
             user_states[chat_id]['items_per_page']
         )

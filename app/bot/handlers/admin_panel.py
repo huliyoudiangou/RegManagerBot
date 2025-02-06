@@ -208,10 +208,13 @@ def admin_panel_callback(call):
                              reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, generate_renew_codes_command)
         case "admin_get_all_invite_codes":
+            bot.delete_message(chat_id, call.message.message_id)
             get_all_invite_codes_command(call.message)
         case "admin_get_unused_invite_codes":
+            bot.delete_message(chat_id, call.message.message_id)
             get_unused_invite_codes_command(call.message)
         case "admin_get_unused_renew_codes":
+            bot.delete_message(chat_id, call.message.message_id)
             get_unused_renew_codes_command(call.message)
         case "admin_set_invite_price":
             bot.delete_message(chat_id, call.message.message_id)
@@ -256,7 +259,7 @@ def admin_panel_callback(call):
             get_stats_command(call.message)
         case "admin_toggle_invite_code_system":
             toggle_invite_code_system_command(call.message)
-        case "admin_toggle_expired_user_clean":
+        case "admin_toggle_expired_user_clean": 
             toggle_expired_user_clean_command(call.message)
         case "admin_get_expired_users":
             get_expired_users_command(call.message)
