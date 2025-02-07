@@ -96,7 +96,7 @@ def create_pagination(chat_id, message_id, user_list, items_per_page):
     end_index = min(start_index + state['items_per_page'], len(state['user_list']))
     items = state['user_list'][start_index:end_index]
     
-    text = '\n'.join(map(str, items)) + f'\n\n当前页: {current_page}/{total_pages}页，{len(items)}/{len(state['user_list'])}项'
+    text = '\n'.join(map(str, items)) + f"\n\n当前页: {current_page}/{total_pages}页，{len(items)}/{len(state['user_list'])}项"
 
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
