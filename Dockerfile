@@ -1,5 +1,5 @@
-# 使用 Python 3.9 作为基础镜像
-FROM python:3.9-slim-buster
+# 使用 Python 3.11 作为基础镜像
+FROM python:3.11-slim-bookworm
 
 # 创建非 root 用户（假设用户名为appuser）
 RUN useradd -m appuser
