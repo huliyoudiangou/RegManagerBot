@@ -33,7 +33,7 @@ def create_user_panel():
         InlineKeyboardButton("签到", callback_data="user_checkin"),
         InlineKeyboardButton("积分", callback_data="user_score"),
         InlineKeyboardButton("个人信息", callback_data="user_info"),
-        InlineKeyboardButton("绑定", callback_data="user_bind"),
+        InlineKeyboardButton("绑定/换绑", callback_data="user_bind"),
         InlineKeyboardButton("解绑", callback_data="user_unbind"),
         InlineKeyboardButton("删除用户", callback_data="user_delete"),
         InlineKeyboardButton("进群链接", url="https://t.me/navidrom_talk"),

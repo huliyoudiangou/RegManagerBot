@@ -262,6 +262,15 @@ class UserService:
             return False
 
     @staticmethod
+    def update_user_telegram_id(user, telegram_id):
+        """更新本地数据库中的用户telegram_id"""
+        logger.debug(f"更新用户Telegram ID")
+        user.telegram_id = telegram_id
+        user.save()
+        logger.debug(f"用户Telegram ID更新成功！")
+        return user
+    
+    @staticmethod
     def update_user_name(user, username):
         """更新本地数据库中的用户名"""
         logger.debug(f"用户重置为：{username}")
