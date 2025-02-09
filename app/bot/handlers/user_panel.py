@@ -37,7 +37,7 @@ def create_user_panel():
         InlineKeyboardButton("积分", callback_data="user_score"),
         InlineKeyboardButton("赠送积分", callback_data="user_give_score"),
         InlineKeyboardButton("个人信息", callback_data="user_info"),
-        InlineKeyboardButton("绑定", callback_data="user_bind"),
+        InlineKeyboardButton("绑定/换绑", callback_data="user_bind"),
         InlineKeyboardButton("解绑", callback_data="user_unbind"),
         InlineKeyboardButton("重置用户名", callback_data="user_reset_un"),
         InlineKeyboardButton("重置密码", callback_data="user_reset_pw"),

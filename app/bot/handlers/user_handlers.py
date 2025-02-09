@@ -15,7 +15,6 @@ message_queue = get_message_queue()
 
 
 @bot.message_handler(commands=['help'])
-@chat_type_required(["group", "supergroup"])
 @user_exists()
 def help_command(message):
     """
@@ -476,11 +475,22 @@ def bind_command(message):
     # 验证用户
     user_id = UserService.auth_user_by_username_and_password(username, password)
     if user_id:
-        logger.info(
-            f"用户绑定账户成功: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
-        bot.reply_to(message, "账户绑定成功!")
-        user = UserService.register_local_user(telegram_id=telegram_id, service_type=service_type,
-                                               service_user_id=user_id, username=username)
+        user = UserService.get_user_by_service_user_id(user_id)
+        if user:
+            logger.info(f"{telegram_id}请求换绑TG！")
+            u = UserService.update_user_telegram_id(user, telegram_id)
+            if u:
+                bot.reply_to(message, "Telegram 换绑成功")
+                logger.info(f"用户换绑成功：telegram_id={telegram_id}")
+            else:
+                bot.reply_to(message, "Telegram 换绑失败！")
+                logger.error(f"用户换绑失败：telegram_id={telegram_id}")
+        else:    
+            logger.info(
+                f"用户绑定账户成功: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
+            user = UserService.register_local_user(telegram_id=telegram_id, service_type=service_type,
+                                                service_user_id=user_id, username=username)
+            bot.reply_to(message, "账户绑定成功!")
     else:
         logger.error(
             f"用户绑定账户失败: telegram_id={telegram_id}, service_type={service_type}, username={username}, user_id={user_id}")
