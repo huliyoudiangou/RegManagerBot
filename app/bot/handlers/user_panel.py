@@ -15,7 +15,10 @@ from app.bot.handlers.user_handlers import (
     checkin_command,
     bind_command,
     unbind_command,
-    help_command
+    help_command,
+    reset_password_command,
+    reset_username_command,
+    give_score_command
 )
 
 
@@ -26,19 +29,22 @@ def create_user_panel():
     markup.add(
         InlineKeyboardButton("地址", callback_data="user_help"),
         InlineKeyboardButton("注册", callback_data="user_register"),
-        InlineKeyboardButton("积分用户注册", callback_data="user_reg_score"),
+        InlineKeyboardButton("积分用户", callback_data="user_reg_score"),
         InlineKeyboardButton("使用邀请码", callback_data="user_use_code"),
         InlineKeyboardButton("购买邀请码", callback_data="user_buyinvite"),
         InlineKeyboardButton("使用续期码", callback_data="user_use_renew_code"),
         InlineKeyboardButton("签到", callback_data="user_checkin"),
         InlineKeyboardButton("积分", callback_data="user_score"),
+        InlineKeyboardButton("赠送积分", callback_data="user_give_score"),
         InlineKeyboardButton("个人信息", callback_data="user_info"),
         InlineKeyboardButton("绑定", callback_data="user_bind"),
         InlineKeyboardButton("解绑", callback_data="user_unbind"),
+        InlineKeyboardButton("重置用户名", callback_data="user_reset_un"),
+        InlineKeyboardButton("重置密码", callback_data="user_reset_pw"),
         InlineKeyboardButton("删除用户", callback_data="user_delete"),
         InlineKeyboardButton("进群链接", url="https://t.me/navidrom_talk"),
         InlineKeyboardButton("频道链接", url="https://t.me/navidrom_notify"),
-        InlineKeyboardButton("使用教程", url="https://makifx.com/1278.html"),
+        InlineKeyboardButton("使用教程", url="https://telegra.ph/%E9%9F%B3%E6%B5%B7%E6%8B%BE%E8%B4%9D%E6%95%99%E7%A8%8B-02-09"),
         InlineKeyboardButton("没有想听的歌？投稿/求歌", url="https://t.me/MaycyBot")
     )
     return markup
@@ -144,12 +150,30 @@ def user_panel_callback(call):
         case "user_checkin":
             bot.answer_callback_query(call.id)
             checkin_command(mock_message)
+        case "user_give_score":
+            bot.answer_callback_query(call.id)
+            bot.delete_message(chat_id, call.message.message_id)
+            bot.send_message(chat_id, "请输入赠送用户的Telegram ID和赠送积分（格式：ID 积分）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
+            bot.register_next_step_handler(call.message, give_score_command)
         case "user_bind":
             bot.answer_callback_query(call.id)
             bot.delete_message(chat_id, call.message.message_id)
             bot.send_message(chat_id, "请输入用户名和密码（格式：用户名 密码）：<30S未输入自动退出>",
                              reply_markup=markup, delay=30)
             bot.register_next_step_handler(call.message, bind_command)
+        case "user_reset_un":
+            bot.answer_callback_query(call.id)
+            bot.delete_message(chat_id, call.message.message_id)
+            bot.send_message(chat_id, "请输入新的用户名（格式：用户名）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
+            bot.register_next_step_handler(mock_message, reset_username_command)
+        case "user_reset_pw":
+            bot.answer_callback_query(call.id)
+            bot.delete_message(chat_id, call.message.message_id)
+            bot.send_message(chat_id, "请输入新的密码（格式：用户名）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
+            bot.register_next_step_handler(mock_message, reset_password_command)
         case "user_unbind":
             bot.answer_callback_query(call.id)
             unbind_command(mock_message)
