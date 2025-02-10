@@ -14,9 +14,9 @@ class BotManager:
         # 定义命令列表
         commands = [
             telebot.types.BotCommand("start", "开始"),
-            telebot.types.BotCommand("admin", "管理"),
-            telebot.types.BotCommand("help", "可用命令"),
+            telebot.types.BotCommand("line", "获取线路"),
             telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
+            telebot.types.BotCommand("admin", "管理"),
             # telebot.types.BotCommand("reg_score_user", "注册积分用户 (可签到、送分、购买邀请码)"),
             # telebot.types.BotCommand("use_renew_code", "使用续期码"),
             # telebot.types.BotCommand("info", "查看个人信息"),
@@ -60,7 +60,7 @@ class BotManager:
         self.bot.set_my_commands(commands)
 
         # 注册路由
-        bot.register_message_handler(user_handlers.help_command, commands=['help'])
+        bot.register_message_handler(user_handlers.get_line_command, commands=['line'])
         bot.register_message_handler(user_panel.start_panel_command, commands=['start'])
 
         bot.register_message_handler(admin_panel.admin_panel_command, commands=['admin'])

@@ -18,7 +18,8 @@ from app.bot.handlers.user_handlers import (
     help_command,
     reset_password_command,
     reset_username_command,
-    give_score_command
+    give_score_command,
+    get_line_command
 )
 
 
@@ -27,7 +28,7 @@ def create_user_panel():
     markup = InlineKeyboardMarkup()
     markup.row_width = 3
     markup.add(
-        InlineKeyboardButton("地址", callback_data="user_help"),
+        InlineKeyboardButton("线路", callback_data="user_line"),
         InlineKeyboardButton("注册", callback_data="user_register"),
         InlineKeyboardButton("积分用户", callback_data="user_reg_score"),
         InlineKeyboardButton("使用邀请码", callback_data="user_use_code"),
@@ -177,9 +178,9 @@ def user_panel_callback(call):
         case "user_unbind":
             bot.answer_callback_query(call.id)
             unbind_command(mock_message)
-        case "user_help":
+        case "user_line":
             bot.answer_callback_query(call.id)
-            help_command(mock_message)
+            get_line_command(mock_message)
         case _:
             bot.answer_callback_query(call.id, "未知操作，请重试！", show_alert=True)
 

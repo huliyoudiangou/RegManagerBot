@@ -29,7 +29,7 @@ class UserService:
         else:
             user = ServiceUser(id=user.id, telegram_id=telegram_id, score=user.score, service_type=service_type,
                                service_user_id=service_user_id, username=username, invite_code=invite_code,
-                               expiration_date=expiration_date)
+                               expiration_date=user.expiration_date, last_sign_in_date=user.last_sign_in_date)
             user.save()
             logger.debug(f"本地用户更新成功: username={username}")
             return user
@@ -82,7 +82,7 @@ class UserService:
         else:
             user = ServiceUser(id=user.id, score=user.score, telegram_id=user.telegram_id, service_type=user.service_type,
                                service_user_id=service_user_id, username=username, invite_code=user.invite_code,
-                               expiration_date=expiration_date)
+                               expiration_date=expiration_date, last_sign_in_date=user.last_sign_in_date)
             user.save()
             logger.debug(f"本地用户更新成功: user_id={user.id}")
             return user

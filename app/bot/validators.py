@@ -261,13 +261,12 @@ def chat_type_required(not_chat_type=None):
                 if message.chat.type in not_chat_type_list:  # 群组或超级群组
                     logger.debug(
                         f"在{not_chat_type}中收到命令，不响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
+                    bot.reply_to(message, f"群组中不响应命令，请私聊Bot！")
                     return
             logger.debug(
                 f"在{message.chat.type}中收到命令，正常响应: chat_id={message.chat.id}, telegram_id={telegram_id}")
             return func(message, *args, **kwargs)
-
         return wrapper
-
     return decorator
 
 
