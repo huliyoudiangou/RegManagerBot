@@ -300,20 +300,27 @@ class UserService:
             user_list = []
             for user in expired_users['expired']:
                 u = ServiceUser.get_by_service_id(user['service_user_id'])
-                if u.status == 'whitelist':
-                    logger.info(f"发现白名单用户{user['username']}, 不处理！")
-                    pass
-                else:
-                    logger.warning(f"删除过期用户: service_user_id={user['service_user_id']}")
-                    service_api_client.delete_user(user['service_user_id'])
-                    user_list.append(user['username'])
-                    navi = ServiceUser.get_by_service_id(user['service_user_id'])
-                    if navi:
+                if u:
+                    if u.status == 'whitelist':
+                        logger.info(f"发现白名单用户{user['username']}, 不处理！")
+                        pass
+                    else:
+                        logger.warning(f"删除过期用户: service_user_id={user['service_user_id']}")
+                        service_api_client.delete_user(user['service_user_id'])
+                        user_list.append(user['username'])
+                        navi = ServiceUser.get_by_service_id(user['service_user_id'])
                         logger.warning(f"删除本地过期用户: telegram_id={navi.telegram_id}")
                         navi.delete()
-                    else:
-                        logger.warning("本地无用户信息，无需删除！")
-                        pass
+                        # if navi:
+                        #     logger.warning(f"删除本地过期用户: telegram_id={navi.telegram_id}")
+                        #     navi.delete()
+                        # else:
+                        #     logger.warning("本地无用户信息，无需删除！")
+                        #     pass
+                else:
+                    logger.warning(f"该用户没有绑定TG账户 service_user_id={user['service_user_id']}")
+                    service_api_client.delete_user(user['service_user_id'])
+                    user_list.append(user['username'])
             return user_list
 
     @staticmethod
