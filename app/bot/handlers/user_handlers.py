@@ -282,7 +282,7 @@ def use_renew_code_command(message):
         user_id = message.from_user.id  # 用户 ID
 
         # 使用续期码
-        success = InviteCodeService.use_invite_code(code, user_id)
+        success = InviteCodeService.use_invite_code(code, user_id, 'renew')
         if success:
             bot.reply_to(message, f"续期码使用成功！您的账户已续期。")
         else:

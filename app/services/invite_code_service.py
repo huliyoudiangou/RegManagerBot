@@ -70,7 +70,7 @@ class InviteCodeService:
             return None
 
     @staticmethod
-    def use_invite_code(code: str, user_id: int) -> bool:
+    def use_invite_code(code: str, user_id: int, code_type: str = 'invite') -> bool:
         """
         使用邀请码
 
@@ -89,7 +89,7 @@ class InviteCodeService:
                 return False
 
             # 根据邀请码类型处理
-            if invite_code.type == 'invite':
+            if invite_code.type == 'invite' and code_type == 'invite':
                 # 计算过期时间
                 expire_time = invite_code.create_time + timedelta(days=invite_code.expire_days)
                 if expire_time < datetime.now():
@@ -101,7 +101,7 @@ class InviteCodeService:
                 invite_code.save()
                 logger.debug(f"邀请码使用成功: code={code}, user_id={user_id}")
                 return True
-            elif invite_code.type == 'renew':
+            elif invite_code.type == 'renew' and code_type == 'renew':
                 # 处理续期码逻辑
                 service_user = ServiceUser.get_by_telegram_id_and_service_type(user_id)
                 if service_user:
