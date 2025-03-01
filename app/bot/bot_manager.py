@@ -15,7 +15,7 @@ class BotManager:
         commands = [
             telebot.types.BotCommand("start", "开始"),
             telebot.types.BotCommand("line", "获取线路"),
-            telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
+            # telebot.types.BotCommand("register", "注册用户 (需要提供用户名和密码)"),
             telebot.types.BotCommand("admin", "管理"),
             # telebot.types.BotCommand("reg_score_user", "注册积分用户 (可签到、送分、购买邀请码)"),
             # telebot.types.BotCommand("use_renew_code", "使用续期码"),
@@ -66,7 +66,7 @@ class BotManager:
         bot.register_message_handler(admin_panel.admin_panel_command, commands=['admin'])
         # bot.register_message_handler(user_handlers.start_command, commands=['start'])
         # bot.register_message_handler(user_handlers.start_command, commands=['start'])
-        bot.register_message_handler(user_handlers.register_user_command, commands=['register'])
+        # bot.register_message_handler(user_handlers.register_user_command, commands=['register'])
         # bot.register_message_handler(user_handlers.reg_score_user_command, commands=['reg_score_user'])
         # # bot.register_message_handler(user_handlers.use_invite_code_command, commands=['use_code'])
         # bot.register_message_handler(user_handlers.info_command, commands=['info'])
