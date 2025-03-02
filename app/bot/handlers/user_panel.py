@@ -46,7 +46,7 @@ def create_user_panel():
         InlineKeyboardButton("进群链接", url="https://t.me/navidrom_talk"),
         InlineKeyboardButton("频道链接", url="https://t.me/navidrom_notify"),
         InlineKeyboardButton("使用教程", url="https://telegra.ph/%E9%9F%B3%E6%B5%B7%E6%8B%BE%E8%B4%9D%E6%95%99%E7%A8%8B-02-09"),
-        InlineKeyboardButton("没有想听的歌？投稿/求歌", url="https://t.me/MaycyBot")
+        InlineKeyboardButton("没有想听的歌？投稿/求歌", callback_data="user_upload_song"),
     )
     return markup
 
@@ -181,6 +181,17 @@ def user_panel_callback(call):
         case "user_line":
             bot.answer_callback_query(call.id)
             get_line_command(mock_message)
+        case "user_upload_song":
+            bot.answer_callback_query(call.id)
+            message = '''
+                    🌟歌曲上传管理员 
+                    @uibianba1234 
+                    @A_LumosBot 
+                    @MaycyBot
+                    @AltzoszBot
+                    @Xiaozhoumini_bot
+                    '''
+            bot.send_message(chat_id, message)
         case _:
             bot.answer_callback_query(call.id, "未知操作，请重试！", show_alert=True)
 
