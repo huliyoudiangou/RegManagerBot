@@ -45,7 +45,7 @@ def create_user_panel():
         InlineKeyboardButton("删除用户", callback_data="user_delete"),
         InlineKeyboardButton("进群链接", url="https://t.me/navidrom_talk"),
         InlineKeyboardButton("频道链接", url="https://t.me/navidrom_notify"),
-        InlineKeyboardButton("使用教程", url="https://telegra.ph/%E9%9F%B3%E6%B5%B7%E6%8B%BE%E8%B4%9D%E6%95%99%E7%A8%8B-02-09"),
+        InlineKeyboardButton("使用教程", url="https://ring-exception-6ec.notion.site/1a9bbd421cca80149308fde4fef24745"),
         InlineKeyboardButton("没有想听的歌？投稿/求歌", callback_data="user_upload_song"),
     )
     return markup
@@ -90,7 +90,8 @@ def start_panel_command(message):
     user_name = message.from_user.username
     bot.delete_message(message.chat.id, message.message_id)
     # bot.send_message(message.chat.id, "请选择操作：", reply_markup=create_user_panel(), delay=None)
-    img_url = "https://i.imgur.com/jci9UJm.jpeg"
+    # img_url = "https://i.imgur.com/jci9UJm.jpeg"
+    img_url = "https://imgur.com/Fe7tkO6"
     resp = f"*倾听音乐，享受生活！欢迎 {user_name} 来到音海拾贝！*\n"
     bot.send_photo(chat_id, img_url, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
 

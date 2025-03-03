@@ -408,7 +408,6 @@ def info_command(message):
                    f"用户名: {user.username}\n" \
                    f"积分: {user.score}\n" \
                    f"状态: {user.status}\n" \
-                   f"过期时间: {user.expiration_date}\n" \
                    f"本地数据库ID: {user.id}\n" \
                    f"服务器用户ID: {user.service_user_id}"
         bot.reply_to(message, response)
