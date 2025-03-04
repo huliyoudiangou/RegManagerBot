@@ -5,6 +5,7 @@ from app.utils.logger import logger
 from app.utils.scheduler import create_scheduler
 from app.utils.message_queue import create_message_queue
 from app.utils.message_cleaner import create_message_cleaner
+from app.utils.mailu import create_mailu
 # 需要安装的模块：无
 
         
@@ -22,6 +23,9 @@ def init_app():
     
     create_message_queue()
     logger.info(f"消息管理队列已启动！")
+    
+    create_mailu()
+    logger.info(f"邮件注册系统已开启")
     
     if settings.ENABLE_MESSAGE_CLEANER:
         message_cleaner = create_message_cleaner()

@@ -47,3 +47,8 @@ ENABLE_EXPIRED_USER_CLEAN = bool(os.getenv("ENABLE_EXPIRED_USER_CLEAN", 'False')
 
 DELAY_INTERVAL = int(os.getenv("DELAY_INTERVAL", 5))
 ENABLE_MESSAGE_CLEANER = bool(os.getenv("ENABLE_MESSAGE_CLEANER", 'False') == 'True') # 是否开启消息清理系统，默认关闭
+
+# --- Mailu 配置 ---
+MAILU_URL = os.getenv("MAILU_URL")
+MAILU_TOKEN = os.getenv("MAILU_TOKEN")
+MAILU_PRICE = int(os.getenv("MAILU_PRICE", 200))

@@ -19,7 +19,8 @@ from app.bot.handlers.user_handlers import (
     reset_password_command,
     reset_username_command,
     give_score_command,
-    get_line_command
+    get_line_command,
+    register_mail_command
 )
 
 
@@ -46,7 +47,8 @@ def create_user_panel():
         InlineKeyboardButton("进群链接", url="https://t.me/navidrom_talk"),
         InlineKeyboardButton("频道链接", url="https://t.me/navidrom_notify"),
         InlineKeyboardButton("使用教程", url="https://ring-exception-6ec.notion.site/1a9bbd421cca80149308fde4fef24745"),
-        InlineKeyboardButton("没有想听的歌？投稿/求歌", url="https://t.me/MaycyBot"),
+        InlineKeyboardButton("专属邮箱注册", callback_data="user_email"),
+        InlineKeyboardButton("投稿/求歌", url="https://t.me/MaycyBot"),
         # InlineKeyboardButton("没有想听的歌？投稿/求歌", callback_data="user_upload_song"),
     )
     return markup
@@ -183,6 +185,12 @@ def user_panel_callback(call):
         case "user_line":
             bot.answer_callback_query(call.id)
             get_line_command(mock_message)
+        case "user_email":
+            bot.answer_callback_query(call.id)
+            bot.delete_message(chat_id, call.message.message_id)
+            bot.send_message(chat_id, "请输入邮箱前缀和密码（格式：用户名前缀 密码。例如: test test123）：<30S未输入自动退出>",
+                             reply_markup=markup, delay=30)
+            bot.register_next_step_handler(call.message, register_mail_command)
         # case "user_upload_song":
         #     bot.answer_callback_query(call.id)
         #     message = '''

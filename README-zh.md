@@ -191,7 +191,7 @@
     -   `/userinfo_by_username <username>`：通过用户名获取用户信息。
     -   `/stats`：获取注册用户统计信息。
 4.  **普通用户可用命令：**
-   -   `/start`： 获取用户信息和所有可用命令
+    -   `/start`： 获取用户信息和所有可用命令
     - `/register <username> <password>`: 注册用户 (需要提供用户名和密码).
     - `/register <username> <password> <invite_code>`: 使用邀请码注册用户 (需要提供用户名、密码和邀请码).
     -   `/info`： 获取用户信息

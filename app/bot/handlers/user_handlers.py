@@ -4,6 +4,7 @@ from app.services.user_service import UserService
 from app.services.score_service import ScoreService
 from app.services.invite_code_service import InviteCodeService
 from app.utils.message_queue import get_message_queue
+from app.utils.mailu import get_mailu
 from app.utils.logger import logger
 from config import settings
 from datetime import datetime, timedelta
@@ -11,8 +12,9 @@ from app.bot.core.bot_instance import bot
 from app.bot.validators import user_exists, confirmation_required, score_enough, chat_type_required
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-message_queue = get_message_queue()
 
+mailu = get_mailu()
+message_queue = get_message_queue()
 
 @bot.message_handler(commands=['line'])
 @user_exists()
@@ -710,3 +712,51 @@ def handle_random_score_callback(call):
         bot.send_message(call.message.chat.id,
                          f"[{user_name}](https://t.me/{user_name})您已经获取过奖励, 请勿重复点击！",
                          parse_mode="Markdown", disable_web_page_preview=True)
+
+
+@user_exists(negate=True)
+@chat_type_required(["group", "supergroup"])
+def register_mail_command(message):
+    """
+    处理 /register_mail 命令，注册邮件
+    """
+    if message.text.startswith('/'):
+        args = message.text.split()[1:]
+    else:
+        args = message.text.split()
+    if len(args) != 2:
+        logger.info(f"参数错误: args={args}")
+        bot.reply_to(message, "参数错误，请提供用户名和密码，格式为：用户名 密码")
+        return
+
+    username, password = args
+    telegram_id = message.from_user.id
+    service_type = settings.SERVICE_TYPE
+
+    logger.info(f"用户请求注册邮件: telegram_id={telegram_id}, service_type={service_type}")
+
+    # 查找本地数据库中的用户
+    user = UserService.get_user_by_telegram_id(telegram_id)
+    if user:
+        # 从配置文件中获取购买邀请码所需积分
+        required_score = settings.MAILU_PRICE
+        if user.score >= required_score:
+            domain_prefix = "@makifx.com"
+            result = mailu.create_user(f"{username}{domain_prefix}", password)
+            if result and result['status'] == 'success':
+                logger.info(f"用户注册邮件成功：telegram_id = {telegram_id}, user = {user.username}")
+                success = ScoreService.reduce_score(user.id, required_score)
+                bot.reply_to(message, f"注册音海拾贝专属邮件成功，您的邮箱：<code>{username}{domain_prefix}</code>", parse_mode="HTML")    
+            elif result and result['status'] == "duplicate":
+                logger.warning(f"用户名重复，要求用户重新输入！当前用户：{username}")
+                bot.reply_to(message, f"用户名重复了，请重新选择用户名继续注册！")
+            else:
+                logger.error(f"用户注册邮件失败！telegram_id = {telegram_id}, user = {user.username}")
+                bot.reply_to(message, "注册失败，请联系管理员！")
+        else:
+            logger.warning(
+                f"用户注册邮件失败，积分不足: telegram_id={telegram_id}, , username={user.username}")
+            bot.reply_to(message, f"注册邮件失败，您的积分不足，邀请码需要 {required_score} 积分！")
+    else:
+        logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
+        bot.reply_to(message, "未找到您的账户信息!")
