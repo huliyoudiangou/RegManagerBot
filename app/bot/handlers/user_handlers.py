@@ -528,6 +528,7 @@ def bind_command(message):
 
 @chat_type_required(["group", "supergroup"])
 @user_exists(negate=True)
+@confirmation_required(f"你确定要解绑账号嘛？解绑后本地账号会被删除，服务账号会保留！")
 def unbind_command(message):
     """
     处理 /unbind 命令，解绑 Web 服务账户并删除本地用户

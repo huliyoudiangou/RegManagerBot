@@ -209,16 +209,18 @@ def callback_query(call):
             # 用户选择“是”，执行原始命令
             func(message, *args, **kwargs)
             logger.debug("已确认，命令已执行")
+            bot.answer_callback_query(call.id, "继续执行")
         elif data == f"confirm_no_{chat_id}":
             # 用户选择“否”，取消操作
             logger.debug("已取消，命令已取消")
+            bot.answer_callback_query(call.id, "取消操作")
         # 清除会话信息
         bot.delete_message(chat_id, call.message.message_id)
         # if settings.ENABLE_MESSAGE_CLEANER:
         #     message_queue.add_message(user_sessions[chat_id]['message'])
         del user_sessions[chat_id]
 
-    bot.answer_callback_query(call.id)
+    # bot.answer_callback_query(call.id)
     if settings.ENABLE_MESSAGE_CLEANER:
         message_queue.add_message(call.message)
 
