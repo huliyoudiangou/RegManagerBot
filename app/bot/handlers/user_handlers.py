@@ -541,7 +541,7 @@ def unbind_command(message):
     user = UserService.get_user_by_telegram_id(telegram_id)
     if user:
         # 删除本地用户
-        UserService.delete_user(user)
+        UserService.delete_local_user(user)
         logger.info(f"用户解绑成功: telegram_id={telegram_id}, service_type={service_type}")
         bot.reply_to(message, "解绑成功！已删除您的本地账户信息。")
     else:
