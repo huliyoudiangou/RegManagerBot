@@ -9,7 +9,7 @@ from app.utils.logger import logger
 from config import settings
 from datetime import datetime, timedelta
 from app.bot.core.bot_instance import bot
-from app.bot.validators import user_exists, confirmation_required, score_enough, chat_type_required
+from app.bot.validators import user_exists, confirmation_required, score_enough, chat_type_required, service_id_exists
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
@@ -264,7 +264,8 @@ def use_invite_code_command(message):
 
 
 @chat_type_required(["group", "supergroup"])
-@user_exists(negate=True)
+# @user_exists(negate=True)
+@service_id_exists
 def use_renew_code_command(message):
     """使用续期码 (用户命令)
     格式: /use_renew_code <code>
@@ -527,7 +528,8 @@ def bind_command(message):
 
 
 @chat_type_required(["group", "supergroup"])
-@user_exists(negate=True)
+# @user_exists(negate=True)
+@service_id_exists
 @confirmation_required(f"你确定要解绑账号嘛？解绑后本地账号会被删除，服务账号会保留！")
 def unbind_command(message):
     """
@@ -551,7 +553,8 @@ def unbind_command(message):
 
 
 @chat_type_required(["group", "supergroup"])
-@user_exists(negate=True)
+# @user_exists(negate=True)
+@service_id_exists
 @confirmation_required(f"你确定要重置密码嘛？")
 def reset_password_command(message):
     """
@@ -588,7 +591,8 @@ def reset_password_command(message):
 
 
 @chat_type_required(["group", "supergroup"])
-@user_exists(negate=True)
+# @user_exists(negate=True)
+@service_id_exists
 def reset_username_command(message):
     """
     处理 /reset_username 命令，重置用户名

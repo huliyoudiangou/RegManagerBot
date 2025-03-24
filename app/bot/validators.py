@@ -60,7 +60,28 @@ def user_exists(negate=True):
 
     return decorator
 
+def service_id_exists(func):
+    """
+    验证用户是否存在service_user_id
+    """
+    @wraps(func)
+    def wrapper(message, *args, **kwargs):
+        telegram_id = message.from_user.id
+        logger.debug(f"校验用户是否存在service_user_id: telegram_id={telegram_id}")
 
+        user = UserService.get_user_by_telegram_id(telegram_id=telegram_id)
+
+        if user and user.service_user_id:
+            logger.info(f"用户存在service_user_id: telegram_id={telegram_id}")
+            return func(*args, **kwargs)
+        else:
+            logger.info(f"用户不存在service_user_id: telegram_id={telegram_id}")
+            bot.reply_to(message, "用户未注册服务器用户，请注册！")
+            return
+    
+    return wrapper
+        
+    
 def admin_required(func):
     """
     验证用户是否是管理员的装饰器
