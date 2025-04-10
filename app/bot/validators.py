@@ -73,7 +73,7 @@ def service_id_exists(func):
 
         if user and user.service_user_id:
             logger.info(f"用户存在service_user_id: telegram_id={telegram_id}")
-            return func(*args, **kwargs)
+            return func(message, *args, **kwargs)
         else:
             logger.info(f"用户不存在service_user_id: telegram_id={telegram_id}")
             bot.reply_to(message, "用户未注册服务器用户，请注册！")
