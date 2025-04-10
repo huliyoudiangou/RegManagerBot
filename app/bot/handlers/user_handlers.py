@@ -530,7 +530,7 @@ def bind_command(message):
 
 @chat_type_required(["group", "supergroup"])
 # @user_exists(negate=True)
-@service_id_exists
+# @service_id_exists
 @confirmation_required(f"你确定要解绑账号嘛？解绑后本地账号会被删除，服务账号会保留！")
 def unbind_command(message):
     """
@@ -583,7 +583,7 @@ def reset_password_command(message):
             logger.info(f"用户重置密码成功: telegram_id={telegram_id}, service_type={service_type}")
             bot.reply_to(message, "密码重置成功！")
         else:
-            logger.warning(f"用户不存在: telegram_id={telegram_id}, service_type={service_type}")
+            logger.warning(f"服务请求失败了: telegram_id={telegram_id}, service_type={service_type}")
             bot.reply_to(message, "密码重置失败，请联系管理员！")
 
     else:
