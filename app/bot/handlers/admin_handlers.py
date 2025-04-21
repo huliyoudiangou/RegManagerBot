@@ -139,7 +139,8 @@ def get_unused_invite_codes_command(message):
                 response += f"--------\n"
                 response += f"未使用总数为：{len(invite_unused_codes)}, 当前页有{len(invite_codes)}个未使用!"
                 page_count += 1
-                bot.reply_to(message, response, parse_mode='HTML')  # 发送HTML格式的消息，支持点击复制
+                bot.send_message(message.chat.id, response, parse_mode='HTML')
+                # bot.reply_to(message, response, parse_mode='HTML')  # 发送HTML格式的消息，支持点击复制
             logger.info(f"管理员获取未使用的邀请码列表成功: telegram_id={telegram_id}, count={len(invite_codes)}")
         else:
             bot.reply_to(message, "没有找到未使用的邀请码！")
