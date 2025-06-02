@@ -226,13 +226,13 @@ def use_invite_code_command(message):
 
     code = args[-1]
 
-    user = UserService.get_user_by_telegram_id(telegram_id)
-    if user and user.invite_code:
-        logger.info(f"已使用过邀请码用户注册！")
-        bot.send_message(message.chat.id, f"邀请码验证通过，请输入用户名和密码(格式：用户名 密码)：<30s后自动退出>",
-                         delay=30)
-        bot.register_next_step_handler(message, register_user_command)
-        return
+    # user = UserService.get_user_by_telegram_id(telegram_id)
+    # if user and user.invite_code:
+    #     logger.info(f"已使用过邀请码用户注册！")
+    #     bot.send_message(message.chat.id, f"邀请码验证通过，请输入用户名和密码(格式：用户名 密码)：<30s后自动退出>",
+    #                      delay=30)
+    #     bot.register_next_step_handler(message, register_user_command)
+    #     return
 
         # 验证邀请码的有效性
     invite_code = InviteCodeService.get_invite_code(code)
