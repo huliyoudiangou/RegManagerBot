@@ -29,7 +29,6 @@ def get_line_command(message):
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         🌟服务器地址： （🈲禁网页播放，必ban）
         https://music.makifx.com（直连x线路）
-        https://music2.makifx.com （CF线路）
 
         🌟歌词API地址 ： 
         https://lrc.makifx.com/lyrics（可用性未测）
