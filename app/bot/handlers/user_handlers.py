@@ -27,7 +27,7 @@ def get_line_command(message):
     response = '''
         *音海拾贝 Navidrome 服务信息！*
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        🌟服务器地址： （🈲禁网页播放，必ban）
+        🌟服务器地址： （🈲禁网页登录使用，必ban）
         https://music.makifx.com       
 
         🌟歌词API地址 ： 
