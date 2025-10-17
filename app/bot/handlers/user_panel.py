@@ -94,7 +94,7 @@ def start_panel_command(message):
     bot.delete_message(message.chat.id, message.message_id)
     # bot.send_message(message.chat.id, "请选择操作：", reply_markup=create_user_panel(), delay=None)
     # img_url = "https://i.imgur.com/jci9UJm.jpeg"
-    img_url = "https://imgur.com/Fe7tkO6"
+    img_url = "https://666671.xyz/i/2025/10/17/68f1c52b4d35b.jpg"
     resp = f"*倾听音乐，享受生活！欢迎 {user_name} 来到音海拾贝！*\n"
     bot.send_photo(chat_id, img_url, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
 
