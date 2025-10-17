@@ -99,7 +99,7 @@ def start_panel_command(message):
     # bot.send_photo(chat_id, img_url, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
     # 这是修改后的代码
     with open('/app/pics/start.jpg', 'rb') as photo:
-    bot.send_photo(chat_id, photo, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
+        bot.send_photo(chat_id, photo, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('user_'))
