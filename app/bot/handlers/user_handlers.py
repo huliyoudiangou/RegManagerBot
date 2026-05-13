@@ -668,8 +668,8 @@ def random_score_command(message):
         ]
     )
     msg = f'''
-            🧧 *随机积分红包来了~*
-            _感谢 {username} 发的随机积分红包！_
+        🧧 *随机积分红包来了~*
+        _感谢 {username} 发的随机积分红包！_
           '''
     bot.send_message(message.chat.id, msg, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True,
                      delay=None)
