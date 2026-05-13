@@ -96,7 +96,7 @@ def start_panel_command(message):
     resp = f"*倾听音乐，享受生活！欢迎 {user_name} 来到音海拾贝！*\n"
     # bot.send_photo(chat_id, img_url, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
     # --- 修改为：直接使用 bot.send_message 发送文本和按钮 ---
-    bot.send_message(chat_id, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
+bot.send_message(chat_id, resp, reply_markup=create_user_panel(), parse_mode="Markdown")
 @bot.callback_query_handler(func=lambda call: call.data.startswith('user_'))
 @user_status_required()
 def user_panel_callback(call):
