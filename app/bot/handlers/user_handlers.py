@@ -120,7 +120,9 @@ def help_command(message):
     #    🔸 `/stats` - 查看统计信息
 
     #   💡 _如需更多帮助，请联系管理员。_
-    '''
+    # '''
+    # 这里的 response 被注释掉了，为了防止下面报错，提供一个简单的文案
+    response = "请联系管理员获取帮助。"
     bot.reply_to(message, response, parse_mode="Markdown")
 
 
