@@ -667,13 +667,19 @@ def random_score_command(message):
             [InlineKeyboardButton("点击抽积分", callback_data=f"random_score_{event_id}")]
         ]
     )
-    msg = f'''
-        🧧 *随机积分红包来了~*
-        _感谢 {username} 发的随机积分红包！_
-          '''
-    bot.send_message(message.chat.id, msg, reply_markup=keyboard, parse_mode="Markdown", disable_web_page_preview=True,
-                     delay=None)
-
+    msg = (
+        "🧧 *随机积分红包来了~*\n"
+        f"_感谢 {username} 发的随机积分红包！_"
+    )
+    
+    bot.send_message(
+        message.chat.id, 
+        msg, 
+        reply_markup=keyboard, 
+        parse_mode="Markdown", 
+        disable_web_page_preview=True,
+        delay=None
+    )
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("random_score_"))
 def handle_random_score_callback(call):
