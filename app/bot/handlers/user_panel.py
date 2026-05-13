@@ -44,12 +44,10 @@ def create_user_panel():
         InlineKeyboardButton("重置用户名", callback_data="user_reset_un"),
         InlineKeyboardButton("重置密码", callback_data="user_reset_pw"),
         InlineKeyboardButton("删除用户", callback_data="user_delete"),
-        InlineKeyboardButton("进群链接", url="https://t.me/Melodic_Tides_chat"),
-        InlineKeyboardButton("频道链接", url="https://t.me/Melodic_Tides_notify"),
-        InlineKeyboardButton("使用教程", url="https://ring-exception-6ec.notion.site/1a9bbd421cca80149308fde4fef24745"),
-        InlineKeyboardButton("专属邮箱注册", callback_data="user_email"),
-        InlineKeyboardButton("投稿/求歌", url="https://t.me/yhshiyin_bot"),
-        # InlineKeyboardButton("没有想听的歌？投稿/求歌", callback_data="user_upload_song"),
+        InlineKeyboardButton("进群链接", url="https://t.me/yinhai_chat"),
+        InlineKeyboardButton("频道链接", url="https://t.me/yinhai_notify")
+       
+        
     )
     return markup
 
