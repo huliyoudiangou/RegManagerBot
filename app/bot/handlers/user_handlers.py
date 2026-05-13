@@ -667,11 +667,10 @@ def random_score_command(message):
             [InlineKeyboardButton("点击抽积分", callback_data=f"random_score_{event_id}")]
         ]
     )
-    msg = (
-        "🧧 *随机积分红包来了~*\n"
-        f"_感谢 {username} 发的随机积分红包！_"
-    )
-    
+
+    msg = "🧧 *随机积分红包来了~*\n"
+    msg += f"_感谢 {username} 发的随机积分红包！_"
+
     bot.send_message(
         message.chat.id, 
         msg, 
