@@ -25,16 +25,10 @@ def get_line_command(message):
     telegram_id = message.from_user.id
     logger.info(f"用户 {telegram_id} 执行了 /line 命令")
     response = '''
-        *音海拾贝 Navidrome 服务信息！*
+        *悦耳声阅 Audiobookshelf 服务信息！*
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         🌟服务器地址： （🈲禁网页播放，必ban）
-        https://yinhai.aiinyue.com
-
-        🌟歌词API地址 ： 
-        https://lrc.makifx.com/lyrics（可用性未测）
-
-        🌟封面API地址 ： 
-        https://lrc.makifx.com/cover（可用性未测）
+        https://yueer.makifx.com
     '''
     bot.reply_to(message, response, parse_mode="Markdown")
 
@@ -59,72 +53,73 @@ def help_command(message):
     #     🌟封面API地址 ： 
     #     https://lrc.makifx.com/cover（可用性未测）
     # '''
-    response = '''
-  🎵   *音海拾贝 Navidrome 用户管理机器人* 🤖
+    # response = '''
+    # 🎵   *音海拾贝 Navidrome 用户管理机器人* 🤖
 
-        本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。
+    #    本机器人主要用于管理 Navidrome 用户，并提供积分和邀请码功能。
 
-        📌 *用户命令*
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    #   📌 *用户命令*
+    #    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        🔹 `/register <用户名> <密码>` - 注册用户（邀请码系统关闭时）
-        _例如：_ `/register testuser password`
+    #    🔹 `/register <用户名> <密码>` - 注册用户（邀请码系统关闭时）
+    #    _例如：_ `/register testuser password`
 
-        🔹 `/register <用户名> <密码> <邀请码>` - 使用邀请码注册（邀请码系统开启时）
-        _例如：_ `/register testuser password abc123def`
+    #    🔹 `/register <用户名> <密码> <邀请码>` - 使用邀请码注册（邀请码系统开启时）
+    #    _例如：_ `/register testuser password abc123def`
 
-        🔹 `/reg_score_user` - 注册积分用户，用于获取积分购买邀请码
+    #    🔹 `/reg_score_user` - 注册积分用户，用于获取积分购买邀请码
 
-        🔹 `/info` - 查看您的个人信息
+    #    🔹 `/info` - 查看您的个人信息
 
-        🔹 `/score` - 查看您的积分
+    #    🔹 `/score` - 查看您的积分
 
-        🔹 `/give <Telegram ID> <score>` - 向注册用户赠送积分
+    #    🔹 `/give <Telegram ID> <score>` - 向注册用户赠送积分
 
-        🔹 `/checkin` - 每日签到获得积分
+    #    🔹 `/checkin` - 每日签到获得积分
 
-        🔹 `/random_score <红包个数> <积分总数>` - 发送随机积分红包（发送即扣分）
+    #    🔹 `/random_score <红包个数> <积分总数>` - 发送随机积分红包（发送即扣分）
 
-        🔹 `/buyinvite` - 购买邀请码
+    #   🔹 `/buyinvite` - 购买邀请码
 
-        🔹 `/bind <用户名> <Navidrome ID>` - 绑定已有服务器账号到 bot 管理
+    #    🔹 `/bind <用户名> <Navidrome ID>` - 绑定已有服务器账号到 bot 管理
 
-        🔹 `/unbind` - 解绑 Bot 管理（不会删除服务器账号）
+    #   🔹 `/unbind` - 解绑 Bot 管理（不会删除服务器账号）
 
-        🔹 `/reset_username <new_username>` - 重置服务器用户名
+    #   🔹 `/reset_username <new_username>` - 重置服务器用户名
 
-        🔹 `/reset_password <new_password>` - 重置服务器密码
+    #    🔹 `/reset_password <new_password>` - 重置服务器密码
 
-        🔹 `/deleteuser` - 删除您的账户（不可恢复）
+    #   🔹 `/deleteuser` - 删除您的账户（不可恢复）
 
-        📌 *管理员命令*
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    #  📌 *管理员命令*
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        🔸 `/generate_code [<数量>]` - 生成指定数量的邀请码（默认为 1）
-        _例如：_ `/generate_code` 或 `/generate_code 10`
+    # 🔸 `/generate_code [<数量>]` - 生成指定数量的邀请码（默认为 1）
+    # _例如：_ `/generate_code` 或 `/generate_code 10`
 
-        🔸 `/invite` - 查看所有邀请码
+    #    🔸 `/invite` - 查看所有邀请码
 
-        🔸 `/toggle_invite_code_system` - 开启/关闭邀请码系统
+    #   🔸 `/toggle_invite_code_system` - 开启/关闭邀请码系统
 
-        🔸 `/set_score <telegram_id> <score>` - 设置用户的积分
-        _例如：_ `/set_score 12345 100`
+    #    🔸 `/set_score <telegram_id> <score>` - 设置用户的积分
+    #   _例如：_ `/set_score 12345 100`
 
-        🔸 `/get_score <telegram_id>` 或 `/score <telegram_id>` - 查看用户的积分
-        _例如：_ `/get_score 12345` 或 `/score 12345`
+    #    🔸 `/get_score <telegram_id>` 或 `/score <telegram_id>` - 查看用户的积分
+    #   _例如：_ `/get_score 12345` 或 `/score 12345`
 
-        🔸 `/add_score <telegram_id> <score>` - 为用户增加积分
-        _例如：_ `/add_score 12345 50`
+    #    🔸 `/add_score <telegram_id> <score>` - 为用户增加积分
+    #   _例如：_ `/add_score 12345 50`
 
-        🔸 `/reduce_score <telegram_id> <score>` - 减少用户的积分
-        _例如：_ `/reduce_score 12345 20`
+    #    🔸 `/reduce_score <telegram_id> <score>` - 减少用户的积分
+     
+    #   _例如：_ `/reduce_score 12345 20`
 
-        🔸 `/set_price <price>` - 设置邀请码的价格
-        _例如：_ `/set_price 150`
+    #    🔸 `/set_price <price>` - 设置邀请码的价格
+    #   _例如：_ `/set_price 150`
 
-        🔸 `/stats` - 查看统计信息
+    #    🔸 `/stats` - 查看统计信息
 
-        💡 _如需更多帮助，请联系管理员。_
+    #   💡 _如需更多帮助，请联系管理员。_
     '''
     bot.reply_to(message, response, parse_mode="Markdown")
 
